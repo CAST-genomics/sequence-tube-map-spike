@@ -52,6 +52,24 @@ def minigraph_node_id(node_key: str) -> str:
     return match.group(1)
 
 
+def sort_key(node_key: str) -> tuple[int, str]:
+    """Node key order for display: numeric ids first, in order; anything else after."""
+    match = NODE_KEY.match(node_key)
+    return (int(match.group(1)), node_key) if match else (2**62, node_key)
+
+
+def chromosome_rank(chrom: str) -> tuple[int, str]:
+    """Conventional order: 1…22, then X, Y, M, then anything else by name.
+
+    Textual order would put chr10 before chr2. cici.json is chr1 only, so nothing
+    here exercises it yet — which is exactly why it's worth getting right now.
+    """
+    name = re.sub(r"^chr", "", chrom, flags=re.IGNORECASE)
+    if name.isdigit():
+        return int(name), ""
+    return {"X": 1000, "Y": 1001, "M": 1002, "MT": 1002}.get(name.upper(), 2000), name
+
+
 def grch38_interval(node: dict) -> dict | None:
     """The node's GRCh38 placement, or None when it isn't in GRCh38 at all."""
     placements = [
@@ -70,6 +88,20 @@ def grch38_interval(node: dict) -> dict | None:
             "a single interval is assumed"
         )
     return placements[0]
+
+
+def interval_fields(node_key: str, placement: dict) -> tuple[str, int, int]:
+    """The three coordinate fields, or a DatasetError naming the node that lacks them.
+
+    A missing or non-numeric coordinate is a dataset the script doesn't understand,
+    not a crash to read backwards from a KeyError in a traceback.
+    """
+    try:
+        return str(placement["sequence_id"]), int(placement["start"]), int(placement["end"])
+    except (KeyError, TypeError, ValueError) as cause:
+        raise DatasetError(
+            f"node {node_key} has an unusable {ASSEMBLY} interval: {placement!r}"
+        ) from cause
 
 
 def tube_map_url(endpoint: str, node_id: str, chrom: str, start: int, end: int) -> str:
@@ -96,9 +128,7 @@ def build_table(dataset: dict, source: str, endpoint: str = ENDPOINT) -> dict:
             continue
 
         node_id = minigraph_node_id(node_key)
-        chrom = placement["sequence_id"]
-        start = int(placement["start"])
-        end = int(placement["end"])
+        chrom, start, end = interval_fields(node_key, placement)
 
         rows.append(
             {
@@ -113,7 +143,7 @@ def build_table(dataset: dict, source: str, endpoint: str = ENDPOINT) -> dict:
         )
 
     # Genomic order: the reader is walking a locus, not a list of ids.
-    rows.sort(key=lambda row: (row["chrom"], row["start"], row["end"]))
+    rows.sort(key=lambda row: (chromosome_rank(row["chrom"]), row["start"], row["end"]))
 
     return {
         "generatedAt": date.today().isoformat(),
@@ -123,7 +153,9 @@ def build_table(dataset: dict, source: str, endpoint: str = ENDPOINT) -> dict:
         "fixedParameters": FIXED_PARAMETERS,
         "queriedLocus": dataset.get("queried_locus"),
         "actualLocus": dataset.get("actual_locus"),
-        "nodesWithoutGrch38": sorted(without_grch38, key=minigraph_node_id),
+        # Sorted numerically where the key looks like one, but never fatally: these
+        # nodes are being reported, not used, and an odd key shouldn't sink the run.
+        "nodesWithoutGrch38": sorted(without_grch38, key=sort_key),
         "nodes": rows,
     }
 

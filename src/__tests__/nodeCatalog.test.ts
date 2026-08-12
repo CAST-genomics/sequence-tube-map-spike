@@ -63,6 +63,25 @@ describe('catalogEntries', () => {
         ])
     })
 
+    it('orders chromosomes numerically, so chr2 precedes chr10', () => {
+        const across: NodeTable = {
+            ...table,
+            nodes: ['chrM', 'chr10', 'chrX', 'chr2', 'chr1'].map((chrom, index) => ({
+                ...table.nodes[0],
+                node: `${index}+`,
+                minigraphnode: String(index),
+                chrom
+            }))
+        }
+        expect(catalogEntries(across).map(entry => entry.chrom)).toEqual([
+            'chr1',
+            'chr2',
+            'chr10',
+            'chrX',
+            'chrM'
+        ])
+    })
+
     it('carries each row\'s url through untouched', () => {
         const [first] = catalogEntries(table)
         expect(first.url).toBe(table.nodes[1].url)

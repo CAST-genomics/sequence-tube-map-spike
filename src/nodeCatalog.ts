@@ -51,7 +51,13 @@ export interface CatalogEntry extends NodeRow {
  */
 export function catalogEntries(table: NodeTable): CatalogEntry[] {
     return [...table.nodes]
-        .sort((a, b) => a.chrom.localeCompare(b.chrom) || a.start - b.start || a.end - b.end)
+        .sort(
+            (a, b) =>
+                chromosomeRank(a.chrom) - chromosomeRank(b.chrom) ||
+                a.chrom.localeCompare(b.chrom) ||
+                a.start - b.start ||
+                a.end - b.end
+        )
         .map(row => ({ ...row, label: labelFor(row) }))
 }
 
@@ -87,6 +93,23 @@ export function formatLength(bases: number): string {
 
 function labelFor(row: NodeRow): string {
     return `${row.minigraphnode} · ${formatLocus(row)} · ${formatLength(row.length)}`
+}
+
+/**
+ * Where a chromosome sits in the conventional order: 1…22, then X, Y, M, then
+ * anything unrecognised, which falls back to name order.
+ *
+ * Textual order would put `chr10` before `chr2`. cici.json is chr1 only, so nothing
+ * here exercises it yet — which is exactly why it's worth getting right now.
+ */
+function chromosomeRank(chrom: string): number {
+    const name = chrom.replace(/^chr/i, '')
+    const number = Number(name)
+    if (Number.isInteger(number)) {
+        return number
+    }
+    const named: Record<string, number> = { X: 1000, Y: 1001, M: 1002, MT: 1002 }
+    return named[name.toUpperCase()] ?? 2000
 }
 
 function group(coordinate: number): string {

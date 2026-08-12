@@ -49,7 +49,12 @@ http://localhost:5173/?url=https%3A%2F%2Fpangenome-api.ucsd.edu%3A8000%2Fseqtube
 |---|---|---|
 | Strands | highlight on contact, accumulating | inert |
 | Segment boxes | inert | hover for id and sequence |
-| Pan / zoom | suppressed | two-finger pan, pinch zoom |
+| Pan / zoom | suppressed | drag to pan, wheel or swipe to zoom |
+
+Pan and zoom are PGB's, gesture for gesture: the browser drives three.js
+`MapControls`, so dragging with the primary button pans, and a Magic Mouse swipe, a
+mouse wheel, or a trackpad pinch zooms about the cursor — at PGB's `zoomSpeed`, so a
+notch travels the same distance in both.
 
 Releasing `Shift` clears the whole selection. The navigator, bottom left, can be
 clicked to jump or dragged to travel.
@@ -66,7 +71,7 @@ never learns whether it is local or remote.
 | `src/tubeMapSurface.ts` | the entry point; owns `{x, y, scale}` and the load lifecycle |
 | `src/viewportTransform.ts` | all transform math — pure, DOM-free, the one tested seam |
 | `src/navigator.ts` | baked thumbnail, viewport rect, drag and click-to-jump |
-| `src/interaction.ts` | modes, highlight rule, tooltips, wheel handling |
+| `src/interaction.ts` | modes, highlight rule, tooltips, drag-pan and wheel-zoom |
 | `src/loadTubeMap.ts` | fetch, parse, strip `<title>`, measure the viewBox |
 | `src/surfaceStyles.ts` | the viewer's stylesheet, as a string so the host imports no CSS |
 | `src/main.ts`, `src/frameMeter.ts` | harness only — PGB replaces both |

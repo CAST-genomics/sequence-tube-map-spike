@@ -1,4 +1,4 @@
-# Live API reachability and CORS — measured 2026-08-12
+# Live API reachability, CORS and parameter behaviour — measured 2026-08-12
 
 Investigation only, no product code. Closes the week-one question: **can a browser
 fetch the tube map API cross-origin?**
@@ -11,13 +11,13 @@ Everything below was run on 2026-08-12 (UTC) against
 
 ## The request
 
-The canonical URL, the one in `README.md` and the one the fixture was captured from:
+The canonical URL — the one `README.md` carries percent-encoded inside its harness
+link, and the one the fixture was captured from. Paste both lines; every finding
+below is one command on top of them:
 
-```
-https://pangenome-api.ucsd.edu:8000/seqtubemap?chrom=chr1&start=25331046&end=25331646&version=v2&pathnumoption=normal&nodewidthoption=compressed&minigraphnode=5519
-```
+```sh
+URL='https://pangenome-api.ucsd.edu:8000/seqtubemap?chrom=chr1&start=25331046&end=25331646&version=v2&pathnumoption=normal&nodewidthoption=compressed&minigraphnode=5519'
 
-```
 curl -sS -D - -o live.svg -H 'Origin: http://localhost:5173' "$URL"
 ```
 
@@ -49,10 +49,16 @@ access-control-allow-credentials: true
 access-control-allow-origin: http://localhost:5173
 ```
 
-A plain `fetch()` or `<img>`/XHR load of the SVG needs no preflight at all — no
-custom request headers are involved — and `access-control-allow-origin: *` covers
-it. The non-standard port is a non-issue: ports do not enter CORS, only the
-`Origin` check does, and it passes.
+The two differ — the GET answers `*`, the preflight echoes the requesting origin
+under `vary: Origin` — because they come from different layers: the wildcard is a
+blanket header on the response, the echo is the CORS middleware answering a
+preflight the way a credentialed setup would. Either satisfies the browser, and a
+plain `fetch()` or `<img>`/XHR load of the SVG never triggers the preflight path at
+all — no custom request headers are involved, so the GET's `*` is the header that
+matters in practice.
+
+The non-standard port is a non-issue: ports do not enter CORS, only the `Origin`
+check does, and it passes.
 
 **No proxy route is needed. No request to Cici Bu is needed.** PGB's local S3 CORS
 proxy is not a model we have to copy here.
@@ -64,11 +70,22 @@ Two caveats worth carrying forward, neither blocking:
   wildcard origin. Fetch this endpoint **without** `credentials: 'include'`. We
   don't need credentials, so this never bites, but a future `credentials: 'include'`
   would fail with a confusing CORS error rather than a 401.
-- **Error responses carry no CORS headers.** A 500 (see below) comes back with no
-  `access-control-allow-origin`, so in a browser it surfaces as a generic network /
-  CORS failure, not as a readable 500. Client error handling cannot distinguish
-  "server broke" from "network died" — treat any rejected fetch as "no tube map",
-  don't try to read a status code out of it.
+- **Error responses carry no CORS headers.** `version=v1` on the canonical URL, same
+  `Origin` header, returns the complete response below — note the absence of any
+  `access-control-*` line:
+
+  ```
+  HTTP/1.1 500 Internal Server Error
+  date: Wed, 12 Aug 2026 19:22:40 GMT
+  server: uvicorn
+  content-length: 21
+  content-type: text/plain; charset=utf-8
+  ```
+
+  In a browser that surfaces as a generic network / CORS failure, not as a readable
+  500. Client error handling cannot distinguish "server broke" from "network died" —
+  treat any rejected fetch as "no tube map", don't try to read a status code out of
+  it.
 
 ## The fixed parameters — behaviour and drift
 
@@ -120,13 +137,14 @@ empty response. But the SVG is a different thing:
 | | `minigraphnode=5519` | nonexistent / omitted |
 |---|---|---|
 | distinct track colors | 108 continuous RGB | **8** (`#08306b`, `#08519c`, `#6baed6`, `#c6dbef`, …) |
-| grey (`rgb(211,211,211)`) paths | 217 | 0 |
+| grey elements — `color="rgb(211, 211, 211)"`, spaces included | 217 (124 `<path>` + 93 `<rect>`) | 0 |
 
 With a valid node, colors are the continuous PCLAI signal `CONTEXT.md` describes,
-and the 217 grey paths are the haplotypes that *don't* traverse the node. With an
+and the 217 grey elements are the haplotypes that *don't* traverse the node. With an
 invalid one, the server falls back to an **8-color categorical Blues palette** —
-which is almost certainly the origin of the "colors are categorical" inference the
-pgb note makes and `CONTEXT.md` corrects. Both observations are true; they're just
+which is almost certainly the origin of the "colors are categorical" inference in
+`pgb/notes/sequence-tube-map/sequence-tube-map-api.md`, the one `CONTEXT.md`
+corrects. Both observations are true; they're just
 of two different responses.
 
 Consequence for integration: a wrong or stale `minigraphnode` produces a
@@ -144,9 +162,11 @@ total=4.40s ttfb=3.37s
 total=4.34s ttfb=3.23s
 ```
 
-3.4 MB **uncompressed** — no `content-encoding` on the response, and SVG this
-repetitive would gzip to a fraction of that. ~3.3 s of it is server think time
-before the first byte, so compression alone wouldn't fix it. Live loads will want a
+3.4 MB **uncompressed, even when asked for**: with
+`Accept-Encoding: gzip, br` the response still carries no `content-encoding` and the
+same `content-length: 3533705`. `gzip -9` of that body locally is 371,910 B — a
+9.5× saving the server is leaving on the floor. Still, ~3.3 s of the ~4.3 s is
+server think time before the first byte, so compression alone wouldn't fix it. Live loads will want a
 spinner; the ~4 s is a UX fact, not a CORS one, and is out of scope here.
 
 ## Recommended path forward
@@ -158,5 +178,5 @@ spinner; the ~4 s is a UX fact, not a CORS one, and is out of scope here.
 - Keep node-eligibility filtering in PGB — the API returns a misleading 200 for a
   node it doesn't know.
 
-Re-run any of the above with the `curl` line at the top; all findings are one
-command each.
+Re-run any of the above from the two lines under **The request**; every finding is
+that `$URL`, edited, plus one `curl`.

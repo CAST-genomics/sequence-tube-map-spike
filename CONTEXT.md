@@ -206,12 +206,26 @@ Both risks flagged for week one are answered, and both are good news.
 - **CORS is open.** `https://pangenome-api.ucsd.edu:8000/seqtubemap` returns
   `access-control-allow-origin: *`, and the viewer loads the live URL from a browser
   origin with no proxy. Nothing is needed from UCSD. The non-standard port is a
-  non-issue.
+  non-issue. Re-verified 2026-08-12 with preflight, error paths and parameter
+  probes — full record in
+  [`notes/2026-08-12-api-reachability-and-cors.md`](./notes/2026-08-12-api-reachability-and-cors.md).
+  Two caveats from that pass: fetch **without** `credentials` (the wildcard origin
+  is paired with `allow-credentials: true`, which browsers reject), and **error
+  responses carry no CORS headers**, so a 500 reaches the client as an opaque
+  network failure.
 - **The frame budget holds.** Panning at maximum zoom with all 10,345 elements live
   under the CSS transform: **worst frame 9.4 ms**, sustained 120 fps (Chrome,
   M-series Mac, 1600×900). The fallback ladder stays unused; canvas stays rejected.
-- **The live response matches the fixture exactly** — same viewBox, 369 tracks,
-  75 segments — so the committed fixture is a faithful stand-in.
+- **The live response matches the fixture exactly** — byte-identical on re-fetch
+  2026-08-12, so the committed fixture is a faithful stand-in.
+- **The "fixed" parameters are not what their names suggest.** `pathnumoption` is
+  the load-bearing one and only its *presence* matters — drop it and the map falls
+  from 369 tracks to 46; any value works. `version=v2` and
+  `nodewidthoption=compressed` are both already the defaults, but an unrecognised
+  value for either returns 500. And an unknown `minigraphnode` returns **200 with a
+  valid-looking SVG** in a fallback 8-color categorical palette, with no haplotype
+  greying — silent nonsense, never an error. Node eligibility must be checked in
+  PGB; the API will not tell us. Detail in the note above.
 
 ## Risks
 

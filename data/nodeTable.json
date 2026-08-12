@@ -1,0 +1,302 @@
+{
+  "generatedAt": "2026-08-12",
+  "source": "pgb/public/datasets/api-v3/cici.json",
+  "assembly": "GRCh38",
+  "endpoint": "https://pangenome-api.ucsd.edu:8000/seqtubemap",
+  "fixedParameters": {
+    "version": "v2",
+    "pathnumoption": "normal",
+    "nodewidthoption": "compressed"
+  },
+  "queriedLocus": "GRCh38#0#chr1:25240000-25460000",
+  "actualLocus": "GRCh38#0#chr1:25200904-25582458",
+  "nodesWithoutGrch38": [
+    "354719+",
+    "354720+",
+    "470948+",
+    "470949+",
+    "493032+",
+    "493033+",
+    "519405+",
+    "618382+",
+    "626344+",
+    "644132+",
+    "644133+",
+    "644134+",
+    "652987+",
+    "706338+",
+    "750140+"
+  ],
+  "nodes": [
+    {
+      "node": "5504+",
+      "minigraphnode": "5504",
+      "chrom": "chr1",
+      "start": 25200904,
+      "end": 25236799,
+      "length": 35895,
+      "url": "https://pangenome-api.ucsd.edu:8000/seqtubemap?chrom=chr1&start=25200904&end=25236799&version=v2&pathnumoption=normal&nodewidthoption=compressed&minigraphnode=5504"
+    },
+    {
+      "node": "5505+",
+      "minigraphnode": "5505",
+      "chrom": "chr1",
+      "start": 25236799,
+      "end": 25251922,
+      "length": 15123,
+      "url": "https://pangenome-api.ucsd.edu:8000/seqtubemap?chrom=chr1&start=25236799&end=25251922&version=v2&pathnumoption=normal&nodewidthoption=compressed&minigraphnode=5505"
+    },
+    {
+      "node": "5506+",
+      "minigraphnode": "5506",
+      "chrom": "chr1",
+      "start": 25251922,
+      "end": 25252095,
+      "length": 173,
+      "url": "https://pangenome-api.ucsd.edu:8000/seqtubemap?chrom=chr1&start=25251922&end=25252095&version=v2&pathnumoption=normal&nodewidthoption=compressed&minigraphnode=5506"
+    },
+    {
+      "node": "5507+",
+      "minigraphnode": "5507",
+      "chrom": "chr1",
+      "start": 25252095,
+      "end": 25265477,
+      "length": 13382,
+      "url": "https://pangenome-api.ucsd.edu:8000/seqtubemap?chrom=chr1&start=25252095&end=25265477&version=v2&pathnumoption=normal&nodewidthoption=compressed&minigraphnode=5507"
+    },
+    {
+      "node": "5508+",
+      "minigraphnode": "5508",
+      "chrom": "chr1",
+      "start": 25265477,
+      "end": 25271765,
+      "length": 6288,
+      "url": "https://pangenome-api.ucsd.edu:8000/seqtubemap?chrom=chr1&start=25265477&end=25271765&version=v2&pathnumoption=normal&nodewidthoption=compressed&minigraphnode=5508"
+    },
+    {
+      "node": "5509+",
+      "minigraphnode": "5509",
+      "chrom": "chr1",
+      "start": 25271765,
+      "end": 25287800,
+      "length": 16035,
+      "url": "https://pangenome-api.ucsd.edu:8000/seqtubemap?chrom=chr1&start=25271765&end=25287800&version=v2&pathnumoption=normal&nodewidthoption=compressed&minigraphnode=5509"
+    },
+    {
+      "node": "5510+",
+      "minigraphnode": "5510",
+      "chrom": "chr1",
+      "start": 25287800,
+      "end": 25287806,
+      "length": 6,
+      "url": "https://pangenome-api.ucsd.edu:8000/seqtubemap?chrom=chr1&start=25287800&end=25287806&version=v2&pathnumoption=normal&nodewidthoption=compressed&minigraphnode=5510"
+    },
+    {
+      "node": "5511+",
+      "minigraphnode": "5511",
+      "chrom": "chr1",
+      "start": 25287806,
+      "end": 25300018,
+      "length": 12212,
+      "url": "https://pangenome-api.ucsd.edu:8000/seqtubemap?chrom=chr1&start=25287806&end=25300018&version=v2&pathnumoption=normal&nodewidthoption=compressed&minigraphnode=5511"
+    },
+    {
+      "node": "5512+",
+      "minigraphnode": "5512",
+      "chrom": "chr1",
+      "start": 25300018,
+      "end": 25300027,
+      "length": 9,
+      "url": "https://pangenome-api.ucsd.edu:8000/seqtubemap?chrom=chr1&start=25300018&end=25300027&version=v2&pathnumoption=normal&nodewidthoption=compressed&minigraphnode=5512"
+    },
+    {
+      "node": "5513+",
+      "minigraphnode": "5513",
+      "chrom": "chr1",
+      "start": 25300027,
+      "end": 25301271,
+      "length": 1244,
+      "url": "https://pangenome-api.ucsd.edu:8000/seqtubemap?chrom=chr1&start=25300027&end=25301271&version=v2&pathnumoption=normal&nodewidthoption=compressed&minigraphnode=5513"
+    },
+    {
+      "node": "5514+",
+      "minigraphnode": "5514",
+      "chrom": "chr1",
+      "start": 25301271,
+      "end": 25309238,
+      "length": 7967,
+      "url": "https://pangenome-api.ucsd.edu:8000/seqtubemap?chrom=chr1&start=25301271&end=25309238&version=v2&pathnumoption=normal&nodewidthoption=compressed&minigraphnode=5514"
+    },
+    {
+      "node": "5515+",
+      "minigraphnode": "5515",
+      "chrom": "chr1",
+      "start": 25309238,
+      "end": 25322566,
+      "length": 13328,
+      "url": "https://pangenome-api.ucsd.edu:8000/seqtubemap?chrom=chr1&start=25309238&end=25322566&version=v2&pathnumoption=normal&nodewidthoption=compressed&minigraphnode=5515"
+    },
+    {
+      "node": "5516+",
+      "minigraphnode": "5516",
+      "chrom": "chr1",
+      "start": 25322566,
+      "end": 25329028,
+      "length": 6462,
+      "url": "https://pangenome-api.ucsd.edu:8000/seqtubemap?chrom=chr1&start=25322566&end=25329028&version=v2&pathnumoption=normal&nodewidthoption=compressed&minigraphnode=5516"
+    },
+    {
+      "node": "5517+",
+      "minigraphnode": "5517",
+      "chrom": "chr1",
+      "start": 25329028,
+      "end": 25329730,
+      "length": 702,
+      "url": "https://pangenome-api.ucsd.edu:8000/seqtubemap?chrom=chr1&start=25329028&end=25329730&version=v2&pathnumoption=normal&nodewidthoption=compressed&minigraphnode=5517"
+    },
+    {
+      "node": "5518+",
+      "minigraphnode": "5518",
+      "chrom": "chr1",
+      "start": 25329730,
+      "end": 25331046,
+      "length": 1316,
+      "url": "https://pangenome-api.ucsd.edu:8000/seqtubemap?chrom=chr1&start=25329730&end=25331046&version=v2&pathnumoption=normal&nodewidthoption=compressed&minigraphnode=5518"
+    },
+    {
+      "node": "5519+",
+      "minigraphnode": "5519",
+      "chrom": "chr1",
+      "start": 25331046,
+      "end": 25331646,
+      "length": 600,
+      "url": "https://pangenome-api.ucsd.edu:8000/seqtubemap?chrom=chr1&start=25331046&end=25331646&version=v2&pathnumoption=normal&nodewidthoption=compressed&minigraphnode=5519"
+    },
+    {
+      "node": "5520+",
+      "minigraphnode": "5520",
+      "chrom": "chr1",
+      "start": 25331646,
+      "end": 25335796,
+      "length": 4150,
+      "url": "https://pangenome-api.ucsd.edu:8000/seqtubemap?chrom=chr1&start=25331646&end=25335796&version=v2&pathnumoption=normal&nodewidthoption=compressed&minigraphnode=5520"
+    },
+    {
+      "node": "5521+",
+      "minigraphnode": "5521",
+      "chrom": "chr1",
+      "start": 25335796,
+      "end": 25335800,
+      "length": 4,
+      "url": "https://pangenome-api.ucsd.edu:8000/seqtubemap?chrom=chr1&start=25335796&end=25335800&version=v2&pathnumoption=normal&nodewidthoption=compressed&minigraphnode=5521"
+    },
+    {
+      "node": "5522+",
+      "minigraphnode": "5522",
+      "chrom": "chr1",
+      "start": 25335800,
+      "end": 25362422,
+      "length": 26622,
+      "url": "https://pangenome-api.ucsd.edu:8000/seqtubemap?chrom=chr1&start=25335800&end=25362422&version=v2&pathnumoption=normal&nodewidthoption=compressed&minigraphnode=5522"
+    },
+    {
+      "node": "5523+",
+      "minigraphnode": "5523",
+      "chrom": "chr1",
+      "start": 25362422,
+      "end": 25368862,
+      "length": 6440,
+      "url": "https://pangenome-api.ucsd.edu:8000/seqtubemap?chrom=chr1&start=25362422&end=25368862&version=v2&pathnumoption=normal&nodewidthoption=compressed&minigraphnode=5523"
+    },
+    {
+      "node": "5524+",
+      "minigraphnode": "5524",
+      "chrom": "chr1",
+      "start": 25368862,
+      "end": 25369849,
+      "length": 987,
+      "url": "https://pangenome-api.ucsd.edu:8000/seqtubemap?chrom=chr1&start=25368862&end=25369849&version=v2&pathnumoption=normal&nodewidthoption=compressed&minigraphnode=5524"
+    },
+    {
+      "node": "5525+",
+      "minigraphnode": "5525",
+      "chrom": "chr1",
+      "start": 25369849,
+      "end": 25391162,
+      "length": 21313,
+      "url": "https://pangenome-api.ucsd.edu:8000/seqtubemap?chrom=chr1&start=25369849&end=25391162&version=v2&pathnumoption=normal&nodewidthoption=compressed&minigraphnode=5525"
+    },
+    {
+      "node": "5526+",
+      "minigraphnode": "5526",
+      "chrom": "chr1",
+      "start": 25391162,
+      "end": 25391814,
+      "length": 652,
+      "url": "https://pangenome-api.ucsd.edu:8000/seqtubemap?chrom=chr1&start=25391162&end=25391814&version=v2&pathnumoption=normal&nodewidthoption=compressed&minigraphnode=5526"
+    },
+    {
+      "node": "5527+",
+      "minigraphnode": "5527",
+      "chrom": "chr1",
+      "start": 25391814,
+      "end": 25393070,
+      "length": 1256,
+      "url": "https://pangenome-api.ucsd.edu:8000/seqtubemap?chrom=chr1&start=25391814&end=25393070&version=v2&pathnumoption=normal&nodewidthoption=compressed&minigraphnode=5527"
+    },
+    {
+      "node": "5528+",
+      "minigraphnode": "5528",
+      "chrom": "chr1",
+      "start": 25393070,
+      "end": 25393358,
+      "length": 288,
+      "url": "https://pangenome-api.ucsd.edu:8000/seqtubemap?chrom=chr1&start=25393070&end=25393358&version=v2&pathnumoption=normal&nodewidthoption=compressed&minigraphnode=5528"
+    },
+    {
+      "node": "5529+",
+      "minigraphnode": "5529",
+      "chrom": "chr1",
+      "start": 25393358,
+      "end": 25405595,
+      "length": 12237,
+      "url": "https://pangenome-api.ucsd.edu:8000/seqtubemap?chrom=chr1&start=25393358&end=25405595&version=v2&pathnumoption=normal&nodewidthoption=compressed&minigraphnode=5529"
+    },
+    {
+      "node": "5530+",
+      "minigraphnode": "5530",
+      "chrom": "chr1",
+      "start": 25405595,
+      "end": 25405596,
+      "length": 1,
+      "url": "https://pangenome-api.ucsd.edu:8000/seqtubemap?chrom=chr1&start=25405595&end=25405596&version=v2&pathnumoption=normal&nodewidthoption=compressed&minigraphnode=5530"
+    },
+    {
+      "node": "5531+",
+      "minigraphnode": "5531",
+      "chrom": "chr1",
+      "start": 25405596,
+      "end": 25457432,
+      "length": 51836,
+      "url": "https://pangenome-api.ucsd.edu:8000/seqtubemap?chrom=chr1&start=25405596&end=25457432&version=v2&pathnumoption=normal&nodewidthoption=compressed&minigraphnode=5531"
+    },
+    {
+      "node": "5532+",
+      "minigraphnode": "5532",
+      "chrom": "chr1",
+      "start": 25457432,
+      "end": 25529499,
+      "length": 72067,
+      "url": "https://pangenome-api.ucsd.edu:8000/seqtubemap?chrom=chr1&start=25457432&end=25529499&version=v2&pathnumoption=normal&nodewidthoption=compressed&minigraphnode=5532"
+    },
+    {
+      "node": "5533+",
+      "minigraphnode": "5533",
+      "chrom": "chr1",
+      "start": 25529499,
+      "end": 25582458,
+      "length": 52959,
+      "url": "https://pangenome-api.ucsd.edu:8000/seqtubemap?chrom=chr1&start=25529499&end=25582458&version=v2&pathnumoption=normal&nodewidthoption=compressed&minigraphnode=5533"
+    }
+  ]
+}

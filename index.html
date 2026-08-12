@@ -31,6 +31,16 @@
             box-shadow: 0 1px 3px rgba(0, 0, 0, 0.24), 0 0 0 1px rgba(0, 0, 0, 0.1);
         }
 
+        .harness-picker select {
+            max-width: 34ch;
+            padding: 4px 6px;
+            border: 1px solid rgba(0, 0, 0, 0.2);
+            border-radius: 4px;
+            background: rgb(245, 245, 245);
+            font: inherit;
+            cursor: pointer;
+        }
+
         .harness-picker input {
             width: 42ch;
             padding: 4px 6px;
@@ -77,6 +87,7 @@
     <div id="viewer"></div>
 
     <form class="harness-picker" id="picker">
+        <select id="node" aria-label="Minigraph node"></select>
         <input id="url" name="url" type="text" spellcheck="false" aria-label="Tube map URL">
         <button type="submit">Open</button>
     </form>

@@ -17,12 +17,27 @@ npm run typecheck
 
 ## Harness
 
-`index.html` is a bare full-viewport container plus a picker. Two query parameters:
+`index.html` is a bare full-viewport container plus a picker: a node selector, a URL
+field, and Open. Two query parameters:
 
 - `?url=…` — open a different tube map. Defaults to the committed fixture.
 - `?fps=1` — frame meter, top left. Click it to reset the worst-frame figure.
 
-The live endpoint works directly:
+The selector lists the committed fixture and every minigraph node of a PGB dataset
+that GRCh38 places — 30 of `cici.json`'s 45 — in chromosome order. Picking one fills
+the URL field and opens it live, so the field always shows what is on screen and
+stays editable by hand. The 15 nodes GRCh38 doesn't place have no tube map and are
+deliberately absent: the API answers for an unknown node with a plausible-looking map
+rather than an error, so not offering them is the only defence.
+
+The list is `data/nodeTable.json`, generated from a PGB dataset — the same derivation
+PGB will do at click time, done once ahead of time:
+
+```
+python3 scripts/build_node_table.py path/to/pgb/public/datasets/api-v3/cici.json
+```
+
+Every URL is also reachable by hand — the live endpoint works directly:
 
 ```
 http://localhost:5173/?url=https%3A%2F%2Fpangenome-api.ucsd.edu%3A8000%2Fseqtubemap%3Fchrom%3Dchr1%26start%3D25331046%26end%3D25331646%26version%3Dv2%26pathnumoption%3Dnormal%26nodewidthoption%3Dcompressed%26minigraphnode%3D5519

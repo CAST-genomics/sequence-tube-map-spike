@@ -1,7 +1,8 @@
 # Sequence Tube Map — standalone build
 
 **Status:** design settled 2026-08-11 by grilling interview; domain language
-corrected 2026-08-12. Nothing implemented yet.
+corrected 2026-08-12. Built 2026-08-12 — every settled decision below is
+implemented; see [`README.md`](./README.md) for how to run it.
 **Parent app:** PGB (`~/PanGenomeProject/pgb`). This directory is a standalone
 harness; the code here is intended to survive integration into PGB.
 
@@ -198,18 +199,33 @@ That note flags its metadata table as inferred-not-confirmed. Both inferences ar
   only `lineIntersection` hover), and no menu offering the tube map. TBD in PGB.
   Note the API constraint: **a minigraph node absent from GRCh38 has no tube map** —
   don't offer the menu item for it.
-- **Live API + CORS.** `https://pangenome-api.ucsd.edu:8000/seqtubemap` — non-standard
-  port, CORS behaviour from a browser origin unknown. Establish early.
+## Settled by measurement, 2026-08-12
+
+Both risks flagged for week one are answered, and both are good news.
+
+- **CORS is open.** `https://pangenome-api.ucsd.edu:8000/seqtubemap` returns
+  `access-control-allow-origin: *`, and the viewer loads the live URL from a browser
+  origin with no proxy. Nothing is needed from UCSD. The non-standard port is a
+  non-issue.
+- **The frame budget holds.** Panning at maximum zoom with all 10,345 elements live
+  under the CSS transform: **worst frame 9.4 ms**, sustained 120 fps (Chrome,
+  M-series Mac, 1600×900). The fallback ladder stays unused; canvas stays rejected.
+- **The live response matches the fixture exactly** — same viewBox, 369 tracks,
+  75 segments — so the committed fixture is a faithful stand-in.
 
 ## Risks
 
-- **Frame budget at 10,345 live elements** under CSS transform is expected fine but
-  unmeasured. Measure in week one.
 - **Every fact above comes from one minigraph node.** A larger or more variable node
-  could carry far more tracks or segments. Don't over-fit to 369×75.
+  could carry far more tracks or segments. Don't over-fit to 369×75. This is now the
+  only open risk.
 
-## Next step
+## Deviations from the settled decisions
 
-Scaffold: Vite + TypeScript, sample SVG in `public/`, `mountTubeMapSurface` +
-viewport transform module + navigator. Harness `index.html` is a bare full-viewport
-container with a picker that calls `open(url)`.
+Two, both small, both deliberate:
+
+- **Pan is clamped as well as zoom.** Decision 9 bounds only zoom (`[fit, 4×]`).
+  Panning is additionally clamped so the content always covers the viewport, for the
+  same reason zoom is bounded — otherwise the researcher can drag the strip off into
+  empty space and lose it. Unit-tested alongside the rest of the transform math.
+- **`panToNavigatorPoint` is called `panToContentPoint`.** It takes a point in
+  content coordinates, and the navigator is only one of its callers.

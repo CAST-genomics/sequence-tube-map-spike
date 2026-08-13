@@ -48,7 +48,8 @@ Three capabilities make the strip usable:
 2. **A navigator.** A thumbnail of the whole tube map, bottom-left, with a rect
    showing where the current view sits. It answers "where am I inside this node" at
    a glance, and can be dragged or clicked to move.
-3. **A feeler.** Holding `Shift` turns the cursor into a probe: strands it touches
+3. **A feeler** *(built, disabled by default — see Feeler mode below)*. Holding
+   `Shift` turns the cursor into a probe: strands it touches
    light up and stay lit while the rest recede, accumulating a set as the researcher
    sweeps. Releasing clears everything. This is the deliberate tool that the
    continuous coloring makes necessary — it separates one haplotype from its
@@ -119,6 +120,29 @@ and interaction layer over someone else's picture.
     it never covers the data I'm reading.
 
 ### Feeler mode — tracing haplotypes
+
+> **Built, then disabled (2026-08-13).** Every story below is implemented and works
+> on the fixture, but on real maps the highlight tears and renders partially:
+> restyling ~10,000 track elements costs ~28 ms, and a sweep asks for that several
+> times a second. Feeler mode is off by default (`strandFeeler`; `?feeler` re-arms
+> the harness).
+>
+> **The general finding, which outlives this section:** *altering the appearance of
+> the strand set in real time, driven directly by pointer position, will not
+> perform.* That covers highlighting, de-emphasis, and any future live restyling of
+> the ribbons alike — the wall is the coupling of appearance change to pointer rate,
+> not any one feature.
+>
+> **What survives is every capability; what changes is the means of invoking it.**
+> Story 28 — separating one haplotype from its near-identical neighbours — remains a
+> live requirement, and so does the rest of what these stories *want*. The stories
+> below describe a **direct** route to it that this element count does not support.
+> Expect an indirect route instead: a list, a menu, a palette assigning colors to
+> samples, selection driven by the host, a click rather than a hover — anything
+> where the rule swaps once per user decision rather than once per pointer move. A
+> highlight already standing was measured to cost nothing to navigate under.
+> Observation and measurements:
+> [`notes/2026-08-13-direct-strand-interaction-is-not-viable.md`](./notes/2026-08-13-direct-strand-interaction-is-not-viable.md).
 
 25. As a researcher, I want strands to stay quiet when I'm merely moving the cursor
     around, so that reading the map is not a strobing distraction.
@@ -278,6 +302,11 @@ are different intents, and mixing them makes both feel unreliable.
   `class="track<N>"` (avg 28 elements per track, max 47), so highlighting is O(1) per
   hover regardless of element count — no DOM walk, no per-element listeners. A short
   transition prevents strobing during a sweep.
+- **This last claim did not survive contact with real maps.** O(1) covers *writing*
+  the rule; the browser still invalidates style for all ~10,000 track children on
+  every swap — measured at ~28 ms each — at pointer-move rate. Hence the default-off
+  flag. An indirect selection keeps everything in this section and only changes how
+  often the rule is swapped.
 
 **Tooltips:**
 

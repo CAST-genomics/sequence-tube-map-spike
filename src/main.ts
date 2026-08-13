@@ -18,6 +18,7 @@ const container = document.getElementById('viewer') as HTMLElement
 const picker = document.getElementById('picker') as HTMLFormElement
 const field = document.getElementById('url') as HTMLInputElement
 const chooser = document.getElementById('node') as HTMLSelectElement
+const hint = document.getElementById('hint') as HTMLElement
 
 const parameters = new URLSearchParams(window.location.search)
 const initialUrl = parameters.get('url') ?? DEFAULT_URL
@@ -27,7 +28,16 @@ const entries = catalogEntries(nodeTable)
 fillChooser()
 show(initialUrl)
 
-const viewer = mountTubeMapSurface(container)
+// `?feeler` re-arms `Shift`-held strand feeling, which ships off. It is kept
+// reachable so the interaction can be judged again — on smaller maps, or against a
+// cheaper highlight — without restoring deleted code first.
+const strandFeeler = parameters.has('feeler')
+
+if (strandFeeler) {
+    hint.textContent += ' · hold shift to feel strands'
+}
+
+const viewer = mountTubeMapSurface(container, { strandFeeler })
 
 // The select is a shortcut into the field, not a second source of truth: it fills
 // the URL in, so what opened is always visible and still editable by hand.

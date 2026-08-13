@@ -45,24 +45,48 @@ http://localhost:5173/?url=https%3A%2F%2Fpangenome-api.ucsd.edu%3A8000%2Fseqtube
 
 ## Using it
 
-| | Feeler mode (`Shift` held) | Inspect mode (released) |
-|---|---|---|
-| Strands | highlight on contact, accumulating | inert |
-| Segment boxes | inert | hover for id and sequence |
-| Pan / zoom | suppressed | drag to pan, wheel or swipe to zoom |
+Drag with the primary button to pan; a Magic Mouse swipe, a mouse wheel, or a
+trackpad pinch zooms about the cursor. Hovering a segment box shows its id and
+sequence. The navigator, bottom left, can be clicked to jump or dragged to travel.
 
 Pan and zoom are PGB's, gesture for gesture: the browser drives three.js
-`MapControls`, so dragging with the primary button pans, and a Magic Mouse swipe, a
-mouse wheel, or a trackpad pinch zooms about the cursor — at PGB's `zoomSpeed`, so a
-notch travels the same distance in both.
+`MapControls`, and this matches it at PGB's `zoomSpeed`, so a notch travels the same
+distance in both.
 
-Releasing `Shift` clears the whole selection. The navigator, bottom left, can be
-clicked to jump or dragged to travel.
+### Feeler mode is off
+
+Holding `Shift` was meant to turn the cursor into a probe — strands highlighting on
+contact and accumulating, releasing clearing them all. It is **disabled by default**,
+because a real map tears and renders partially under it: restyling the ~10,000 track
+elements costs ~28 ms, and a sweep asks for that several times a second.
+
+The finding generalizes past this one feature: **changing how the strands look, in
+real time, from pointer position is not going to perform** — highlighting,
+de-emphasis, or anything else that restyles the ribbons live. The wall is the
+coupling of appearance change to pointer rate, and no constant fixes it.
+
+What that does *not* mean is that the ideas are abandoned. Every one of them
+survives; only the way they get invoked changes, from direct to indirect — a strand
+list, a menu, a palette assigning colors to samples, selection driven by the host, a
+click instead of a hover. A highlight already standing was measured to cost nothing
+to pan and zoom under, so the budget is roughly 28 ms per user decision rather than
+per pointer move. Plenty of room, and plenty of ways to spend it.
+
+The mechanism is intact behind `strandFeeler`, and the harness re-arms it with
+`?feeler` for judging it against smaller maps or a cheaper highlight:
+
+```
+http://localhost:5173/?feeler
+```
+
+Full observation, measurements and reasoning:
+[`notes/2026-08-13-direct-strand-interaction-is-not-viable.md`](./notes/2026-08-13-direct-strand-interaction-is-not-viable.md).
 
 ## Shape of the code
 
-`mountTubeMapSurface(container)` is the only public entry point. It returns
-`{ open(url), destroy() }` — `open` is the entire input surface. The host builds the
+`mountTubeMapSurface(container, options?)` is the only public entry point. It
+returns `{ open(url), destroy() }` — `open` is the entire input surface, and the one
+option is `strandFeeler`. The host builds the
 URL and decides eligibility; the viewer never builds one, never inspects one, and
 never learns whether it is local or remote.
 

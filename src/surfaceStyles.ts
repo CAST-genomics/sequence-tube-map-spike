@@ -29,6 +29,7 @@ export const SURFACE_STYLES = `
     overflow: hidden;
     touch-action: none;
     overscroll-behavior: none;
+    user-select: none;
 }
 
 .stm-content {
@@ -50,6 +51,22 @@ export const SURFACE_STYLES = `
 
 /* Inspect mode: segments own the cursor, strands are inert. */
 .stm-root:not(.is-feeling) .stm-content g.track > * {
+    pointer-events: none;
+}
+
+/* Inspect mode: the map is also a thing you take hold of and drag, as in PGB. */
+.stm-root:not(.is-feeling) .stm-surface {
+    cursor: grab;
+}
+
+.stm-root.is-panning .stm-surface {
+    cursor: grabbing;
+}
+
+/* A drag is a grip on the whole map rather than a pointer at anything inside it,
+   so nothing under the cursor is a target for its duration. Skipping the
+   hit-testing says that, and spares ~10,345 elements per pointer move saying it. */
+.stm-root.is-panning .stm-content {
     pointer-events: none;
 }
 

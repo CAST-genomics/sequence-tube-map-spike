@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 
 import {
     MAX_SCALE,
+    ZOOM_SPEED,
     clampToViewport,
     contentToScreen,
     fitToWidth,
@@ -10,6 +11,7 @@ import {
     panToContentPoint,
     screenToContent,
     viewportRectInContent,
+    wheelZoomFactor,
     zoomAbout,
     type Size,
     type Transform
@@ -126,6 +128,53 @@ describe('zoomAbout', () => {
         const after = screenToContent(zoomed, cursor)
         expect(after.x).toBeCloseTo(before.x, 6)
         expect(after.y).toBeCloseTo(before.y, 6)
+    })
+})
+
+describe('wheelZoomFactor', () => {
+
+    // PGB drives three.js MapControls, whose wheel handler is
+    // `0.95 ** (zoomSpeed * deltaY / 100)`, dollying in when deltaY is negative.
+    // These cases pin that curve, not a feel — so the constants below are PGB's
+    // literals, not this module's, which is the whole point of matching.
+
+    it('runs at the zoom speed PGB configures MapControls with', () => {
+        expect(ZOOM_SPEED).toBe(1.2)
+    })
+
+    it('magnifies on a negative deltaY and shrinks on a positive one', () => {
+        expect(wheelZoomFactor(-100, 0)).toBeGreaterThan(1)
+        expect(wheelZoomFactor(100, 0)).toBeLessThan(1)
+    })
+
+    it('is a no-op for a zero delta', () => {
+        expect(wheelZoomFactor(0, 0)).toBe(1)
+    })
+
+    it('matches the three.js MapControls curve at PGB\'s zoom speed', () => {
+        expect(wheelZoomFactor(120, 0)).toBeCloseTo(Math.pow(0.95, 1.2 * 120 / 100), 12)
+        expect(wheelZoomFactor(-120, 0)).toBeCloseTo(1 / Math.pow(0.95, 1.2 * 120 / 100), 12)
+    })
+
+    it('is symmetric: opposite deltas undo each other', () => {
+        expect(wheelZoomFactor(53, 0) * wheelZoomFactor(-53, 0)).toBeCloseTo(1, 12)
+    })
+
+    it('composes: two steps equal one step of the summed delta', () => {
+        expect(wheelZoomFactor(40, 0) * wheelZoomFactor(60, 0)).toBeCloseTo(wheelZoomFactor(100, 0), 12)
+    })
+
+    it('reads line and page deltas as pixel distances', () => {
+        // Firefox reports lines, not pixels; untranslated, a notch would zoom by ~0.06%.
+        expect(wheelZoomFactor(3, 1)).toBeCloseTo(wheelZoomFactor(48, 0), 12)
+        expect(wheelZoomFactor(1, 2)).toBeCloseTo(wheelZoomFactor(100, 0), 12)
+    })
+
+    it('holds a full-range zoom to a bounded number of notches', () => {
+        // A researcher must be able to cross fit-to-max without an arm-length swipe.
+        const notch = wheelZoomFactor(-120, 0)
+        const span = MAX_SCALE / fitScale(content, viewport)
+        expect(Math.log(span) / Math.log(notch)).toBeLessThan(120)
     })
 })
 

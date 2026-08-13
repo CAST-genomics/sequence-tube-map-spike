@@ -10,6 +10,12 @@
  *   segment boxes     pointer-events: none       hoverable, tooltip
  *   pan / zoom        suppressed                 live
  *
+ * Pan and zoom mirror the PGB browser, which drives three.js `MapControls`: drag
+ * with the primary button to pan, and wheel or Magic Mouse swipe to zoom about the
+ * cursor. A researcher moves between the 3D graph and this magnifying glass
+ * constantly, and a viewer that answered the same gesture differently would be a
+ * standing hazard — reaching for a pan and getting a zoom.
+ *
  * Segment boxes paint after tracks and are hit-testable across their whole fill —
  * `fill-opacity: 0.4` does not disable pointer events. They occupy narrow vertical
  * bands and strands run horizontally, so sweeping a strand set means moving
@@ -17,10 +23,9 @@
  * fail to highlight anything, reading as a random dead zone rather than a rule.
  */
 
-import type { Point } from './viewportTransform.ts'
+import { wheelZoomFactor, type Point } from './viewportTransform.ts'
 
 const TRACK_CLASS_PATTERN = /^track\d+$/
-const ZOOM_SENSITIVITY = 0.01
 
 export interface InteractionOptions {
     /** Carries the mode class and hosts the swapped highlight rule. */
@@ -54,6 +59,9 @@ export function createInteractions(options: InteractionOptions): InteractionHand
     const selected = new Set<string>()
     let feeling = false
     let lastPointer: Point | null = null
+    /** The pointer currently dragging the map, and where it was last seen. */
+    let dragPointer: number | null = null
+    let dragFrom: Point | null = null
 
     function applyHighlight(): void {
         if (0 === selected.size) {
@@ -145,10 +153,48 @@ export function createInteractions(options: InteractionOptions): InteractionHand
         showTooltip(null === sequence ? id : `${id}   ${sequence}`, at)
     }
 
+    function onPointerDown(event: PointerEvent): void {
+        // Primary button only, and never while the map is being felt: a drag there
+        // would slide the strand out from under the cursor mid-sweep.
+        if (feeling || 0 !== event.button || null !== dragPointer) {
+            return
+        }
+
+        dragPointer = event.pointerId
+        dragFrom = { x: event.clientX, y: event.clientY }
+        root.classList.add('is-panning')
+        hideTooltip()
+
+        // Capture so a drag that leaves the window still ends cleanly, and so the
+        // pointer keeps reporting while it is outside the surface.
+        surface.setPointerCapture(event.pointerId)
+    }
+
+    function onPointerUp(event: PointerEvent): void {
+        if (event.pointerId !== dragPointer) {
+            return
+        }
+
+        endDrag()
+
+        if (surface.hasPointerCapture(event.pointerId)) {
+            surface.releasePointerCapture(event.pointerId)
+        }
+    }
+
+    function endDrag(): void {
+        dragPointer = null
+        dragFrom = null
+        root.classList.remove('is-panning')
+    }
+
     function enterFeelerMode(): void {
         if (feeling) {
             return
         }
+
+        // Shift arbitrates: a drag in flight yields to the feeler immediately.
+        endDrag()
 
         feeling = true
         root.classList.add('is-feeling')
@@ -178,6 +224,15 @@ export function createInteractions(options: InteractionOptions): InteractionHand
         const at = localPoint(event)
         lastPointer = at
 
+        if (event.pointerId === dragPointer && null !== dragFrom) {
+            // Screen deltas move the map one-for-one, so the point grabbed stays
+            // under the cursor for the whole drag. No hover work while dragging:
+            // the cursor is holding the map, not pointing at anything in it.
+            options.onPan(event.clientX - dragFrom.x, event.clientY - dragFrom.y)
+            dragFrom = { x: event.clientX, y: event.clientY }
+            return
+        }
+
         if (feeling) {
             feel(event.target as Element | null, at)
         } else {
@@ -200,13 +255,11 @@ export function createInteractions(options: InteractionOptions): InteractionHand
             return
         }
 
-        if (event.ctrlKey) {
-            // macOS synthesizes ctrl+wheel for a trackpad pinch.
-            options.onZoom(localPoint(event), Math.exp(-event.deltaY * ZOOM_SENSITIVITY))
-            return
-        }
-
-        options.onPan(-event.deltaX, -event.deltaY)
+        // Every wheel source zooms, as in PGB: a Magic Mouse swipe, a conventional
+        // wheel, and the ctrl+wheel macOS synthesizes for a trackpad pinch all
+        // arrive here as deltaY and are answered the same way. Horizontal deltas
+        // are ignored — panning is the drag.
+        options.onZoom(localPoint(event), wheelZoomFactor(event.deltaY, event.deltaMode))
     }
 
     function onKeyDown(event: KeyboardEvent): void {
@@ -225,7 +278,10 @@ export function createInteractions(options: InteractionOptions): InteractionHand
         leaveFeelerMode()
     }
 
+    surface.addEventListener('pointerdown', onPointerDown)
     surface.addEventListener('pointermove', onPointerMove)
+    surface.addEventListener('pointerup', onPointerUp)
+    surface.addEventListener('pointercancel', onPointerUp)
     surface.addEventListener('pointerleave', onPointerLeave)
     surface.addEventListener('wheel', onWheel, { passive: false })
     view.addEventListener('keydown', onKeyDown)
@@ -236,11 +292,16 @@ export function createInteractions(options: InteractionOptions): InteractionHand
 
         reset(): void {
             leaveFeelerMode()
+            endDrag()
             lastPointer = null
         },
 
         destroy(): void {
+            endDrag()
+            surface.removeEventListener('pointerdown', onPointerDown)
             surface.removeEventListener('pointermove', onPointerMove)
+            surface.removeEventListener('pointerup', onPointerUp)
+            surface.removeEventListener('pointercancel', onPointerUp)
             surface.removeEventListener('pointerleave', onPointerLeave)
             surface.removeEventListener('wheel', onWheel)
             view.removeEventListener('keydown', onKeyDown)

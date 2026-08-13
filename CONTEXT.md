@@ -140,7 +140,10 @@ That note flags its metadata table as inferred-not-confirmed. Both inferences ar
    depends on.
 7. **Single `{x, y, scale}` state object** drives both surface and navigator, so the
    two cannot disagree.
-8. **Trackpad:** `wheel` + `ctrlKey` = pinch-zoom; `wheel` alone = two-finger pan.
+8. **Gestures are PGB's** (three.js `MapControls`, `zoomToCursor`, `zoomSpeed: 1.2`):
+   primary-button drag = pan; any `wheel`, ctrl-modified or not = zoom about the
+   cursor. A researcher crosses between the two viewers constantly and must not have
+   to change hands.
 9. **Open fit-to-width**; clamp zoom to `[fit, 4×]`; zoom about the cursor.
 10. **Resize preserves `{x, y, scale}`** and reveals more/less. Exception: re-fit if
     the view is still untouched at initial fit.

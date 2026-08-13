@@ -82,10 +82,10 @@ and interaction layer over someone else's picture.
 
 ### Navigation
 
-9. As a researcher, I want to pan with a two-finger trackpad gesture, so that moving
-   around feels like every other map I use.
-10. As a researcher, I want to zoom with a pinch gesture, so that I can move between
-    overview and detail continuously.
+9. As a researcher, I want to pan by dragging, so that moving around works exactly as
+   it does in the PGB browser I arrived from.
+10. As a researcher, I want to zoom with a Magic Mouse swipe, a wheel, or a pinch, so
+    that I can move between overview and detail continuously — again as in PGB.
 11. As a researcher, I want zoom to happen about the cursor, so that the feature I am
     pointing at stays under my finger as I zoom into it.
 12. As a researcher, I want zoom bounded at the low end by whole-map fit, so that I
@@ -214,8 +214,14 @@ rule management, tooltips.
   re-rasterizes all ~10,345 elements every frame. Canvas rasterization was rejected
   outright — it forfeits per-element hit-testing, which the entire interaction model
   depends on.
-- **Trackpad:** `wheel` with `ctrlKey` is pinch-zoom (synthesized by macOS); `wheel`
-  alone is two-finger pan via `deltaX`/`deltaY`.
+- **Gestures match PGB**, which configures three.js `MapControls` with
+  `zoomToCursor`, `zoomSpeed: 1.2`, rotation off. Primary-button drag pans one-for-one
+  in screen pixels; every `wheel` — Magic Mouse swipe, conventional wheel, and the
+  ctrl+`wheel` macOS synthesizes for a pinch — zooms about the cursor on
+  `MapControls`' own curve, `0.95 ** (zoomSpeed * deltaY / 100)`. `deltaX` is ignored.
+  One deliberate deviation: line- and page-mode `deltaMode` values are converted to
+  pixels first. three.js reads `deltaY` raw, which on a line-reporting browser makes a
+  notch zoom by ~0.06% — PGB never meets that because it ships in Chrome.
 - **Initial view is fit-to-width.** Zoom clamped to `[fit, 4×]`, about the cursor.
 - **Resize preserves `{x, y, scale}`**, except when the view is untouched at initial
   fit, in which case it re-fits.

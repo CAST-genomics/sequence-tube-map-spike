@@ -37,6 +37,43 @@ export interface Rect {
 /** Upper zoom bound: beyond 4 screen pixels per content unit there is nothing left to resolve. */
 export const MAX_SCALE = 4
 
+/** PGB's `MapControls.zoomSpeed`. Matching it makes a notch here travel as far as a notch there. */
+export const ZOOM_SPEED = 1.2
+
+/** How far one pixel of wheel travel moves the zoom, in `MapControls`' own units. */
+const ZOOM_PER_PIXEL = 0.95
+
+/** `WheelEvent.deltaMode`: deltas arrive in three units, and the curve is defined in pixels. */
+const DOM_DELTA_LINE = 1
+const DOM_DELTA_PAGE = 2
+const PIXELS_PER_LINE = 16
+const PIXELS_PER_PAGE = 100
+
+/**
+ * The magnification a wheel notch or Magic Mouse swipe asks for, matching the
+ * curve three.js `MapControls` uses — `0.95 ** (zoomSpeed * delta / 100)`, which
+ * magnifies for a negative delta and shrinks for a positive one — so this viewer
+ * and the PGB browser respond to the same gesture by the same amount.
+ *
+ * Exponential in the delta, so it composes: two events zoom exactly as far as one
+ * event carrying their sum, and opposite deltas cancel.
+ */
+export function wheelZoomFactor(delta: number, deltaMode: number): number {
+    return Math.pow(ZOOM_PER_PIXEL, ZOOM_SPEED * wheelPixels(delta, deltaMode) / 100)
+}
+
+function wheelPixels(delta: number, deltaMode: number): number {
+    if (DOM_DELTA_LINE === deltaMode) {
+        return delta * PIXELS_PER_LINE
+    }
+
+    if (DOM_DELTA_PAGE === deltaMode) {
+        return delta * PIXELS_PER_PAGE
+    }
+
+    return delta
+}
+
 /** The scale at which the content's full width exactly fills the viewport. Also the lower zoom bound. */
 export function fitScale(content: Size, viewport: Size): number {
     return viewport.width / content.width

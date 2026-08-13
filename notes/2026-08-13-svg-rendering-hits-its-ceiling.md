@@ -91,21 +91,42 @@ Measured from the committed fixture, not assumed:
 
 | | |
 |---|---|
-| `<rect>` (segment boxes) | 4,603 |
-| `<path>` (ribbons) | 5,742 |
+| `g.track` — `<rect>` | 4,603 |
+| `g.track` — `<path>` | 5,667 |
+| `g.node` — `<path>` (segment boxes) | 75 |
 | Path commands present | `M` 5,742 · `C` 11,334 · `V` 5,667 · `Z` 5,667 · `Q` 300 · `L` 204 |
-| Strokes | **none** — every shape is a flat fill |
+| Strokes | **75** — every segment box, `stroke-width: 2px` |
 | Text elements | **none** |
 | Gradients, clip paths, filters | **none** |
 
-A representative ribbon: `M 67 20 C … V 80 C … Z` — a closed band bounded by two
-cubics with vertical ends. This is the easy case for GPU conversion: no stroke joins
-or caps, no dash patterns, no fill-rule ambiguity, and no text, which is the hardest
-thing to render in WebGL.
+**Correction, 2026-08-13 (same day).** The line above originally read
+"Strokes: **none** — every shape is a flat fill," and the element counts split
+`<rect>`/`<path>` without regard to group. Both were wrong, and the stroke claim was
+load-bearing for the "easy case" argument below. The 75 segment boxes live in
+`g.node` and every one is `fill: rgb(255,255,255); fill-opacity: 0.4; stroke:
+rgb(0,0,0); stroke-width: 2px` — rounded rects built from `Q` corners, translucent
+**and** stroked. The `Q 300` and `L 204` counts are these. It remains a small,
+special-cased population (75 elements, handled as a DOM overlay), but the fixture was
+not stroke-free and the validation gate must be written against `g.track`
+specifically.
 
-**Rough sizing.** Sampling each cubic at 16–32 points makes every ribbon a small
-triangle strip: on the order of 380k triangles for the whole map, mergeable into one
-buffer and one draw call. Trivial for a GPU.
+A representative ribbon: `M 67 20 C … V 80 C … Z` — a closed band bounded by two
+cubics with vertical ends. Within `g.track` this is the easy case for GPU conversion:
+no stroke joins or caps, no dash patterns, no fill-rule ambiguity, and no text, which
+is the hardest thing to render in WebGL.
+
+**Rough sizing — superseded 2026-08-13.** The estimate below assumed general cubic
+tessellation. Re-measuring the fixture showed **all 5,667 track paths conform to one
+grammar with zero exceptions**, with both control points of each cubic sharing an x
+and a constant band thickness of 15. A band is therefore six floats, needs no
+tessellator, and the map is ~10,270 instances of a single parametric shape in one
+draw call — not 380k triangles. See
+[`2026-08-13-webgl-band-renderer-spike-brief.md`](./2026-08-13-webgl-band-renderer-spike-brief.md)
+and ADR [`0001`](../docs/adr/0001-webgl-band-renderer.md).
+
+~~Sampling each cubic at 16–32 points makes every ribbon a small triangle strip: on
+the order of 380k triangles for the whole map, mergeable into one buffer and one draw
+call. Trivial for a GPU.~~
 
 **What this buys beyond fixing the bug.** Highlighting stops being a style
 invalidation and becomes a per-track attribute or lookup-texture update — effectively

@@ -1,0 +1,548 @@
+{
+ "generatedAt": "2026-08-13",
+ "timeoutSeconds": 180,
+ "attempts": 2,
+ "nodes": [
+  {
+   "node": "5530+",
+   "span": 1,
+   "bytes": 2552829,
+   "seconds": 5.2,
+   "tracks": 464,
+   "segments": 40,
+   "bands": 7425,
+   "trackPaths": 3909,
+   "trackRects": 3516,
+   "bandGrammarConforming": 3909,
+   "bandGrammarOffenders": [],
+   "bandThicknesses": [
+    15.0
+   ],
+   "ctrlUMin": 0.3,
+   "ctrlUMax": 0.7,
+   "rectHeights": [
+    "15"
+   ],
+   "stripWidth": 18256.571428571428,
+   "strokesInTrack": 0,
+   "strokesInNode": 80,
+   "textElements": 0,
+   "gradients": 0,
+   "clipPaths": 0,
+   "filters": 0
+  },
+  {
+   "node": "5521+",
+   "span": 4,
+   "bytes": 2090775,
+   "seconds": 7.2,
+   "tracks": 464,
+   "segments": 23,
+   "bands": 6197,
+   "trackPaths": 3182,
+   "trackRects": 3015,
+   "bandGrammarConforming": 3182,
+   "bandGrammarOffenders": [],
+   "bandThicknesses": [
+    15.0
+   ],
+   "ctrlUMin": 0.3,
+   "ctrlUMax": 0.7,
+   "rectHeights": [
+    "15"
+   ],
+   "stripWidth": 14386.285714285712,
+   "strokesInTrack": 0,
+   "strokesInNode": 46,
+   "textElements": 0,
+   "gradients": 0,
+   "clipPaths": 0,
+   "filters": 0
+  },
+  {
+   "node": "5510+",
+   "span": 6,
+   "bytes": 1998877,
+   "seconds": 3.6,
+   "tracks": 378,
+   "segments": 39,
+   "bands": 5869,
+   "trackPaths": 2850,
+   "trackRects": 3019,
+   "bandGrammarConforming": 2850,
+   "bandGrammarOffenders": [],
+   "bandThicknesses": [
+    15.0
+   ],
+   "ctrlUMin": 0.3,
+   "ctrlUMax": 0.7,
+   "rectHeights": [
+    "15"
+   ],
+   "stripWidth": 19322.42857142857,
+   "strokesInTrack": 0,
+   "strokesInNode": 78,
+   "textElements": 0,
+   "gradients": 0,
+   "clipPaths": 0,
+   "filters": 0
+  },
+  {
+   "node": "5512+",
+   "span": 9,
+   "bytes": 431663,
+   "seconds": 6.8,
+   "tracks": 378,
+   "segments": 27,
+   "bands": 1306,
+   "trackPaths": 476,
+   "trackRects": 830,
+   "bandGrammarConforming": 476,
+   "bandGrammarOffenders": [],
+   "bandThicknesses": [
+    15.0
+   ],
+   "ctrlUMin": 0.3,
+   "ctrlUMax": 0.7,
+   "rectHeights": [
+    "15"
+   ],
+   "stripWidth": 4540.5714285714275,
+   "strokesInTrack": 0,
+   "strokesInNode": 54,
+   "textElements": 0,
+   "gradients": 0,
+   "clipPaths": 0,
+   "filters": 0
+  },
+  {
+   "node": "5506+",
+   "span": 173,
+   "bytes": 936753,
+   "seconds": 3.8,
+   "tracks": 464,
+   "segments": 12,
+   "bands": 2793,
+   "trackPaths": 1402,
+   "trackRects": 1391,
+   "bandGrammarConforming": 1402,
+   "bandGrammarOffenders": [],
+   "bandThicknesses": [
+    15.0
+   ],
+   "ctrlUMin": 0.3,
+   "ctrlUMax": 0.7,
+   "rectHeights": [
+    "15"
+   ],
+   "stripWidth": 10228.714285714284,
+   "strokesInTrack": 0,
+   "strokesInNode": 24,
+   "textElements": 0,
+   "gradients": 0,
+   "clipPaths": 0,
+   "filters": 0
+  },
+  {
+   "node": "5528+",
+   "span": 288,
+   "bytes": 1672851,
+   "seconds": 3.5,
+   "tracks": 464,
+   "segments": 45,
+   "bands": 4841,
+   "trackPaths": 2419,
+   "trackRects": 2422,
+   "bandGrammarConforming": 2419,
+   "bandGrammarOffenders": [],
+   "bandThicknesses": [
+    15.0
+   ],
+   "ctrlUMin": 0.3,
+   "ctrlUMax": 0.7,
+   "rectHeights": [
+    "15"
+   ],
+   "stripWidth": 16743.571428571428,
+   "strokesInTrack": 0,
+   "strokesInNode": 90,
+   "textElements": 0,
+   "gradients": 0,
+   "clipPaths": 0,
+   "filters": 0
+  },
+  {
+   "node": "5519+",
+   "span": 600,
+   "bytes": 3533705,
+   "seconds": 4.4,
+   "tracks": 369,
+   "segments": 75,
+   "bands": 10270,
+   "trackPaths": 5667,
+   "trackRects": 4603,
+   "bandGrammarConforming": 5667,
+   "bandGrammarOffenders": [],
+   "bandThicknesses": [
+    15.0
+   ],
+   "ctrlUMin": 0.3,
+   "ctrlUMax": 0.7,
+   "rectHeights": [
+    "15"
+   ],
+   "stripWidth": 35562.42857142856,
+   "strokesInTrack": 0,
+   "strokesInNode": 150,
+   "textElements": 0,
+   "gradients": 0,
+   "clipPaths": 0,
+   "filters": 0
+  },
+  {
+   "node": "5526+",
+   "span": 652,
+   "bytes": 2839908,
+   "seconds": 4.1,
+   "tracks": 464,
+   "segments": 48,
+   "bands": 8335,
+   "trackPaths": 4183,
+   "trackRects": 4152,
+   "bandGrammarConforming": 4183,
+   "bandGrammarOffenders": [],
+   "bandThicknesses": [
+    15.0
+   ],
+   "ctrlUMin": 0.3,
+   "ctrlUMax": 0.7,
+   "rectHeights": [
+    "15"
+   ],
+   "stripWidth": 30637.57142857142,
+   "strokesInTrack": 0,
+   "strokesInNode": 96,
+   "textElements": 0,
+   "gradients": 0,
+   "clipPaths": 0,
+   "filters": 0
+  },
+  {
+   "node": "5517+",
+   "span": 702,
+   "bytes": 2259574,
+   "seconds": 18.4,
+   "tracks": 378,
+   "segments": 72,
+   "bands": 6509,
+   "trackPaths": 3399,
+   "trackRects": 3110,
+   "bandGrammarConforming": 3399,
+   "bandGrammarOffenders": [],
+   "bandThicknesses": [
+    15.0
+   ],
+   "ctrlUMin": 0.3,
+   "ctrlUMax": 0.7,
+   "rectHeights": [
+    "15"
+   ],
+   "stripWidth": 37125.00000000002,
+   "strokesInTrack": 0,
+   "strokesInNode": 144,
+   "textElements": 0,
+   "gradients": 0,
+   "clipPaths": 0,
+   "filters": 0
+  },
+  {
+   "node": "5524+",
+   "span": 987,
+   "bytes": 3368793,
+   "seconds": 14.2,
+   "tracks": 464,
+   "segments": 54,
+   "bands": 9747,
+   "trackPaths": 5064,
+   "trackRects": 4683,
+   "bandGrammarConforming": 5064,
+   "bandGrammarOffenders": [],
+   "bandThicknesses": [
+    15.0
+   ],
+   "ctrlUMin": 0.3,
+   "ctrlUMax": 0.7,
+   "rectHeights": [
+    "15"
+   ],
+   "stripWidth": 30641.428571428565,
+   "strokesInTrack": 0,
+   "strokesInNode": 108,
+   "textElements": 0,
+   "gradients": 0,
+   "clipPaths": 0,
+   "filters": 0
+  },
+  {
+   "node": "5513+",
+   "span": 1244,
+   "bytes": 2335789,
+   "seconds": 4.3,
+   "tracks": 378,
+   "segments": 136,
+   "bands": 6557,
+   "trackPaths": 3578,
+   "trackRects": 2979,
+   "bandGrammarConforming": 3578,
+   "bandGrammarOffenders": [],
+   "bandThicknesses": [
+    15.0
+   ],
+   "ctrlUMin": 0.3,
+   "ctrlUMax": 0.7,
+   "rectHeights": [
+    "15"
+   ],
+   "stripWidth": 26692.28571428571,
+   "strokesInTrack": 0,
+   "strokesInNode": 272,
+   "textElements": 0,
+   "gradients": 0,
+   "clipPaths": 0,
+   "filters": 0
+  },
+  {
+   "node": "5527+",
+   "span": 1256,
+   "bytes": 4665535,
+   "seconds": 42.5,
+   "tracks": 464,
+   "segments": 154,
+   "bands": 13229,
+   "trackPaths": 7299,
+   "trackRects": 5930,
+   "bandGrammarConforming": 7299,
+   "bandGrammarOffenders": [],
+   "bandThicknesses": [
+    15.0
+   ],
+   "ctrlUMin": 0.3,
+   "ctrlUMax": 0.7,
+   "rectHeights": [
+    "15"
+   ],
+   "stripWidth": 48805.57142857149,
+   "strokesInTrack": 0,
+   "strokesInNode": 308,
+   "textElements": 0,
+   "gradients": 0,
+   "clipPaths": 0,
+   "filters": 0
+  },
+  {
+   "node": "5518+",
+   "span": 1316,
+   "bytes": 5269154,
+   "seconds": 24.2,
+   "tracks": 378,
+   "segments": 134,
+   "bands": 15118,
+   "trackPaths": 8031,
+   "trackRects": 7087,
+   "bandGrammarConforming": 8031,
+   "bandGrammarOffenders": [],
+   "bandThicknesses": [
+    15.0
+   ],
+   "ctrlUMin": 0.3,
+   "ctrlUMax": 0.7,
+   "rectHeights": [
+    "15"
+   ],
+   "stripWidth": 59322.285714285725,
+   "strokesInTrack": 0,
+   "strokesInNode": 268,
+   "textElements": 0,
+   "gradients": 0,
+   "clipPaths": 0,
+   "filters": 0
+  },
+  {
+   "node": "5520+",
+   "span": 4150,
+   "bytes": 14215504,
+   "seconds": 51.5,
+   "tracks": 464,
+   "segments": 274,
+   "bands": 40442,
+   "trackPaths": 23430,
+   "trackRects": 17012,
+   "bandGrammarConforming": 23430,
+   "bandGrammarOffenders": [],
+   "bandThicknesses": [
+    15.0
+   ],
+   "ctrlUMin": 0.3,
+   "ctrlUMax": 0.7,
+   "rectHeights": [
+    "15"
+   ],
+   "stripWidth": 108982.57142857135,
+   "strokesInTrack": 0,
+   "strokesInNode": 548,
+   "textElements": 0,
+   "gradients": 0,
+   "clipPaths": 0,
+   "filters": 0
+  },
+  {
+   "node": "5508+",
+   "span": 6288,
+   "error": "HTTPError: HTTP Error 500: Internal Server Error"
+  },
+  {
+   "node": "5523+",
+   "span": 6440,
+   "bytes": 12852227,
+   "seconds": 12.8,
+   "tracks": 464,
+   "segments": 318,
+   "bands": 36813,
+   "trackPaths": 19437,
+   "trackRects": 17376,
+   "bandGrammarConforming": 19437,
+   "bandGrammarOffenders": [],
+   "bandThicknesses": [
+    15.0
+   ],
+   "ctrlUMin": 0.3,
+   "ctrlUMax": 0.7,
+   "rectHeights": [
+    "15"
+   ],
+   "stripWidth": 149525.1428571427,
+   "strokesInTrack": 0,
+   "strokesInNode": 636,
+   "textElements": 0,
+   "gradients": 0,
+   "clipPaths": 0,
+   "filters": 0
+  },
+  {
+   "node": "5516+",
+   "span": 6462,
+   "bytes": 8240661,
+   "seconds": 8.9,
+   "tracks": 378,
+   "segments": 245,
+   "bands": 23610,
+   "trackPaths": 12472,
+   "trackRects": 11138,
+   "bandGrammarConforming": 12472,
+   "bandGrammarOffenders": [],
+   "bandThicknesses": [
+    15.0
+   ],
+   "ctrlUMin": 0.3,
+   "ctrlUMax": 0.7,
+   "rectHeights": [
+    "15"
+   ],
+   "stripWidth": 100593.42857142855,
+   "strokesInTrack": 0,
+   "strokesInNode": 490,
+   "textElements": 0,
+   "gradients": 0,
+   "clipPaths": 0,
+   "filters": 0
+  },
+  {
+   "node": "5514+",
+   "span": 7967,
+   "bytes": 13545239,
+   "seconds": 89.3,
+   "tracks": 378,
+   "segments": 767,
+   "bands": 38423,
+   "trackPaths": 20303,
+   "trackRects": 18120,
+   "bandGrammarConforming": 20303,
+   "bandGrammarOffenders": [],
+   "bandThicknesses": [
+    15.0
+   ],
+   "ctrlUMin": 0.3,
+   "ctrlUMax": 0.7,
+   "rectHeights": [
+    "15"
+   ],
+   "stripWidth": 177993.5714285708,
+   "strokesInTrack": 0,
+   "strokesInNode": 1534,
+   "textElements": 0,
+   "gradients": 0,
+   "clipPaths": 0,
+   "filters": 0
+  },
+  {
+   "node": "5511+",
+   "span": 12212,
+   "error": "HTTPError: HTTP Error 500: Internal Server Error"
+  },
+  {
+   "node": "5529+",
+   "span": 12237,
+   "error": "HTTPError: HTTP Error 500: Internal Server Error"
+  },
+  {
+   "node": "5515+",
+   "span": 13328,
+   "error": "HTTPError: HTTP Error 500: Internal Server Error"
+  },
+  {
+   "node": "5507+",
+   "span": 13382,
+   "error": "HTTPError: HTTP Error 500: Internal Server Error"
+  },
+  {
+   "node": "5505+",
+   "span": 15123,
+   "error": "HTTPError: HTTP Error 500: Internal Server Error"
+  },
+  {
+   "node": "5509+",
+   "span": 16035,
+   "error": "HTTPError: HTTP Error 500: Internal Server Error"
+  },
+  {
+   "node": "5525+",
+   "span": 21313,
+   "error": "URLError: <urlopen error _ssl.c:1011: The handshake operation timed out>"
+  },
+  {
+   "node": "5522+",
+   "span": 26622,
+   "error": "HTTPError: HTTP Error 500: Internal Server Error"
+  },
+  {
+   "node": "5504+",
+   "span": 35895,
+   "error": "HTTPError: HTTP Error 500: Internal Server Error"
+  },
+  {
+   "node": "5531+",
+   "span": 51836,
+   "error": "HTTPError: HTTP Error 500: Internal Server Error"
+  },
+  {
+   "node": "5533+",
+   "span": 52959,
+   "error": "HTTPError: HTTP Error 500: Internal Server Error"
+  },
+  {
+   "node": "5532+",
+   "span": 72067,
+   "error": "URLError: <urlopen error _ssl.c:1011: The handshake operation timed out>"
+  }
+ ]
+}

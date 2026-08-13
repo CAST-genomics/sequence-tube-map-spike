@@ -43,8 +43,8 @@ resolution, used consistently throughout these documents:
 | **track** / **strand** | One haplotype's path through the subgraph, drawn as a colored ribbon left→right. Named `sample#haplotype#contig`, e.g. `NA21309#2#CM092097.1`. |
 | **surface** | The pannable/zoomable area holding the tube-map SVG. |
 | **navigator** | Thumbnail of the whole tube map, bottom-left, with a rect showing the current viewport. |
-| **feeler mode** | `Shift` held. Cursor acts as a feeler: strands highlight on contact, segments inert, pan/zoom suppressed. |
-| **inspect mode** | `Shift` released. Segments hoverable, strands inert, pan/zoom live. |
+| **feeler mode** | `Shift` held. Cursor acts as a feeler: strands highlight on contact, segments inert, pan/zoom suppressed. **Disabled by default** — see the note under Interaction. |
+| **inspect mode** | `Shift` released, and the only mode the viewer ships in. Segments hoverable, strands inert, pan/zoom live. |
 
 *If `segment` is wrong — if the team already says "node" at both scales, or prefers
 another term — say so, because it propagates through every document and identifier
@@ -170,6 +170,25 @@ That note flags its metadata table as inferred-not-confirmed. Both inferences ar
     dimming reads instantly where brightening does not. One swapped CSS rule
     (`g.track > *:not(.trackN) { opacity: … }`) — O(1) per hover. Short transition to
     avoid strobing.
+    **Superseded in practice, 2026-08-13:** "O(1) per hover" describes writing the
+    rule, not honouring it. Each swap invalidates style for every one of the map's
+    ~10,000 track children — measured at **~28 ms**, with 190 of 582 frames dropped
+    during a sweep. Real maps tear and render partially.
+
+    The general rule this establishes, which is not specific to highlighting:
+    **changing the appearance of the strand set in real time from pointer position
+    will not perform.** De-emphasis, highlighting, and anything else that restyles
+    the ribbons live all buy the same ~28 ms; the wall is the coupling to pointer
+    rate. Feeler mode is therefore **off by default** (`strandFeeler`, `?feeler` in
+    the harness), kept whole rather than deleted.
+
+    **The appearance vocabulary is not abandoned — its invocation is.** A highlight
+    already standing costs **nothing** to pan and zoom under (8.3 ms median, 2
+    dropped frames in 200), so decisions 15 and 16 survive unchanged. Expect indirect
+    invocation: a strand list, a menu or palette assigning colors to samples,
+    selection driven by PGB, click rather than hover — a few swaps per minute instead
+    of a few per second. See
+    [`notes/2026-08-13-direct-strand-interaction-is-not-viable.md`](./notes/2026-08-13-direct-strand-interaction-is-not-viable.md).
 16. **Strand tooltip: raw `trackName`, unparsed.**
 17. **Segment tooltip (inspect mode): `id` + `sequence`, verbatim.** At ≤130 chars it
     always fits — no truncation, no detail panel. Content is provisional; the

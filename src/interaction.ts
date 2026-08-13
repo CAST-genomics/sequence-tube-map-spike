@@ -23,6 +23,7 @@
  * fail to highlight anything, reading as a random dead zone rather than a rule.
  */
 
+import { createPointerDrag } from './pointerDrag.ts'
 import { wheelZoomFactor, type Point } from './viewportTransform.ts'
 
 const TRACK_CLASS_PATTERN = /^track\d+$/
@@ -59,8 +60,7 @@ export function createInteractions(options: InteractionOptions): InteractionHand
     const selected = new Set<string>()
     let feeling = false
     let lastPointer: Point | null = null
-    /** The pointer currently dragging the map, and where it was last seen. */
-    let dragPointer: number | null = null
+    /** Where the dragging pointer was last seen, in client coordinates. */
     let dragFrom: Point | null = null
 
     function applyHighlight(): void {
@@ -153,40 +153,34 @@ export function createInteractions(options: InteractionOptions): InteractionHand
         showTooltip(null === sequence ? id : `${id}   ${sequence}`, at)
     }
 
-    function onPointerDown(event: PointerEvent): void {
+    const drag = createPointerDrag(surface, {
+
         // Primary button only, and never while the map is being felt: a drag there
         // would slide the strand out from under the cursor mid-sweep.
-        if (feeling || 0 !== event.button || null !== dragPointer) {
-            return
+        accepts: (event: PointerEvent): boolean => false === feeling && 0 === event.button,
+
+        onStart(event: PointerEvent): void {
+            dragFrom = { x: event.clientX, y: event.clientY }
+            root.classList.add('is-panning')
+            hideTooltip()
+        },
+
+        onMove(event: PointerEvent): void {
+            if (null === dragFrom) {
+                return
+            }
+
+            // Screen deltas move the map one-for-one, so the point grabbed stays
+            // under the cursor for the whole drag.
+            options.onPan(event.clientX - dragFrom.x, event.clientY - dragFrom.y)
+            dragFrom = { x: event.clientX, y: event.clientY }
+        },
+
+        onEnd(): void {
+            dragFrom = null
+            root.classList.remove('is-panning')
         }
-
-        dragPointer = event.pointerId
-        dragFrom = { x: event.clientX, y: event.clientY }
-        root.classList.add('is-panning')
-        hideTooltip()
-
-        // Capture so a drag that leaves the window still ends cleanly, and so the
-        // pointer keeps reporting while it is outside the surface.
-        surface.setPointerCapture(event.pointerId)
-    }
-
-    function onPointerUp(event: PointerEvent): void {
-        if (event.pointerId !== dragPointer) {
-            return
-        }
-
-        endDrag()
-
-        if (surface.hasPointerCapture(event.pointerId)) {
-            surface.releasePointerCapture(event.pointerId)
-        }
-    }
-
-    function endDrag(): void {
-        dragPointer = null
-        dragFrom = null
-        root.classList.remove('is-panning')
-    }
+    })
 
     function enterFeelerMode(): void {
         if (feeling) {
@@ -194,7 +188,7 @@ export function createInteractions(options: InteractionOptions): InteractionHand
         }
 
         // Shift arbitrates: a drag in flight yields to the feeler immediately.
-        endDrag()
+        drag.cancel()
 
         feeling = true
         root.classList.add('is-feeling')
@@ -224,12 +218,9 @@ export function createInteractions(options: InteractionOptions): InteractionHand
         const at = localPoint(event)
         lastPointer = at
 
-        if (event.pointerId === dragPointer && null !== dragFrom) {
-            // Screen deltas move the map one-for-one, so the point grabbed stays
-            // under the cursor for the whole drag. No hover work while dragging:
-            // the cursor is holding the map, not pointing at anything in it.
-            options.onPan(event.clientX - dragFrom.x, event.clientY - dragFrom.y)
-            dragFrom = { x: event.clientX, y: event.clientY }
+        // No hover work while dragging: the cursor is holding the map, not pointing
+        // at anything in it. The pan itself is the drag's own move handler.
+        if (drag.active()) {
             return
         }
 
@@ -278,10 +269,7 @@ export function createInteractions(options: InteractionOptions): InteractionHand
         leaveFeelerMode()
     }
 
-    surface.addEventListener('pointerdown', onPointerDown)
     surface.addEventListener('pointermove', onPointerMove)
-    surface.addEventListener('pointerup', onPointerUp)
-    surface.addEventListener('pointercancel', onPointerUp)
     surface.addEventListener('pointerleave', onPointerLeave)
     surface.addEventListener('wheel', onWheel, { passive: false })
     view.addEventListener('keydown', onKeyDown)
@@ -292,16 +280,13 @@ export function createInteractions(options: InteractionOptions): InteractionHand
 
         reset(): void {
             leaveFeelerMode()
-            endDrag()
+            drag.cancel()
             lastPointer = null
         },
 
         destroy(): void {
-            endDrag()
-            surface.removeEventListener('pointerdown', onPointerDown)
+            drag.destroy()
             surface.removeEventListener('pointermove', onPointerMove)
-            surface.removeEventListener('pointerup', onPointerUp)
-            surface.removeEventListener('pointercancel', onPointerUp)
             surface.removeEventListener('pointerleave', onPointerLeave)
             surface.removeEventListener('wheel', onWheel)
             view.removeEventListener('keydown', onKeyDown)

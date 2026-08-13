@@ -41,6 +41,8 @@ resolution, used consistently throughout these documents:
 | **minigraph node** | A node in PGB's 3D pangenome graph — the thing the user clicks. Its ID goes to the API as `minigraphnode`. The container. |
 | **segment** | One of the ~75 sequence boxes *inside* the tube map, drawn in `<g class="node">` with ids like `79337767`. The contents. Called "node" by the SVG and by upstream sequence-tube-map; renamed here to keep the two scales distinct. |
 | **track** / **strand** | One haplotype's path through the subgraph, drawn as a colored ribbon left→right. Named `sample#haplotype#contig`, e.g. `NA21309#2#CM092097.1`. |
+| **band** | The atomic drawable: **one track crossing one x-interval** — a single `<path>` or `<rect>` in `g.track`. A track is made of many bands. *Avoid* "ribbon" for this; a ribbon reads as the whole strand. Added 2026-08-13. |
+| **span** | A minigraph node's GRCh38 base-pair extent (`end − start`), as recorded in `data/nodeTable.json`. *Avoid* "size", which conflates four separate quantities — see the note under Risks. Added 2026-08-13. |
 | **surface** | The pannable/zoomable area holding the tube-map SVG. |
 | **navigator** | Thumbnail of the whole tube map, bottom-left, with a rect showing the current viewport. |
 | **feeler mode** | `Shift` held. Cursor acts as a feeler: strands highlight on contact, segments inert, pan/zoom suppressed. **Disabled by default** — see the note under Interaction. |
@@ -119,6 +121,15 @@ That note flags its metadata table as inferred-not-confirmed. Both inferences ar
 1. **Pure viewer.** SVG from the server is opaque and immutable. No re-ordering,
    filtering or recoloring — those would be server-side parameter requests, not
    client-side layout work.
+
+    **Reversed 2026-08-13.** The viewer now **interprets the server's geometry**: it
+    parses band coordinates out of the SVG and rasterizes them on the GPU. This was
+    the most load-bearing property of the original design and giving it up is the
+    real price of the renderer change — UCSD becomes an upstream we are coupled to at
+    the level of drawing primitives. Paid for with a validation gate that rejects a
+    non-conforming document outright and falls back to the SVG surface. The
+    *no-layout* half of this decision stands: still no re-ordering, filtering or
+    recoloring. See ADR [`0001`](./docs/adr/0001-webgl-band-renderer.md).
 2. **`open(url: string)` is the entire input surface.** PGB constructs the URL from
    the clicked minigraph node's ID and GRCh38 coordinates; the viewer never builds
    one, never checks eligibility, and never knows whether it is local or remote. A
@@ -131,6 +142,10 @@ That note flags its metadata table as inferred-not-confirmed. Both inferences ar
 5. **Pure HTML / CSS / SVG / TypeScript. No Three.js.** Zero dependency overlap with
    PGB's 3D stack.
 
+    **Reversed 2026-08-13.** `three@^0.176.0` is added, pinned to PGB's version. The
+    rationale inverts: dependency overlap with PGB's 3D stack was a cost and is now
+    the point — the dependency is free at the destination.
+
 ### Rendering and navigation
 
 6. **Pan/zoom via CSS `transform`** on a wrapping div (`transform-origin: 0 0`,
@@ -138,6 +153,17 @@ That note flags its metadata table as inferred-not-confirmed. Both inferences ar
    elements per frame. Keeps every element live for hit-testing. Canvas was rejected
    outright: it forfeits per-element hit-testing, which the whole interaction model
    depends on.
+
+    **Premise collapsed 2026-08-13 — do not re-litigate this from the sentence
+    above.** Canvas was rejected to preserve DOM hit-testing, and DOM hit-testing at
+    pointer rate is precisely what does not work at this element count (~28 ms per
+    hover; see #15). The composited layer that made panning cheap is also what broke
+    rendering — 900 megapixels at dpr 2, 14.4 gigapixels at `MAX_SCALE`. Per-element
+    hit-testing returns via GPU colour picking. `viewportTransform` and the single
+    `{x, y, scale}` state object (#7) survive unchanged and now drive an
+    `OrthographicCamera`; the canvas is **viewport-sized**, so the oversized-layer
+    failure is structurally impossible rather than fixed. See
+    [`notes/2026-08-13-svg-rendering-hits-its-ceiling.md`](./notes/2026-08-13-svg-rendering-hits-its-ceiling.md).
 7. **Single `{x, y, scale}` state object** drives both surface and navigator, so the
    two cannot disagree.
 8. **Gestures are PGB's** (three.js `MapControls`, `zoomToCursor`, `zoomSpeed: 1.2`):
@@ -254,6 +280,46 @@ Both risks flagged for week one are answered, and both are good news.
 - **Every fact above comes from one minigraph node.** A larger or more variable node
   could carry far more tracks or segments. Don't over-fit to 369×75. This is now the
   only open risk.
+
+  **Answered by measurement, 2026-08-13, and it was worse than the wording
+  suggested** — the committed fixture is a **600 bp** node, and 23 of the 30 nodes in
+  `data/nodeTable.json` have a larger span (median 6,364 bp, largest 72,067 bp). All
+  30 were fetched (`scripts/survey_nodes.py`, results in `data/nodeSurvey.json`); 17
+  returned. **"Size" was doing four jobs at once**:
+
+  | quantity | behaviour |
+  |---|---|
+  | **span** | The input. Drives nothing directly. |
+  | **track count** | **Invariant to span** — 464 on a 1 bp node and on a 6,440 bp node — but **varies by node**: 369, 378 and 464 all occur. It is how many haplotypes traverse *that* node. Never hard-code it; read it from the document. |
+  | **segment count** | **Grows with span** — 40 → 48 → 318 → 767 — because a longer span holds more variant sites. |
+  | **band count** | Follows segment count: 7,425 → 8,335 → 36,813 → 40,442. The only quantity the renderer's cost depends on. |
+  | **bytes** | ~250–350 per band. Drives parse time and transport. |
+
+  So span does not add haplotypes, but it does add bands. There is also a floor: even
+  a **1 bp** node is 2.55 MB and 7,425 bands. And note that a band is a **fragment**,
+  not a whole ribbon — one haplotype is drawn as a median of 28 pieces in the fixture
+  and ~87 in `5520+`, so band counts are counts of shapes, not of strands.
+
+- **43% of the catalog cannot be fetched.** 13 of 30 nodes fail: eleven HTTP 500s, two
+  TLS handshake timeouts. Diagnosed 2026-08-13 — the 500 is an **unhandled application
+  exception** (uvicorn's default handler, thrown at ~18 s on an otherwise healthy
+  server), it is **not load** (failures reproduce cold and isolated), and it is **not
+  the node** — the same `minigraphnode` succeeds with a narrower coordinate window.
+  **The driver is response size, not span**: bytes-per-bp varies 3× between nodes, the
+  largest success is 14.2 MB, and the ceiling is un-bracketed somewhere between ~14 and
+  ~24 MB. Consequently **node eligibility cannot be gated on span** — a threshold either
+  blocks nodes that work or admits nodes that crash. Full record in
+  [`notes/2026-08-13-api-fetch-ceiling.md`](./notes/2026-08-13-api-fetch-ceiling.md).
+  Deliberately fenced off from the renderer spike.
+
+- **Retired 2026-08-13: the band grammar is not a one-document artifact.**
+  **127,101 of 127,101** track paths across all 17 retrieved documents conform to the
+  canonical form, with thickness always 15, the control point always within the middle
+  40% of the span, and no strokes, text, gradients, clip paths or filters anywhere in
+  `g.track`. Consecutive pieces of a track **overlap by exactly 1.0 unit** with
+  matching y at every one of 9,883 joins — the generator laps them, so there are no
+  seams to hide. The grammar is confirmed only over spans of 1 bp–7,967 bp, because
+  larger nodes cannot be retrieved.
 
 ## Deviations from the settled decisions
 

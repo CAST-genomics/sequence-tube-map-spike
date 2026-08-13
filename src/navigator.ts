@@ -11,6 +11,7 @@
  * surface renders from, so the two cannot disagree.
  */
 
+import { createPointerDrag } from './pointerDrag.ts'
 import { clamp, screenToContent, viewportRectInContent, type Point, type Rect, type Size, type Transform } from './viewportTransform.ts'
 
 const NAVIGATOR_WIDTH = 360
@@ -47,7 +48,6 @@ export function createNavigator(parent: HTMLElement, options: NavigatorOptions):
 
     let content: Size | null = null
     let thumbnail: Size = { width: NAVIGATOR_WIDTH, height: 1 }
-    let dragPointer: number | null = null
     let grabOffset: Point = { x: 0, y: 0 }
     /** The unclipped viewport rect in navigator pixels — what the *view* covers, which is what a drag moves. */
     let viewRect: Rect | null = null
@@ -75,54 +75,37 @@ export function createNavigator(parent: HTMLElement, options: NavigatorOptions):
         })
     }
 
-    function onPointerDown(event: PointerEvent): void {
-        if (null === content) {
-            return
-        }
+    const drag = createPointerDrag(element, {
 
-        // Grabbing inside the rect drags it from where it was taken hold of;
-        // pressing anywhere else jumps that point to the middle of the view.
-        //
-        // The anchor comes from the unclipped rect, not the drawn one: where the
-        // rect runs past the thumbnail edge the two centers differ, and using the
-        // drawn one would make a grab there jump the view.
-        const position = pointerPosition(event)
+        accepts: (): boolean => null !== content,
 
-        grabOffset = null !== viewRect && contains(viewRect, position)
-            ? { x: position.x - (viewRect.x + viewRect.width / 2), y: position.y - (viewRect.y + viewRect.height / 2) }
-            : { x: 0, y: 0 }
+        onStart(event: PointerEvent): void {
+            // Grabbing inside the rect drags it from where it was taken hold of;
+            // pressing anywhere else jumps that point to the middle of the view.
+            //
+            // The anchor comes from the unclipped rect, not the drawn one: where the
+            // rect runs past the thumbnail edge the two centers differ, and using the
+            // drawn one would make a grab there jump the view.
+            const position = pointerPosition(event)
 
-        dragPointer = event.pointerId
-        element.setPointerCapture(event.pointerId)
-        element.classList.add('is-dragging')
-        navigate(event)
-        event.preventDefault()
-    }
+            grabOffset = null !== viewRect && contains(viewRect, position)
+                ? { x: position.x - (viewRect.x + viewRect.width / 2), y: position.y - (viewRect.y + viewRect.height / 2) }
+                : { x: 0, y: 0 }
 
-    function onPointerMove(event: PointerEvent): void {
-        if (event.pointerId === dragPointer) {
+            element.classList.add('is-dragging')
             navigate(event)
+            event.preventDefault()
+        },
+
+        onMove(event: PointerEvent): void {
+            navigate(event)
+        },
+
+        onEnd(): void {
+            grabOffset = { x: 0, y: 0 }
+            element.classList.remove('is-dragging')
         }
-    }
-
-    function onPointerUp(event: PointerEvent): void {
-        if (event.pointerId !== dragPointer) {
-            return
-        }
-
-        dragPointer = null
-        grabOffset = { x: 0, y: 0 }
-        element.classList.remove('is-dragging')
-
-        if (element.hasPointerCapture(event.pointerId)) {
-            element.releasePointerCapture(event.pointerId)
-        }
-    }
-
-    element.addEventListener('pointerdown', onPointerDown)
-    element.addEventListener('pointermove', onPointerMove)
-    element.addEventListener('pointerup', onPointerUp)
-    element.addEventListener('pointercancel', onPointerUp)
+    })
 
     return {
 
@@ -180,6 +163,7 @@ export function createNavigator(parent: HTMLElement, options: NavigatorOptions):
         },
 
         clear(): void {
+            drag.cancel()
             content = null
             viewRect = null
             element.hidden = true
@@ -187,10 +171,7 @@ export function createNavigator(parent: HTMLElement, options: NavigatorOptions):
         },
 
         destroy(): void {
-            element.removeEventListener('pointerdown', onPointerDown)
-            element.removeEventListener('pointermove', onPointerMove)
-            element.removeEventListener('pointerup', onPointerUp)
-            element.removeEventListener('pointercancel', onPointerUp)
+            drag.destroy()
             element.remove()
         }
     }

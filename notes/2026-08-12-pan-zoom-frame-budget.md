@@ -47,6 +47,16 @@ would be unrecognizable mush at that magnification. The browser re-rasterizes th
 at the live scale; the transform buys cheap movement, not a frozen bitmap. This is
 issue #5's "stays vector-sharp at every zoom level" criterion, and it holds.
 
+## Scope of this result
+
+It covers **movement only**. Panning and zooming change one `transform` on one
+composited layer, so the 10,345 elements are never revisited — that is precisely why
+this is cheap. Anything that changes how those elements are *styled* pays a different
+bill entirely, and pays it per change:
+[`2026-08-13-direct-strand-interaction-is-not-viable.md`](./2026-08-13-direct-strand-interaction-is-not-viable.md)
+measures the same map restyling at ~28 ms per highlight change. Do not read "pan and
+zoom are cheap over 10,345 elements" as "10,345 elements are cheap."
+
 ## Caveat
 
 This is a fast Apple-silicon Mac with a 120 Hz display, one map, one browser tab. It

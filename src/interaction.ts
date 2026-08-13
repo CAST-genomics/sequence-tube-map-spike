@@ -21,6 +21,14 @@
  * bands and strands run horizontally, so sweeping a strand set means moving
  * vertically at a fixed x: without the rule above, some x values would silently
  * fail to highlight anything, reading as a random dead zone rather than a rule.
+ *
+ * Feeler mode is **off by default** (`strandFeeler`). Swapping the highlight rule
+ * is O(1) to author but not to honour: each swap invalidates style for every one of
+ * the map's ~10,000 track children, each carrying an opacity transition, and a sweep
+ * asks for that several times a second. Real maps tear and render partially. Nothing
+ * here is tuned around that — the wall is the approach, not the constants — so the
+ * mechanism stays whole behind the flag while strand selection is reconsidered as
+ * something chosen indirectly (a list, or the host) rather than felt at pointer rate.
  */
 
 import { createPointerDrag } from './pointerDrag.ts'
@@ -33,6 +41,8 @@ export interface InteractionOptions {
     root: HTMLElement
     /** The clipping viewport: wheel target and tooltip frame. */
     surface: HTMLElement
+    /** Enable `Shift`-held strand feeling. Off by default — see the note above. */
+    strandFeeler?: boolean
     onPan(dx: number, dy: number): void
     onZoom(cursor: Point, factor: number): void
 }
@@ -48,9 +58,15 @@ export function createInteractions(options: InteractionOptions): InteractionHand
     const { root, surface } = options
     const doc = root.ownerDocument
     const view = doc.defaultView ?? window
+    const strandFeeler = true === options.strandFeeler
 
-    const highlightStyle = doc.createElement('style')
-    root.append(highlightStyle)
+    // Unmounted when the feeler is off: with no `Shift` listeners nothing can ever
+    // write to it, and its absence is the plainest statement that no rule is armed.
+    const highlightStyle = strandFeeler ? doc.createElement('style') : null
+
+    if (null !== highlightStyle) {
+        root.append(highlightStyle)
+    }
 
     const tooltip = doc.createElement('div')
     tooltip.className = 'stm-tooltip'
@@ -64,6 +80,10 @@ export function createInteractions(options: InteractionOptions): InteractionHand
     let dragFrom: Point | null = null
 
     function applyHighlight(): void {
+        if (null === highlightStyle) {
+            return
+        }
+
         if (0 === selected.size) {
             highlightStyle.textContent = ''
             return
@@ -272,9 +292,15 @@ export function createInteractions(options: InteractionOptions): InteractionHand
     surface.addEventListener('pointermove', onPointerMove)
     surface.addEventListener('pointerleave', onPointerLeave)
     surface.addEventListener('wheel', onWheel, { passive: false })
-    view.addEventListener('keydown', onKeyDown)
-    view.addEventListener('keyup', onKeyUp)
-    view.addEventListener('blur', onWindowBlur)
+
+    // The only door into feeler mode. Left shut, `feeling` stays false for the
+    // mount's whole life and every branch that reads it takes the inspect side —
+    // the mode is unreachable rather than merely unused.
+    if (strandFeeler) {
+        view.addEventListener('keydown', onKeyDown)
+        view.addEventListener('keyup', onKeyUp)
+        view.addEventListener('blur', onWindowBlur)
+    }
 
     return {
 
@@ -292,7 +318,7 @@ export function createInteractions(options: InteractionOptions): InteractionHand
             view.removeEventListener('keydown', onKeyDown)
             view.removeEventListener('keyup', onKeyUp)
             view.removeEventListener('blur', onWindowBlur)
-            highlightStyle.remove()
+            highlightStyle?.remove()
             tooltip.remove()
         }
     }

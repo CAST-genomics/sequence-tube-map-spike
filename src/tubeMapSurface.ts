@@ -31,6 +31,15 @@ import {
 
 const STYLE_ELEMENT_ID = 'stm-surface-styles'
 
+export interface TubeMapSurfaceOptions {
+    /**
+     * Enable `Shift`-held strand feeling. Off by default: on real maps the
+     * per-hover restyle of ~10,000 track elements tears and renders partially.
+     * See the note atop `interaction.ts`.
+     */
+    strandFeeler?: boolean
+}
+
 export interface TubeMapSurfaceHandle {
     /** Fetch, parse, and display the tube map at `url`. Rejects only on programmer error; load failures are shown in place. */
     open(url: string): Promise<void>
@@ -38,9 +47,13 @@ export interface TubeMapSurfaceHandle {
     destroy(): void
 }
 
-export function mountTubeMapSurface(container: HTMLElement): TubeMapSurfaceHandle {
+export function mountTubeMapSurface(
+    container: HTMLElement,
+    options: TubeMapSurfaceOptions = {}
+): TubeMapSurfaceHandle {
 
     const doc = container.ownerDocument
+    const strandFeeler = true === options.strandFeeler
 
     installStyles(doc)
 
@@ -53,16 +66,21 @@ export function mountTubeMapSurface(container: HTMLElement): TubeMapSurfaceHandl
     const content = doc.createElement('div')
     content.className = 'stm-content'
 
-    const badge = doc.createElement('div')
-    badge.className = 'stm-mode-badge'
-    badge.textContent = 'feeler'
-
     const status = doc.createElement('div')
     status.className = 'stm-status'
     status.hidden = true
 
     surface.append(content)
-    root.append(surface, badge, status)
+    root.append(surface, status)
+
+    // The badge announces a mode that cannot be entered unless the feeler is on,
+    // so it is mounted only alongside it.
+    if (strandFeeler) {
+        const badge = doc.createElement('div')
+        badge.className = 'stm-mode-badge'
+        badge.textContent = 'feeler'
+        root.append(badge)
+    }
     container.append(root)
 
     let contentSize: Size | null = null
@@ -84,6 +102,7 @@ export function mountTubeMapSurface(container: HTMLElement): TubeMapSurfaceHandl
     const interactions: InteractionHandle = createInteractions({
         root,
         surface,
+        strandFeeler,
 
         onPan(dx: number, dy: number): void {
             if (null === transform) {

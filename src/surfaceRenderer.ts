@@ -32,6 +32,3 @@ export interface SurfaceRenderer {
     /** Remove every listener, node and GPU resource this renderer created. */
     destroy(): void
 }
-
-/** Builds a renderer inside `host`, which is the mount's root element. */
-export type SurfaceRendererFactory = (host: HTMLElement) => SurfaceRenderer

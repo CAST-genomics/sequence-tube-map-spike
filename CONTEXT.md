@@ -130,6 +130,16 @@ That note flags its metadata table as inferred-not-confirmed. Both inferences ar
     non-conforming document outright and falls back to the SVG surface. The
     *no-layout* half of this decision stands: still no re-ordering, filtering or
     recoloring. See ADR [`0001`](./docs/adr/0001-webgl-band-renderer.md).
+
+    **Half-built as of 2026-08-14, and say so.** The gate rejects: a document off the
+    band grammar is refused whole, loudly, and the mount shows a named error state.
+    **The automatic fallback to the SVG surface is not built** — the refusal is
+    currently a dead end, and the only route to the other surface is the harness's
+    `?renderer=svg`. That is deliberate, not overlooked: the verdict fenced off
+    "whether it remains as a fallback" as separate work, and a fallback that swaps
+    surfaces underneath the researcher is a product decision, not a rendering one.
+    Until it is made, ADR `0001`'s promise is a promise, and this is the honest state
+    of it.
 2. **`open(url: string)` is the entire input surface.** PGB constructs the URL from
    the clicked minigraph node's ID and GRCh38 coordinates; the viewer never builds
    one, never checks eligibility, and never knows whether it is local or remote. A
@@ -245,6 +255,16 @@ That note flags its metadata table as inferred-not-confirmed. Both inferences ar
     DOM. Everything else is verified by looking at it. The three silently-wrong-able
     things are fit-to-width, zoom-about-cursor drift, and navigator-rect ↔ viewport
     scale.
+
+    **Restated 2026-08-14, same rule, more seams.** The rule was never "one file"; it
+    was *test what can be silently wrong without looking wrong, look at everything
+    else*, and the WebGL surface added two more of those. `bandCamera.ts` — where a
+    frustum in the wrong units gives a picture that is convincing at one window size
+    and stretched at every other — and `parseBands.ts`, where a mis-numbered regex
+    group yields plausible geometry and a coordinate conversion applied twice yields a
+    map that is merely upside down somewhere else. Both are pure and DOM-free, as this
+    decision requires. `spikeIsGone.test.ts` is not a unit test but a rule nobody would
+    otherwise check.
 
 ### Repo
 

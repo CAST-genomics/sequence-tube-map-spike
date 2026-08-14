@@ -71,8 +71,9 @@ at 200× zoom on the widest piece in `5520+`. A sweep of 16/32/64/128 at 200× s
 frame time**, so rung count is free in this range. The pixel comparison across that sweep was
 **inconclusive** — all three differed from 128 by the same ~0.14%, which is camera
 reproducibility across page loads rather than tessellation, since wheel-driven
-zoom-to-cursor does not land bit-identically. No evidence 64 is insufficient. Override with
-`?rungs=`.
+zoom-to-cursor does not land bit-identically. No evidence 64 is insufficient. The spike
+swept it from `?rungs=`; the sweep is settled, so `RUNGS` is a constant in
+`src/bandSurface.ts` rather than a parameter nobody passes.
 
 ## Coverage: what was predicted, and what happened
 

@@ -24,10 +24,6 @@ export interface TubeMap {
 }
 
 export function prepareTubeMap(text: string): TubeMap {
-    if (0 === text.trim().length) {
-        throw new TubeMapLoadError('The response was empty — no tube map for this minigraph node.', 'content')
-    }
-
     const parsed = new DOMParser().parseFromString(text, 'image/svg+xml')
 
     if (null !== parsed.querySelector('parsererror')) {

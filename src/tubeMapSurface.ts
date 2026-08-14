@@ -157,7 +157,7 @@ function describeFailure(url: string, error: unknown): string {
     if (error instanceof TubeMapLoadError) {
         return 'network' === error.kind
             ? `Could not load the tube map.\n${error.message}`
-            : `No tube map to show.\n${error.message}`
+            : `No tube map to show.\n${error.message}\n${url}`
     }
 
     if (error instanceof NonConformingDocument) {

@@ -45,7 +45,8 @@
  *
  * `RUNGS = 64` leaves a worst-case chord error of 0.41 px in x and 0.06 px in y, measured
  * at 200× zoom on the widest piece in `5520+`, and a sweep of 16/32/64/128 showed flat
- * frame time — rung count is free in this range.
+ * frame time — rung count is free in this range. The spike swept it from the URL; the
+ * sweep is over, so it is a constant here rather than a parameter nobody passes.
  *
  * ## Drawing happens on demand
  *
@@ -208,11 +209,7 @@ interface Drawing {
     mesh: Mesh
 }
 
-export function createBandSurface(host: HTMLElement, rungs: number = RUNGS): SurfaceRenderer {
-
-    if (false === Number.isInteger(rungs) || 1 > rungs) {
-        throw new Error(`rungs must be a positive whole number, not ${rungs}.`)
-    }
+export function createBandSurface(host: HTMLElement): SurfaceRenderer {
 
     const canvas = host.ownerDocument.createElement('canvas')
     canvas.className = 'stm-canvas'
@@ -410,7 +407,7 @@ export function createBandSurface(host: HTMLElement, rungs: number = RUNGS): Sur
 
             releaseDrawing()
 
-            const geometry = buildLadder(rungs)
+            const geometry = buildLadder(RUNGS)
 
             geometry.setAttribute('iSpan', deinterleave(map.geometry, 6, 0, 4, map.bandCount))
             geometry.setAttribute('iControl', deinterleave(map.geometry, 6, 4, 2, map.bandCount))
@@ -444,11 +441,16 @@ export function createBandSurface(host: HTMLElement, rungs: number = RUNGS): Sur
             // Resizing reveals more or less of the map rather than re-framing it —
             // unless the researcher has not yet invested in a position, in which case
             // the opening framing should stay correct.
-            if (untouched) {
-                reframe()
+            //
+            // Read before reframing, not after: raising the floor under a zoom that was
+            // already at fit moves the camera, and the change that announces would look
+            // exactly like the researcher having moved it.
+            const refit = untouched
+
+            reframe()
+
+            if (refit) {
                 fit()
-            } else {
-                reframe()
             }
         },
 

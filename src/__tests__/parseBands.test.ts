@@ -114,6 +114,14 @@ describe('parseBands', () => {
             .toThrow(NonConformingDocument)
     })
 
+    it('says a response is not an SVG before it says anything about bands', () => {
+        // The common way to arrive with the wrong bytes is an HTML error page. Diagnosing
+        // that as a defect in the band grammar sends the reader hunting for a malformed
+        // tube map that was never there.
+        expect(() => parseBands('<!doctype html><html><body>500</body></html>'))
+            .toThrow(/not an SVG document/)
+    })
+
     it('rejects a document whose track ids are sparse', () => {
         const text = readFileSync(FIXTURES.small.path, 'utf8')
 

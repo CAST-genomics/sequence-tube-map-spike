@@ -39,7 +39,17 @@ export async function fetchDocument(url: string, signal?: AbortSignal): Promise<
         throw new TubeMapLoadError(`Server returned ${response.status} ${response.statusText} for ${url}`, 'network')
     }
 
-    return await response.text()
+    const text = await response.text()
+
+    // Emptiness is a property of the response, not of either reading of it, so it is
+    // named here. Left to the renderers it comes back as whatever each one's parser
+    // happens to miss first — "no drawable elements in g.track" is a diagnosis of the
+    // band grammar, and the document had no bytes.
+    if (0 === text.trim().length) {
+        throw new TubeMapLoadError('The response was empty — no tube map for this minigraph node.', 'content')
+    }
+
+    return text
 }
 
 function describe(error: unknown): string {

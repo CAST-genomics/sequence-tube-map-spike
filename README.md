@@ -70,7 +70,10 @@ verdict that settled this, with the measurements, is
 how a band is drawn is [`docs/RENDERING.md`](./docs/RENDERING.md).
 
 The SVG surface stays because it is the only one with per-element hit-testing, and
-because a document the band grammar rejects can still be looked at there.
+because a document the band grammar rejects can still be looked at there — by
+switching to it by hand. The **automatic** fallback ADR `0001` promises is not built:
+a refusal is currently a dead end with a named error state. See the amendment under
+`CONTEXT.md` decision #1.
 
 ## Using it
 

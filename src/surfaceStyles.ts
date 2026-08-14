@@ -154,8 +154,12 @@ export const SURFACE_STYLES = `
     cursor: grabbing;
 }
 
+/* Baked at the size the widget had when the map loaded, and scaled from there: a resize
+   re-fits the navigator without re-rendering the map into it. */
 .stm-navigator-thumbnail {
     display: block;
+    width: 100%;
+    height: 100%;
 }
 
 .stm-navigator-rect {

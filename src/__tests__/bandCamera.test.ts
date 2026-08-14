@@ -9,7 +9,16 @@
  */
 
 import { describe, expect, it } from 'vitest'
-import { MAX_ZOOM_FACTOR, devicePixel, fitZoom, pixelFrustum, usable, zoomRange } from '../bandCamera.ts'
+import {
+    MAX_ZOOM_FACTOR,
+    devicePixel,
+    fitZoom,
+    pixelFrustum,
+    usable,
+    visibleContentRect,
+    worldFromContentPoint,
+    zoomRange
+} from '../bandCamera.ts'
 
 describe('fitZoom', () => {
 
@@ -84,5 +93,76 @@ describe('usable', () => {
         expect(usable({ width: 0, height: 600 })).toBe(false)
         expect(usable({ width: 800, height: 0 })).toBe(false)
         expect(usable({ width: 800, height: 600 })).toBe(true)
+    })
+})
+
+/**
+ * The navigator speaks content coordinates — origin at the map's top-left corner, y down,
+ * the vocabulary the parser converted *away* from. These two functions are the whole of
+ * the translation, and they are the third thing that can be silently wrong without looking
+ * wrong: a rect that tracks the view but drifts by half a map height at one zoom and not
+ * another looks like a plausible widget until you check it against the picture.
+ */
+describe('visibleContentRect', () => {
+
+    const content = { width: 108982.57, height: 7785 }
+
+    it('is the whole map when the camera sits at the origin at fit zoom', () => {
+        const viewport = { width: 1400, height: 900 }
+        const zoom = fitZoom(content.width, viewport)
+        const visible = visibleContentRect({ x: 0, y: 0, zoom }, viewport, content)
+
+        expect(visible.x).toBeCloseTo(0, 6)
+        expect(visible.width).toBeCloseTo(content.width, 6)
+
+        // Height follows the viewport, not the content: at fit-to-width the strip is
+        // shorter than the window, so the visible slice runs off both ends of it.
+        expect(visible.height).toBeCloseTo(viewport.height / zoom, 6)
+        expect(visible.y).toBeCloseTo((content.height - visible.height) / 2, 6)
+    })
+
+    it('moves right and down as the camera does, in content units', () => {
+        const viewport = { width: 1400, height: 900 }
+        const zoom = 0.01
+        const centred = visibleContentRect({ x: 0, y: 0, zoom }, viewport, content)
+        const moved = visibleContentRect({ x: 5000, y: -300, zoom }, viewport, content)
+
+        // World y is up and content y is down, so a camera moving down the world moves
+        // the rect down the thumbnail.
+        expect(moved.x - centred.x).toBeCloseTo(5000, 6)
+        expect(moved.y - centred.y).toBeCloseTo(300, 6)
+    })
+
+    it('shows less of the map as the zoom rises', () => {
+        const viewport = { width: 1400, height: 900 }
+        const wide = visibleContentRect({ x: 0, y: 0, zoom: 0.01 }, viewport, content)
+        const close = visibleContentRect({ x: 0, y: 0, zoom: 0.04 }, viewport, content)
+
+        expect(close.width).toBeCloseTo(wide.width / 4, 6)
+        expect(close.height).toBeCloseTo(wide.height / 4, 6)
+    })
+})
+
+describe('worldFromContentPoint', () => {
+
+    const content = { width: 108982.57, height: 7785 }
+
+    it('puts the map’s centre at the origin, where the parser left it', () => {
+        expect(worldFromContentPoint({ x: content.width / 2, y: content.height / 2 }, content))
+            .toEqual({ x: 0, y: 0 })
+    })
+
+    it('round-trips with the centre of the visible rect at any zoom', () => {
+        const viewport = { width: 1400, height: 900 }
+
+        for (const zoom of [ 0.0128, 0.05, 1.2 ]) {
+            const view = { x: 12000, y: -900, zoom }
+            const visible = visibleContentRect(view, viewport, content)
+            const centre = { x: visible.x + visible.width / 2, y: visible.y + visible.height / 2 }
+            const world = worldFromContentPoint(centre, content)
+
+            expect(world.x).toBeCloseTo(view.x, 6)
+            expect(world.y).toBeCloseTo(view.y, 6)
+        }
     })
 })

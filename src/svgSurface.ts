@@ -26,6 +26,7 @@ import {
     fitToWidth,
     pan,
     panToContentPoint,
+    viewportRectInContent,
     zoomAbout,
     type Point,
     type Size,
@@ -148,7 +149,7 @@ export function createSvgSurface(host: HTMLElement, options: SvgSurfaceOptions =
         }
 
         content.style.transform = `translate(${transform.x}px, ${transform.y}px) scale(${transform.scale})`
-        mapNavigator.update(transform, viewportSize())
+        mapNavigator.update(viewportRectInContent(transform, viewportSize()))
     }
 
     function fit(): void {
@@ -184,7 +185,7 @@ export function createSvgSurface(host: HTMLElement, options: SvgSurfaceOptions =
 
             // Baking the thumbnail rasterizes the whole strip, so it lands whenever it
             // lands — and is discarded if another document arrived meanwhile.
-            void mapNavigator.setMap(map.source, map.content).then(() => {
+            void mapNavigator.setMap(map.content, (canvas, size) => bake(canvas, map.source, size)).then(() => {
                 if (mine === generation) {
                     render()
                 }
@@ -206,6 +207,8 @@ export function createSvgSurface(host: HTMLElement, options: SvgSurfaceOptions =
             if (null === contentSize) {
                 return
             }
+
+            mapNavigator.relayout()
 
             // Resizing reveals more or less of the map rather than re-framing it — unless
             // the researcher has not yet invested in a position, in which case the opening
@@ -232,4 +235,41 @@ export function createSvgSurface(host: HTMLElement, options: SvgSurfaceOptions =
             badge?.remove()
         }
     }
+}
+
+/**
+ * Rasterize the prepared SVG into the navigator's thumbnail canvas.
+ *
+ * A second *live* copy of the document would roughly double the element count for
+ * something rendered ~90× too small to resolve a single strand, so the thumbnail is a
+ * bitmap baked once on load. This is the SVG surface's own way of filling the canvas and
+ * nothing else shares it — the WebGL surface renders its own scene instead, which is why
+ * the navigator asks for a painter rather than for bytes.
+ */
+async function bake(canvas: HTMLCanvasElement, source: string, size: Size): Promise<void> {
+    const context = canvas.getContext('2d')
+
+    if (null === context) {
+        return
+    }
+
+    const url = URL.createObjectURL(new Blob([ source ], { type: 'image/svg+xml' }))
+
+    try {
+        const image = await decode(url)
+        context.setTransform(canvas.width / size.width, 0, 0, canvas.height / size.height, 0, 0)
+        context.clearRect(0, 0, size.width, size.height)
+        context.drawImage(image, 0, 0, size.width, size.height)
+    } finally {
+        URL.revokeObjectURL(url)
+    }
+}
+
+function decode(url: string): Promise<HTMLImageElement> {
+    return new Promise((resolve, reject) => {
+        const image = new Image()
+        image.onload = () => resolve(image)
+        image.onerror = () => reject(new Error('SVG could not be rasterized'))
+        image.src = url
+    })
 }

@@ -9,15 +9,30 @@
  * buffer. Here it means writing **one texel**. Nothing about the geometry moves, and the
  * instance buffer is never touched again after the document loads.
  *
+ * ## The focus follows the cursor, and does not accumulate
+ *
+ * Exactly one track is emphasized at a time: the one under the feeler right now. Moving on
+ * hands the emphasis to the next track and the previous one recedes with the rest.
+ *
+ * **This reverses what was asked for**, and the reversal is the user's, decided 2026-08-14
+ * on looking at the built thing: #39's acceptance criteria, `SPEC.md` story 29 and
+ * `CONTEXT.md` #14 all say touched strands *accumulate* into a comparison set. Swept across
+ * a bundle, accumulation leaves a widening trail of lit tracks behind the cursor, and the
+ * one track being pointed at is then one of dozens lit — which is the opposite of telling it
+ * apart from its neighbours. A comparison set is still a real want; it needs a deliberate
+ * gesture rather than the side effect of a sweep.
+ *
+ * The table itself is unchanged by that decision — it holds an emphasis byte per track and
+ * has no opinion about how many of them are lit, which is why a set could be lit from a
+ * strand list or from PGB without touching this file.
+ *
  * ## What the cost actually is
  *
- * Lighting a track writes one byte per *track* — not per band, and not per lit track. With
- * nothing lit no track recedes, so the first touch of a sweep also has to write the other
- * 463 emphasis bytes; every touch after it writes one. Both figures are independent of how
- * many tracks are already lit, which is what makes lighting one strand and lighting two
- * hundred cost the same. The upload that follows is the whole table — 2 KB at every track
- * count the survey found — and it happens at most once per frame, because a frame is what
- * consumes it.
+ * Moving the focus writes one byte per *track* — not per band, and not per lit track — and
+ * that figure does not depend on which track, on how far the cursor moved, or on anything
+ * about the document except how many haplotypes it has. The upload that follows is the whole
+ * table: 2 KB at every track count the survey found, at most once per frame, because a frame
+ * is what consumes it.
  *
  * That is the number that retires the ~28 ms style invalidation of the SVG surface
  * (`CONTEXT.md` #15). Measured on a real GPU in `scripts/verify_highlight.mjs`.
@@ -30,14 +45,18 @@
  * (`docs/DISAMBIGUATING-TRACKS.md`, constraint 1). Only emphasis moves.
  *
  * The fragment shader multiplies coverage by emphasis, so a receded band becomes a ghost of
- * itself: whatever is behind it — the ground, or a lit track it crosses — shows through.
- * Of the four treatments weighed in `docs/DISAMBIGUATING-TRACKS.md` this is "translucent",
- * chosen over desaturation because grey already means something here (`pclaiX="None"`,
- * including `GRCh38#0#chr1`) and over removal because a haplotype's path is read against
- * its neighbours. The risk that document names is real and specific — at fit the map is
- * already washed toward white, so receding the crowd could leave the lit strand with
- * nothing to sit against — which is why `RECEDED` is a value that was looked at rather than
- * a constant chosen for its roundness.
+ * itself: whatever is behind it — the ground, or the focused track it crosses — shows
+ * through. Of the four treatments weighed in `docs/DISAMBIGUATING-TRACKS.md` this is
+ * "translucent", chosen over desaturation because grey already means something here
+ * (`pclaiX="None"`, including `GRCh38#0#chr1`) and over removal because a haplotype's path
+ * is read against its neighbours.
+ *
+ * **The focused track is drawn exactly as the document drew it**, and gets nothing added.
+ * An earlier version gave it a floor of ink so that a sub-pixel band would not composite at
+ * a fraction of its own colour; that is brightening the one rather than dimming the others,
+ * which #39 forbids in as many words, and it was measured to buy nothing at fit on `5520+`
+ * anyway. Removed. What it was reaching for — legibility below one pixel per band — is a
+ * pixel budget, and the candidates are in `docs/DISAMBIGUATING-TRACKS.md`.
  *
  * ## Why a 256-wide grid rather than one long row
  *
@@ -55,44 +74,40 @@ import type { ParsedMap } from './parseBands.ts'
 export const APPEARANCE_ROW = 256
 
 /**
- * The emphasis byte has three states, not two, and the third is why.
- *
- * `PLAIN` is a map with nothing lit: every track is drawn exactly as the document drew it,
- * which is the state the surface is in whenever `Shift` is not held.
- *
- * `RECEDED` is a track the feeler has not touched, once something has been touched. 8% is
- * dim enough that a lit strand reads out of a crowd of 463 instantly, and not so dim that
- * the crowd stops being there — the envelope of the bundle is the context that makes a
- * single path meaningful.
- *
- * `EMPHASIZED` is a track the feeler has touched, and it is a state of its own rather than
- * "the ones that are not receded" because receding the crowd is not sufficient at fit —
- * looked at, not predicted. A band is 0.59 css pixels tall at fit on the fixture, so the
- * most ink it can put anywhere is 59% of its colour and a lit strand starts out washed
- * before the crowd is even considered. The fragment shader draws a band in this state as
- * though it were **at least one pixel thick**; past one pixel per band that does nothing at
- * all. See `FRAGMENT` in `bandSurface.ts`.
- *
- * This is not brightening the one instead of dimming the others (`CONTEXT.md` #15): it never
- * touches colour, and it can only ever give a sub-pixel band the ink a pixel-tall band of
- * the same colour would already have had.
+ * A track drawn as the document drew it: the whole map with no key held, and the focused
+ * track while the feeler is out. Emphasis is a multiplier on coverage, so this is 1.
  */
 export const PLAIN = 255
-export const EMPHASIZED = 128
+
+/**
+ * A track the feeler is not on, while the feeler is out.
+ *
+ * 8% is dim enough that the focused strand reads out of a crowd of 463 instantly, and not so
+ * dim that the crowd stops being there — the envelope of the bundle is the context that
+ * makes a single path meaningful. Looked at on `5520+` at fit and zoomed, per
+ * `docs/DISAMBIGUATING-TRACKS.md` constraint 5.
+ */
 export const RECEDED = 20
 
 /** The document's appearance table, and the only thing highlighting writes. */
 export interface TrackAppearance {
-    /** Sampled by track id in the vertex shader. `uAppearanceRow` texels per row. */
+    /** Sampled by track id in the vertex shader. `APPEARANCE_ROW` texels per row. */
     texture: DataTexture
     width: number
     height: number
-    /** How many tracks are currently lit. Harness instrumentation reads it. */
-    litCount(): number
-    /** Light `trackId`, receding everything else. True if the table changed. */
-    light(trackId: number): boolean
-    /** Drop every highlight, restoring the document's own appearance. True if it changed. */
-    clear(): boolean
+    /** The track currently drawn in full, or null — either because the feeler is away or
+     *  because it is over empty space. */
+    focused(): number | null
+    /**
+     * Recede the map and draw `trackId` as the document drew it. `null` recedes everything,
+     * which is what the feeler over empty space looks like — the mode is still on, so the
+     * map must not spring back to full colour every time the cursor crosses a gap.
+     *
+     * True if the table changed, which is how the caller knows whether to schedule a frame.
+     */
+    focus(trackId: number | null): boolean
+    /** Feeler away: the document's own appearance, nothing receded. True if it changed. */
+    release(): boolean
     dispose(): void
 }
 
@@ -127,16 +142,14 @@ export function createTrackAppearance(
     texture.generateMipmaps = false
     texture.needsUpdate = true
 
-    const lit = new Set<number>()
+    /** True while the feeler is out, which is what makes the unfocused tracks recede. */
+    let feeling = false
+    let focus: number | null = null
 
-    /** Write the emphasis column: a plain map, or the lit set against a receded one. */
+    /** Write the emphasis column: a plain map, or one track against a receded one. */
     function writeEmphasis(): void {
-        const nothingLit = 0 === lit.size
-
         for (let id = 0; id < trackCount; id += 1) {
-            data[texelOf(id, width) + 3] = nothingLit
-                ? PLAIN
-                : lit.has(id) ? EMPHASIZED : RECEDED
+            data[texelOf(id, width) + 3] = false === feeling || id === focus ? PLAIN : RECEDED
         }
 
         texture.needsUpdate = true
@@ -148,30 +161,36 @@ export function createTrackAppearance(
         width,
         height,
 
-        litCount(): number {
-            return lit.size
+        focused(): number | null {
+            return focus
         },
 
-        light(trackId: number): boolean {
-            // A sweep crosses the same haplotype over and over — it is 87 bands wide on
-            // `5520+` — so the common case is a touch that changes nothing, and saying so
-            // is what keeps a held pointer from uploading the same table every frame.
-            if (0 > trackId || trackId >= trackCount || lit.has(trackId)) {
+        focus(trackId: number | null): boolean {
+            const wanted = null !== trackId && trackId >= 0 && trackId < trackCount
+                ? trackId
+                : null
+
+            // A sweep re-reports the same haplotype for many frames running — a track is 87
+            // bands wide on `5520+` — so the common case is a move that changes nothing, and
+            // saying so is what keeps a held pointer from uploading the same table forever.
+            if (feeling && wanted === focus) {
                 return false
             }
 
-            lit.add(trackId)
+            feeling = true
+            focus = wanted
             writeEmphasis()
 
             return true
         },
 
-        clear(): boolean {
-            if (0 === lit.size) {
+        release(): boolean {
+            if (false === feeling) {
                 return false
             }
 
-            lit.clear()
+            feeling = false
+            focus = null
             writeEmphasis()
 
             return true

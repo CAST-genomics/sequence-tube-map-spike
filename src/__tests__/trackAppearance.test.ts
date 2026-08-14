@@ -1,18 +1,18 @@
 /**
  * The appearance table is the one part of highlighting that can be silently wrong.
  *
- * Everything else about feeler mode is judged by looking — a highlight that fails to read
- * is visible immediately. These are not: a table indexed by the wrong row width lights a
- * different haplotype than the cursor touched, and both pictures look like working
- * highlighting; a table sized from a constant works on every document with fewer tracks
- * than the constant and truncates the rest; and an emphasis column that forgets to restore
- * leaves a map permanently receded with nothing lit.
+ * Everything else about feeler mode is judged by looking — a highlight that fails to read is
+ * visible immediately. These are not: a table indexed by the wrong row width emphasizes a
+ * different haplotype than the cursor is on, and both pictures look like working
+ * highlighting; a table sized from a constant works on every document with fewer tracks than
+ * the constant and truncates the rest; an emphasis column that forgets to restore leaves a
+ * map permanently receded with the feeler away; and a focus that fails to *un*-emphasize the
+ * track it moved off is the trail-behind-the-cursor bug this file exists to keep dead.
  */
 
 import { describe, expect, it } from 'vitest'
 import {
     APPEARANCE_ROW,
-    EMPHASIZED,
     PLAIN,
     RECEDED,
     createTrackAppearance,
@@ -45,6 +45,17 @@ function texel(appearance: TrackAppearance, trackId: number): number[] {
     return Array.from(data.subarray(at, at + 4))
 }
 
+/** Every track drawn as the document drew it, which is what the feeler away looks like. */
+function nothingReceded(appearance: TrackAppearance, trackCount: number): boolean {
+    for (let id = 0; id < trackCount; id += 1) {
+        if (PLAIN !== texel(appearance, id)[3]) {
+            return false
+        }
+    }
+
+    return true
+}
+
 describe('createTrackAppearance', () => {
 
     it('sizes the table from the document, not from a constant', () => {
@@ -68,81 +79,123 @@ describe('createTrackAppearance', () => {
         }
     })
 
-    it('carries the document colours, undimmed, with nothing lit', () => {
+    it('carries the document colours, undimmed, with the feeler away', () => {
         const appearance = createTrackAppearance(document(464))
 
-        expect(appearance.litCount()).toBe(0)
+        expect(appearance.focused()).toBe(null)
         expect(texel(appearance, 0)).toEqual([0, 0, 0, PLAIN])
         expect(texel(appearance, 7)).toEqual([7, 14, 21, PLAIN])
         expect(texel(appearance, 463)).toEqual([463 % 256, 463 * 2 % 256, 463 * 3 % 256, PLAIN])
     })
 
-    it('recedes every track but the lit one, and accumulates', () => {
+    it('emphasizes one track and recedes every other', () => {
         const appearance = createTrackAppearance(document(464))
 
-        expect(appearance.light(300)).toBe(true)
-        expect(appearance.litCount()).toBe(1)
-        expect(texel(appearance, 300)[3]).toBe(EMPHASIZED)
+        expect(appearance.focus(300)).toBe(true)
+        expect(appearance.focused()).toBe(300)
+        expect(texel(appearance, 300)[3]).toBe(PLAIN)
         expect(texel(appearance, 299)[3]).toBe(RECEDED)
         expect(texel(appearance, 301)[3]).toBe(RECEDED)
+        expect(texel(appearance, 0)[3]).toBe(RECEDED)
+        expect(texel(appearance, 463)[3]).toBe(RECEDED)
+    })
 
-        expect(appearance.light(0)).toBe(true)
-        expect(appearance.litCount()).toBe(2)
-        expect(texel(appearance, 0)[3]).toBe(EMPHASIZED)
-        expect(texel(appearance, 300)[3]).toBe(EMPHASIZED)
-        expect(texel(appearance, 1)[3]).toBe(RECEDED)
+    it('does not accumulate: the track it moves off recedes with the rest', () => {
+        // The behaviour this file was rewritten for. A sweep hands the emphasis along; it
+        // does not leave a trail of lit tracks behind the cursor.
+        const appearance = createTrackAppearance(document(464))
+
+        appearance.focus(300)
+        expect(appearance.focus(301)).toBe(true)
+
+        expect(appearance.focused()).toBe(301)
+        expect(texel(appearance, 301)[3]).toBe(PLAIN)
+        expect(texel(appearance, 300)[3]).toBe(RECEDED)
+
+        // And across a whole sweep, exactly one track is ever emphasized.
+        for (let id = 0; id < 200; id += 1) {
+            appearance.focus(id)
+
+            let plain = 0
+
+            for (let other = 0; other < 464; other += 1) {
+                if (PLAIN === texel(appearance, other)[3]) {
+                    plain += 1
+                }
+            }
+
+            expect(plain).toBe(1)
+        }
+    })
+
+    it('recedes the whole map over empty space, rather than springing back', () => {
+        // A sweep crosses gaps between bands constantly. Restoring full colour in each of
+        // them would strobe, and would also read as the mode switching itself off.
+        const appearance = createTrackAppearance(document(464))
+
+        appearance.focus(300)
+
+        expect(appearance.focus(null)).toBe(true)
+        expect(appearance.focused()).toBe(null)
+        expect(texel(appearance, 300)[3]).toBe(RECEDED)
+        expect(texel(appearance, 0)[3]).toBe(RECEDED)
+        expect(nothingReceded(appearance, 464)).toBe(false)
+    })
+
+    it('recedes on the key alone, before the cursor has touched anything', () => {
+        const appearance = createTrackAppearance(document(369))
+
+        expect(appearance.focus(null)).toBe(true)
+        expect(texel(appearance, 0)[3]).toBe(RECEDED)
+        expect(texel(appearance, 368)[3]).toBe(RECEDED)
     })
 
     it('leaves the colours themselves alone — PCLAI is the map primary channel', () => {
         const appearance = createTrackAppearance(document(464))
 
-        appearance.light(300)
+        appearance.focus(300)
 
         expect(texel(appearance, 300).slice(0, 3)).toEqual([300 % 256, 600 % 256, 900 % 256])
         expect(texel(appearance, 299).slice(0, 3)).toEqual([299 % 256, 598 % 256, 897 % 256])
     })
 
-    it('reports a repeated touch as no change, so nothing is uploaded for it', () => {
+    it('reports an unchanged focus as no change, so nothing is uploaded for it', () => {
         const appearance = createTrackAppearance(document(464))
 
-        expect(appearance.light(12)).toBe(true)
-        expect(appearance.light(12)).toBe(false)
-        expect(appearance.litCount()).toBe(1)
+        expect(appearance.focus(12)).toBe(true)
+        expect(appearance.focus(12)).toBe(false)
+        expect(appearance.focus(null)).toBe(true)
+        expect(appearance.focus(null)).toBe(false)
     })
 
-    it('ignores a track the document does not have', () => {
+    it('treats a track the document does not have as empty space', () => {
         const appearance = createTrackAppearance(document(369))
 
-        expect(appearance.light(369)).toBe(false)
-        expect(appearance.light(-1)).toBe(false)
-        expect(appearance.litCount()).toBe(0)
+        expect(appearance.focus(369)).toBe(true)
+        expect(appearance.focused()).toBe(null)
+        expect(texel(appearance, 0)[3]).toBe(RECEDED)
+
+        expect(appearance.focus(-1)).toBe(false)
+        expect(appearance.focused()).toBe(null)
     })
 
-    it('restores the whole map on release, however many were lit', () => {
+    it('restores the whole map when the feeler goes away', () => {
         const appearance = createTrackAppearance(document(464))
 
-        for (let id = 0; id < 200; id += 1) {
-            appearance.light(id)
-        }
+        appearance.focus(300)
 
-        expect(appearance.litCount()).toBe(200)
-        expect(texel(appearance, 400)[3]).toBe(RECEDED)
+        expect(appearance.release()).toBe(true)
+        expect(appearance.focused()).toBe(null)
+        expect(nothingReceded(appearance, 464)).toBe(true)
 
-        expect(appearance.clear()).toBe(true)
-        expect(appearance.litCount()).toBe(0)
-
-        // Not merely the ones that were lit: with nothing lit, nothing recedes.
-        expect(texel(appearance, 0)[3]).toBe(PLAIN)
-        expect(texel(appearance, 400)[3]).toBe(PLAIN)
-        expect(texel(appearance, 463)[3]).toBe(PLAIN)
-
-        expect(appearance.clear()).toBe(false)
+        expect(appearance.release()).toBe(false)
     })
 
-    it('costs the same to light the two-hundredth track as the first', () => {
-        // Not a timing test — the claim is structural. Each write touches one byte per
-        // track and nothing per lit track, so what it costs cannot depend on how many are
-        // already lit. Timing lives in `scripts/verify_highlight.mjs`, on a real GPU.
+    it('costs the same to move the focus as to set it, and nothing scales with the map', () => {
+        // Not a timing test — the claim is structural. Each write touches one byte per track
+        // and nothing per band, so what it costs cannot depend on where the focus was, where
+        // it is going, or how far the cursor moved. Timing lives in
+        // `scripts/verify_highlight.mjs`, on a real GPU.
         const appearance = createTrackAppearance(document(464))
         const touched: number[] = []
         const data = bytes(appearance)
@@ -150,7 +203,7 @@ describe('createTrackAppearance', () => {
         for (let id = 0; id < 200; id += 1) {
             const before = Array.from(data)
 
-            appearance.light(id)
+            appearance.focus(id)
 
             let changed = 0
 
@@ -163,10 +216,9 @@ describe('createTrackAppearance', () => {
             touched.push(changed)
         }
 
-        // The first light moves the whole column: 463 tracks recede and the touched one
-        // goes from plain to emphasized. Every light after it moves exactly one byte.
-        // Neither figure grows with the size of the lit set.
-        expect(touched[0]).toBe(464)
-        expect(touched.slice(1)).toEqual(new Array(199).fill(1))
+        // The first focus recedes 463 tracks and leaves one alone. Every move after it
+        // un-emphasizes one track and emphasizes another: two bytes, forever.
+        expect(touched[0]).toBe(463)
+        expect(touched.slice(1)).toEqual(new Array(199).fill(2))
     })
 })

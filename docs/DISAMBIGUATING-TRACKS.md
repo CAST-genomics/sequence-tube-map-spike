@@ -100,8 +100,13 @@ at ~28 ms each; nothing wired to pointer position.*
 **That number is a fact about the SVG DOM, not about this problem.** The 28 ms was style
 invalidation across ~10,000 elements. The WebGL surface has one mesh and one draw call;
 changing which track is emphasized is a buffer or uniform write, and the shader already
-runs per fragment regardless. There is every reason to expect the constraint to lift, and
-**it has not been measured**, so no strategy below may be justified by assuming it has.
+runs per fragment regardless.
+
+**Measured 2026-08-14, and the constraint lifted** (#39): moving the emphasis is a 2 KB table
+upload, under 100 µs of CPU, and a sweep's worst frame is indistinguishable from the same
+pointer moves with no key held. Strategies below may now assume that *changing appearance per
+pointer move is affordable on this surface* — but nothing more than that, and nothing at all
+about the SVG surface, where the 28 ms stands.
 
 What has *not* changed is the part of that note that was never about performance: a
 highlight wired to pointer position is also a **design** choice, and the note deliberately
@@ -150,35 +155,47 @@ Record: [`notes/2026-08-14-feeler-mode-on-the-gpu.md`](../notes/2026-08-14-feele
 Rerun it with `node scripts/verify_highlight.mjs '<url>'`.
 
 1. **Fast enough, measured, at pointer rate on `5520+`.** Emphasis moved into an appearance
-   table — one texel per track, RGB plus an emphasis byte — so a touch writes one byte per
-   *track* and the frame uploads 2 KB. Median table write **0.000 ms, below what the page
-   timer resolves, flat from 1 track lit to 198 of 464**; worst frame while sweeping 18.0 ms
-   against 17.9 ms for the identical moves with the key released. The ~28 ms was the DOM.
-   The mechanism at the bottom of this document under *Not yet discussed* is no longer a
-   proposal; it is what this is built on.
+   table — one texel per track, RGB plus an emphasis byte — so moving it writes one byte per
+   *track* and the frame uploads 2 KB. Over a sweep that moved the emphasis **198 times across
+   198 of 464 tracks**: median write 0.000 ms and worst 0.100 ms **in every window of the
+   sweep** — flat, and below what the page timer resolves, so read it as under 100 µs. Worst
+   frame while sweeping 9.4 ms, against 9.4 ms for the identical moves with the key released:
+   inside a frame, and a third of the ~28 ms the DOM spent per swap. The mechanism at the
+   bottom of this document under *Not yet discussed* is no longer a proposal; it is what this
+   is built on.
+
+   **The emphasis follows the cursor: one track at a time, not an accumulating set.** The
+   user's decision, 2026-08-14, reversing #39 and `SPEC.md` story 29 on looking at it built —
+   a trail of lit strands behind a sweep makes the strand being pointed at one of dozens at
+   full colour, which is this document's whole problem restated. A comparison set still wants
+   a deliberate gesture, and this table supports one unchanged.
 2. **It does not survive the sub-pixel regime, and the affordance is now honest about it.**
    Unmistakable from ~1 css pixel per band upward; at fit on `5520+` — 0.19 css pixels per
-   band, 5.7 tracks per device pixel row — a lit strand cannot be found among the receded
-   ones by eye. The shader draws a touched band as though it were at least a pixel thick,
-   which stops a lit strand compositing at a fraction of its own colour, and that buys a
-   solid hairline rather than a findable one. **This is constraint 3 and it is a pixel
-   budget, not a treatment that needs tuning.** The candidates that would change the answer
-   are a screen-space minimum thickness or an outline — both below, both making the lit
-   track wider than the map says it is, neither attempted.
+   band, 5.7 tracks per device pixel row — the emphasized strand cannot be found among the
+   receded ones by eye. **This is constraint 3 and it is a pixel budget, not a treatment that
+   needs tuning.**
+
+   *Tried and removed:* drawing the emphasized band as though it were at least one pixel
+   thick, so a sub-pixel band would not composite at a fraction of its own colour. It turned
+   a 59%-alpha hairline into a solid one on the fixture, did **not** make the strand findable
+   at fit on `5520+`, and is brightening the one rather than dimming the others — which #39
+   and story 30 both forbid, whatever the mechanism. The candidates that remain are a
+   screen-space minimum thickness or an outline: both below, both making the emphasized track
+   wider than the map says it is, and that trade is still undiscussed.
 3. **Picking is built** (#38) and it is what the feeler touches. Its own caveat stands
    unchanged: it answers what is under the cursor, not what you are looking at three screens
    to the right.
 4. **Open.** Emphasis does persist along the whole strand — it is a property of the track,
    not of the bands on screen — but the navigator's thumbnail is baked once per document, so
-   the lit strand does not appear in it. One render would fix it and it was left alone.
+   the emphasized strand does not appear in it. One render would fix it and it was left alone.
 
 **Which treatment won, of the four in the table:** translucent. A receded band keeps its
 colour and drops its alpha, so it is a ghost of itself and whatever is behind it — the
-ground, or a lit track it crosses — shows through. Desaturation was rejected because grey
+ground, or the emphasized track it crosses — shows through. Desaturation was rejected because grey
 already means `pclaiX="None"`; removal because a haplotype's path is read against its
 neighbours. The fear recorded against translucency, that dimming the crowd leaves nothing
 to sit against, did not materialise at working zooms: the bundle's envelope stays legible at
-8% and the lit strand sits inside it.
+8% and the emphasized strand sits inside it.
 
 ## Strategy B — use depth, now that we are in 3D
 
@@ -258,7 +275,9 @@ started this document. None of these have been thought through:
 - ~~**Appearance as a lookup table**~~ — **built 2026-08-14** (#39, `src/trackAppearance.ts`),
   and it is what Strategy A above rests on: one texel per track, RGB plus an emphasis byte,
   2 KB uploaded however many tracks are lit. Kept in this list because the mechanism is
-  available to any strategy that needs per-track appearance, not only to A.
+  available to any strategy that needs per-track appearance, not only to A — including the
+  indirect selection below, which is now the obvious home for the comparison set that feeling
+  one strand at a time gave up.
 - **Indirect selection**, which the 2026-08-13 note already argues for: a strand list, a
   search on `sample#haplotype#contig`, a palette assigning colors to samples, or selection
   arriving from PGB, which already knows which sample the researcher came in caring about.

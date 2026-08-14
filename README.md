@@ -27,7 +27,7 @@ node selector, a URL field, and Open. Three query parameters:
 - `?url=…` — open a different tube map. Defaults to the committed fixture.
 - `?fps=1` — frame meter, top left. Click it to reset the worst-frame figure.
 - `?pick` — on the WebGL surface, read the pick pass and the feeler out loud: the track
-  under the cursor, what the pick cost, how many tracks are lit, and what the last and
+  under the cursor, what the pick cost, which track is emphasized, and what the last and
   worst appearance-table writes cost. Instrumentation; feeler mode runs without it.
 
 The selector lists the committed fixture and every minigraph node of a PGB dataset
@@ -111,10 +111,18 @@ at PGB's `zoomSpeed`, so a notch travels the same distance in all three.
 
 ### Feeler mode
 
-Hold `Shift` and the cursor becomes a feeler: the track it touches lights, touches
-accumulate, everything else recedes, releasing clears. Hover alone does nothing —
+Hold `Shift` and the cursor becomes a feeler. The map recedes on the key alone, the track
+under the cursor is drawn as the document drew it, moving the cursor hands the emphasis to
+the next track, and releasing brings the whole map back. Hover alone does nothing —
 highlighting is deliberate rather than incidental. Pan and zoom are suppressed while the
 key is held, because a strand that slides out from under the cursor cannot be felt.
+
+**The emphasis follows the cursor rather than accumulating**, decided 2026-08-14 after
+looking at the alternative: touches that pile up leave a widening trail of lit strands
+behind a sweep, and the strand being pointed at ends up as one of dozens at full colour,
+which is the opposite of telling it apart. A comparison set of several haplotypes is still
+wanted and needs a deliberate gesture instead; the appearance table already supports one.
+The SVG surface's feeler, which is off, still accumulates.
 
 It is **on, on the WebGL surface, and off on the SVG surface** — the same interaction with
 two different costs behind it. On the SVG surface each swap invalidates style across
@@ -127,17 +135,18 @@ http://localhost:5173/?renderer=svg&feeler
 ```
 
 On the WebGL surface, track appearance is a `DataTexture` of one texel per track — RGB
-plus an emphasis byte — so lighting a strand writes one byte per *track*, nothing per band
-and nothing per already-lit track, and the frame uploads 2 KB. On `5520+`, 464 tracks and
-40,442 bands, a sweep lighting 198 of them holds a median table write of 0.000 ms — under
-what the page timer resolves — flat from the first track to the hundred-and-ninety-eighth,
-and the worst frame while sweeping equals the worst frame over the same moves with the key
-released. Lighting one strand and lighting two hundred cost the same.
+plus an emphasis byte — so moving the emphasis writes one byte per *track*, nothing per
+band, and the frame uploads 2 KB. On `5520+`, 464 tracks and 40,442 bands, a sweep that
+moves it 198 times across 198 tracks holds a median write of 0.000 ms and a worst of
+0.100 ms in every window of the sweep — flat, and under what the page timer resolves, so
+read it as *below 100 µs*. The worst frame while sweeping is 9.4 ms, the same as the worst
+frame over the identical moves with the key released: inside a 16.67 ms frame, and a third
+of the ~28 ms a single DOM swap cost.
 
 What it does not do is work at fit-to-width, where a band on `5520+` is 0.19 css pixels
-tall and 5.7 tracks share a device pixel row: there is no pixel in which lit and receded
-can differ. It reads unmistakably from about one css pixel per band upward. That is a pixel
-budget rather than a performance one, and
+tall and 5.7 tracks share a device pixel row: there is no pixel in which emphasized and
+receded can differ. It reads unmistakably from about one css pixel per band upward. That is
+a pixel budget rather than a performance one, and
 [`docs/DISAMBIGUATING-TRACKS.md`](./docs/DISAMBIGUATING-TRACKS.md) is where the candidates
 for the other regime are weighed.
 

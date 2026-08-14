@@ -75,6 +75,7 @@
 import {
     BufferAttribute,
     ColorManagement,
+    type DataTexture,
     GLSL3,
     InstancedBufferAttribute,
     InstancedBufferGeometry,
@@ -99,6 +100,7 @@ import {
     type Viewport
 } from './bandCamera.ts'
 import { createBandPicker, type BandPicker } from './bandPicker.ts'
+import { watchFeelerKey, type FeelerKey } from './feelerKey.ts'
 import { createNavigator, type NavigatorHandle } from './navigator.ts'
 import { THICKNESS, parseBands, type ParsedMap } from './parseBands.ts'
 import { APPEARANCE_ROW, createTrackAppearance, type TrackAppearance } from './trackAppearance.ts'
@@ -246,10 +248,9 @@ float bandCoverage() {
  * it is allowed to claim.
  *
  * Receding a track turns it into a ghost of itself rather than repainting it: whatever is
- * behind it shows through, including a lit track it crosses over. Emphasis reaches alpha and
- * never `vColor`, so the PCLAI colour a researcher reads across PGB's three panels is not
- * distorted by highlighting — see `trackAppearance.ts`, which is also where the three states
- * this branches on are named.
+ * behind it shows through, including the focused track it crosses over. Emphasis reaches
+ * alpha and never `vColor`, so the PCLAI colour a researcher reads across PGB's three panels
+ * is not distorted by highlighting — see `trackAppearance.ts`.
  */
 const FRAGMENT = /* glsl */`
 precision highp float;
@@ -267,29 +268,10 @@ void main() {
         discard;
     }
 
-    // Three states, so two thresholds. Nothing lit (1.0) leaves the map alone; everything
-    // the feeler has not touched (0.08) becomes a ghost of itself; a touched track (0.5) is
-    // drawn as though it were at least one pixel thick.
-    //
-    // That last one is what makes the treatment survive fit-to-width, and it is a division
-    // rather than a floor so that it changes nothing where it should not. A band is 0.59 css
-    // pixels tall at fit on the fixture, so the most ink it can put anywhere is 0.59 and a
-    // lit strand is 41% washed out before the crowd is even considered; dividing by the
-    // fraction of a pixel it could fill lets a fully crossed pixel reach full ink while the
-    // graded edges keep their relative values. Past one pixel per band the divisor is 1 and
-    // this is not brightening anything (CONTEXT.md #15) — it is refusing to let the one
-    // thing being pointed at be a rounding error.
-    if (0.9 > vEmphasis) {
-        if (0.3 < vEmphasis) {
-            float bandPixels = uThickness / max(2.0 * uHalfPixel, 1e-6);
-
-            coverage = clamp(coverage / min(1.0, max(bandPixels, 1e-3)), 0.0, 1.0);
-        } else {
-            coverage *= vEmphasis;
-        }
-    }
-
-    fragColor = vec4(vColor, coverage);
+    // One multiply, and only ever downward: the focused track and a map with no key held
+    // are both emphasis 1 and are drawn identically. Nothing here can brighten a band
+    // beyond what the document gave it, which is CONTEXT.md #15 held to literally.
+    fragColor = vec4(vColor, coverage * vEmphasis);
 }
 `
 
@@ -366,18 +348,10 @@ export interface BandSurfaceOptions {
 export function createBandSurface(host: HTMLElement, options: BandSurfaceOptions = {}): SurfaceRenderer {
 
     const doc = host.ownerDocument
-    const view = doc.defaultView ?? window
 
     const canvas = doc.createElement('canvas')
     canvas.className = 'stm-canvas'
     host.append(canvas)
-
-    // The mode is a held key, so it has to be visible rather than remembered
-    // (`CONTEXT.md` #13). The crosshair says it over the map; this says it in words.
-    const badge = doc.createElement('div')
-    badge.className = 'stm-mode-badge'
-    badge.textContent = 'feeler'
-    host.append(badge)
 
     const readout = true === options.pickReadout ? doc.createElement('div') : null
 
@@ -396,11 +370,9 @@ export function createBandSurface(host: HTMLElement, options: BandSurfaceOptions
     let cursor: Point | null = null
     let pickFrame = 0
     let worstPick = 0
-    /** `Shift` held: the cursor is a feeler and the tracks it touches light up. */
-    let feeling = false
-    /** Wall-clock cost of appearance-table writes, in ms — the last one and the worst so
-     *  far. Both, because the worst alone cannot distinguish a cost that grows with the lit
-     *  set from a cost that is flat with one outlier in it, and that is the claim. */
+    /** Wall-clock cost of appearance-table writes, in ms — the last one and the worst so far.
+     *  Both, because the worst alone cannot tell a cost that drifts from a flat one with an
+     *  outlier in it, and flatness is the claim. Only measured when the readout is mounted. */
     let lastWrite = 0
     let worstWrite = 0
     /** The viewport the camera was last framed for. Kept so `draw` — which runs on every
@@ -484,15 +456,7 @@ export function createBandSurface(host: HTMLElement, options: BandSurfaceOptions
             glslVersion: GLSL3,
             vertexShader: VERTEX,
             fragmentShader: FRAGMENT,
-            uniforms: {
-                uThickness: { value: THICKNESS },
-                uHalfPixel: { value: 0 },
-                uPad: { value: 0 },
-                // Filled in by `show`, from the document: the table is sized from the
-                // track count, so there is nothing to bind until a document is parsed.
-                uAppearance: { value: null },
-                uAppearanceRow: { value: APPEARANCE_ROW }
-            },
+            uniforms: bandUniforms(),
             // Coverage arrives as alpha, so the surface blends. There is no depth buffer:
             // bands are opaque in the document and painted in order, so instance order
             // carries z-order where two tracks cross.
@@ -508,15 +472,7 @@ export function createBandSurface(host: HTMLElement, options: BandSurfaceOptions
             glslVersion: GLSL3,
             vertexShader: VERTEX,
             fragmentShader: PICK_FRAGMENT,
-            uniforms: {
-                uThickness: { value: THICKNESS },
-                uHalfPixel: { value: 0 },
-                uPad: { value: 0 },
-                // The shared vertex shader reads the table, so this pass has to bind it
-                // too — it writes ids rather than colour and reads nothing back out of it.
-                uAppearance: { value: null },
-                uAppearanceRow: { value: APPEARANCE_ROW }
-            },
+            uniforms: bandUniforms(),
             // Ids are not colours: blending two of them would produce a third that names
             // a track neither band belongs to. Without blending the last write wins, and
             // instance order is document order, so that is the topmost band.
@@ -669,8 +625,13 @@ export function createBandSurface(host: HTMLElement, options: BandSurfaceOptions
         // rate; a mean hides exactly the stalls being hunted.
         worstPick = Math.max(worstPick, result.milliseconds)
 
-        if (feeling && null !== result.trackId) {
-            light(result.trackId)
+        // The feeler emphasizes what is under it *now*: moving on hands the emphasis to the
+        // next track, and over empty space nothing is emphasized while the map stays
+        // receded. Over-empty-space is a real state, not the absence of one — a sweep
+        // crosses gaps between bands constantly, and springing back to full colour in each
+        // of them would strobe.
+        if (feeler.active()) {
+            focus(result.trackId)
         }
 
         if (null === readout) {
@@ -678,33 +639,39 @@ export function createBandSurface(host: HTMLElement, options: BandSurfaceOptions
         }
 
         const track = null === result.trackId ? '—' : String(result.trackId)
+        const shown = drawing.appearance.focused()
 
         readout.textContent = `track ${track} · ${result.milliseconds.toFixed(2)} ms`
             + ` · worst ${worstPick.toFixed(2)} ms`
-            + ` · lit ${drawing.appearance.litCount()}`
+            + ` · focus ${null === shown ? '—' : shown}`
             + ` · table ${lastWrite.toFixed(3)} ms, worst ${worstWrite.toFixed(3)} ms`
     }
 
     /**
-     * Light one track. This is the whole cost of highlighting, and it is timed rather than
-     * asserted: one byte per track in the appearance table, nothing per band and nothing
-     * per already-lit track, then a 2 KB upload on the frame that draws it.
+     * Move the emphasis to one track, or to none.
+     *
+     * This is the whole cost of highlighting: one byte per track in the appearance table,
+     * nothing per band, then a 2 KB upload on the frame that draws it. It is timed rather
+     * than asserted — but only while the readout is mounted, so the clock stays out of the
+     * path when nobody is reading it.
      */
-    function light(trackId: number): void {
+    function focus(trackId: number | null): void {
         if (null === drawing) {
             return
         }
 
-        const started = performance.now()
+        const started = null === readout ? 0 : performance.now()
 
-        // A sweep re-touches the same haplotype for many frames running — a track is 87
-        // bands wide on `5520+` — and a touch that changes nothing must not cost an upload.
-        if (false === drawing.appearance.light(trackId)) {
+        // A sweep re-reports the same haplotype for many frames running — a track is 87
+        // bands wide on `5520+` — and a move that changes nothing must not cost an upload.
+        if (false === drawing.appearance.focus(trackId)) {
             return
         }
 
-        lastWrite = performance.now() - started
-        worstWrite = Math.max(worstWrite, lastWrite)
+        if (null !== readout) {
+            lastWrite = performance.now() - started
+            worstWrite = Math.max(worstWrite, lastWrite)
+        }
 
         scheduleDraw()
     }
@@ -712,43 +679,43 @@ export function createBandSurface(host: HTMLElement, options: BandSurfaceOptions
     /**
      * `Shift` down: the cursor becomes a feeler.
      *
-     * The controls are switched off for the duration, which is `CONTEXT.md` #13 —
-     * `Shift` arbitrates pointer ownership, so the two interaction sets are mutually
-     * exclusive by construction. A pan or a wheel mid-sweep would slide the strand out
-     * from under the cursor, which is the one thing a feeler cannot survive.
+     * The controls are switched off for the duration, which is `CONTEXT.md` #13 — `Shift`
+     * arbitrates pointer ownership, so the two interaction sets are mutually exclusive by
+     * construction. A pan or a wheel mid-sweep would slide the strand out from under the
+     * cursor, which is the one thing a feeler cannot survive.
      */
     function enterFeelerMode(): void {
-        if (feeling || null === context) {
+        if (null === context) {
             return
         }
 
-        feeling = true
         context.controls.enabled = false
-        host.classList.add('is-feeling')
 
-        // Probe immediately, so holding `Shift` over a track acts without a nudge.
-        if (null !== cursor) {
-            schedulePick()
-        }
+        // The map recedes on the key alone, before any movement: the mode is legible
+        // immediately, and holding `Shift` over a track emphasizes it without a nudge.
+        focus(null)
+        schedulePick()
     }
 
-    /** `Shift` up: the highlight goes with it. Highlighting is the mode, not a state. */
+    /** `Shift` up: the emphasis goes with it. Highlighting is the mode, not a state. */
     function leaveFeelerMode(): void {
-        if (false === feeling) {
-            return
-        }
-
-        feeling = false
-        host.classList.remove('is-feeling')
-
         if (null !== context) {
             context.controls.enabled = true
         }
 
-        if (true === drawing?.appearance.clear()) {
+        if (true === drawing?.appearance.release()) {
             scheduleDraw()
         }
     }
+
+    const feeler: FeelerKey = watchFeelerKey({
+        root: host,
+        // Always. What kept this off on the SVG surface was the cost of its highlight, and
+        // this surface's highlight is a table write.
+        armed: true,
+        onEnter: enterFeelerMode,
+        onLeave: leaveFeelerMode
+    })
 
     function onPointerMove(event: PointerEvent): void {
         // `offsetX`/`offsetY` are css pixels from the canvas's own padding box, which is
@@ -758,45 +725,28 @@ export function createBandSurface(host: HTMLElement, options: BandSurfaceOptions
 
         // Hover alone does nothing (`CONTEXT.md` #14): with no key held and no readout
         // asking, there is nobody to answer, and a pick nobody reads is pure cost.
-        if (feeling || null !== readout) {
+        if (feeler.active() || null !== readout) {
             schedulePick()
         }
     }
 
     function onPointerLeave(): void {
-        // The highlight is not dropped: the selection accumulates for as long as `Shift`
-        // is held, and leaving the canvas to come back at the other end of a crossing is
-        // part of sweeping rather than the end of it.
+        // The emphasis does not follow the cursor out of the map: the key is still held, so
+        // the mode is still on, and there is simply no track under a cursor that is
+        // somewhere else. Whatever was emphasized recedes with the rest.
         cursor = null
+
+        if (feeler.active()) {
+            focus(null)
+        }
 
         if (null !== readout) {
             readout.textContent = 'track —'
         }
     }
 
-    function onKeyDown(event: KeyboardEvent): void {
-        if ('Shift' === event.key) {
-            enterFeelerMode()
-        }
-    }
-
-    function onKeyUp(event: KeyboardEvent): void {
-        if ('Shift' === event.key) {
-            leaveFeelerMode()
-        }
-    }
-
-    // A `Shift`-held window that loses focus never reports the key going up, so without
-    // this the map would stay receded and unpannable with nothing on screen saying why.
-    function onWindowBlur(): void {
-        leaveFeelerMode()
-    }
-
     canvas.addEventListener('pointermove', onPointerMove)
     canvas.addEventListener('pointerleave', onPointerLeave)
-    view.addEventListener('keydown', onKeyDown)
-    view.addEventListener('keyup', onKeyUp)
-    view.addEventListener('blur', onWindowBlur)
 
     /**
      * Render the whole map into an offscreen target at thumbnail size and read it back.
@@ -840,8 +790,7 @@ export function createBandSurface(host: HTMLElement, options: BandSurfaceOptions
         // The table belonged to the document that just went away, and a sampler left
         // pointing at a disposed texture is how the next document gets drawn in the
         // previous one's colours.
-        context.material.uniforms.uAppearance.value = null
-        context.pickMaterial.uniforms.uAppearance.value = null
+        bindAppearance(context, null)
     }
 
     return {
@@ -862,8 +811,7 @@ export function createBandSurface(host: HTMLElement, options: BandSurfaceOptions
             // `trackAppearance.ts`.
             const appearance = createTrackAppearance(map)
 
-            built.material.uniforms.uAppearance.value = appearance.texture
-            built.pickMaterial.uniforms.uAppearance.value = appearance.texture
+            bindAppearance(built, appearance.texture)
 
             // The parser's own array, uploaded without a copy. Declared `in float` in the
             // shader, so GL widens the two bytes on the way in and nothing here has to
@@ -890,8 +838,8 @@ export function createBandSurface(host: HTMLElement, options: BandSurfaceOptions
 
         clear(): void {
             // Before the drawing goes: the mode owns the controls and the cursor, and
-            // leaving it armed over an empty surface would leave both switched off.
-            leaveFeelerMode()
+            // leaving it held over an empty surface would leave both switched off.
+            feeler.release()
             releaseDrawing()
             mapNavigator.clear()
 
@@ -933,11 +881,8 @@ export function createBandSurface(host: HTMLElement, options: BandSurfaceOptions
 
             canvas.removeEventListener('pointermove', onPointerMove)
             canvas.removeEventListener('pointerleave', onPointerLeave)
-            view.removeEventListener('keydown', onKeyDown)
-            view.removeEventListener('keyup', onKeyUp)
-            view.removeEventListener('blur', onWindowBlur)
+            feeler.destroy()
             readout?.remove()
-            badge.remove()
 
             releaseDrawing()
             mapNavigator.destroy()
@@ -1026,6 +971,31 @@ function renderThumbnail(context: Context, content: Size, size: Size, pixelRatio
     }
 
     return image
+}
+
+/**
+ * The uniforms both materials carry, which are the same uniforms because both run the same
+ * vertex shader — including its appearance lookup. The pick pass writes track ids rather than
+ * colour and reads nothing back out of the table, but the fetch still happens, so the sampler
+ * has to be bound there too.
+ *
+ * `uAppearance` is filled in by `show`: the table is sized from the document's track count,
+ * so there is nothing to bind until one is parsed.
+ */
+function bandUniforms(): Record<string, { value: unknown }> {
+    return {
+        uThickness: { value: THICKNESS },
+        uHalfPixel: { value: 0 },
+        uPad: { value: 0 },
+        uAppearance: { value: null },
+        uAppearanceRow: { value: APPEARANCE_ROW }
+    }
+}
+
+/** Point both materials at one document's appearance table, or at none. */
+function bindAppearance(context: Context, texture: DataTexture | null): void {
+    context.material.uniforms.uAppearance.value = texture
+    context.pickMaterial.uniforms.uAppearance.value = texture
 }
 
 /** Point an orthographic camera at a viewport-sized frustum, in CSS pixels. */

@@ -131,15 +131,22 @@ That note flags its metadata table as inferred-not-confirmed. Both inferences ar
     *no-layout* half of this decision stands: still no re-ordering, filtering or
     recoloring. See ADR [`0001`](./docs/adr/0001-webgl-band-renderer.md).
 
-    **Half-built as of 2026-08-14, and say so.** The gate rejects: a document off the
-    band grammar is refused whole, loudly, and the mount shows a named error state.
-    **The automatic fallback to the SVG surface is not built** — the refusal is
-    currently a dead end, and the only route to the other surface is the harness's
-    `?renderer=svg`. That is deliberate, not overlooked: the verdict fenced off
-    "whether it remains as a fallback" as separate work, and a fallback that swaps
-    surfaces underneath the researcher is a product decision, not a rendering one.
-    Until it is made, ADR `0001`'s promise is a promise, and this is the honest state
-    of it.
+    **The fallback is rejected, 2026-08-14; the gate stands.** A document off the band
+    grammar is refused whole, loudly, and the mount shows a named error state. **It
+    does not fall back to the SVG surface, and it never will** — the sentence above
+    ("falls back to the SVG surface") is retired, not deferred.
+
+    The reasoning, decided by the user: a rejection is a thing to deal with when it
+    occurs, from the document that caused it. Insuring against it with a permanent
+    second implementation costs a surface that must be carried, kept working and paid
+    for by every feature that lands after it — and buys a researcher who cannot tell
+    which renderer drew what they are looking at. An error that surfaces is also the
+    only arm that produces a bug report; a silent swap hides the grammar drifting.
+
+    The gate keeps its whole point: the API returns 200-with-plausible-nonsense for an
+    unknown node, so refusing loudly is what stands between that and a map that looks
+    correct and is of different data. See ADR
+    [`0001`](./docs/adr/0001-webgl-band-renderer.md).
 2. **`open(url: string)` is the entire input surface.** PGB constructs the URL from
    the clicked minigraph node's ID and GRCh38 coordinates; the viewer never builds
    one, never checks eligibility, and never knows whether it is local or remote. A

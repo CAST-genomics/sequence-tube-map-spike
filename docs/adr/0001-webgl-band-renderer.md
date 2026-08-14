@@ -112,11 +112,24 @@ Two further consequences, both measured:
     is what forces an inversion of `x(t)` — were never necessary.
 - **A validation gate, and the SVG surface kept as its fallback.** Anything in
   `g.track` that does not match the grammar rejects the **whole** document, loudly,
-  and falls back. Partial rendering is not offered: this API already returns
+  and ~~falls back~~. Partial rendering is not offered: this API already returns
   200-with-plausible-nonsense for an unknown `minigraphnode`, and a half-drawn map is
   a silently wrong map. The 75 stroked, translucent segment boxes in `g.node` are a
   whitelisted exception — ~~they stay as DOM SVG in an overlay, which also keeps
   segment hit-testing free~~.
+
+    **The fallback half is rejected, 2026-08-14 — the gate half stands.** The gate is
+    built and rejects loudly; **nothing falls back, and nothing will.** A fallback
+    means a second surface silently swapped in underneath the researcher, so what they
+    are looking at depends on a validation result they never saw — and it means every
+    later feature is owed twice, to a surface that exists only for a case nobody has
+    met. A refusal is an error to be dealt with when it occurs, on the evidence of the
+    document that caused it. That is cheaper than a permanent second implementation
+    insuring against it, and it is the only arm that produces a bug report.
+
+    This retires the last stated reason for the SVG surface's existence. It survives
+    for now as a comparison arm and as the only surface with per-element hit-testing —
+    both temporary, neither a fallback.
 
     **Reversed 2026-08-14.** The segment boxes become three.js geometry, picked with a
     raycaster; **there is no DOM overlay.** "Free hit-testing" is the same reasoning

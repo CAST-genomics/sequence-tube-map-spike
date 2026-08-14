@@ -1,0 +1,1036 @@
+<!--
+  Standalone copy of the published artifact:
+  https://claude.ai/code/artifact/5dc227e9-5033-4676-97ff-7be47af87a39
+
+  The <html>/<head>/<body> wrapper below exists so this file opens directly in a
+  browser. The artifact runtime injects its own, so strip the wrapper before
+  republishing or the page ends up nested inside a second document.
+-->
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Six Floats Per Band</title>
+<style>
+  :root {
+    --ground:   #F2F3F1;
+    --surface:  #FBFBFA;
+    --ink:      #16181A;
+    --muted:    #666C68;
+    --faint:    #8A918C;
+    --rule:     #D6DAD6;
+    --rule-soft:#E4E7E3;
+    --signal:   #B8420E;
+    --band:     #0B8E6E;
+    --band-soft:#0B8E6E22;
+    --warn:     #9A6B00;
+
+    --sans: "Helvetica Neue", Helvetica, Arial, ui-sans-serif, sans-serif;
+    --serif: "Iowan Old Style", "Palatino Linotype", Palatino, "Book Antiqua", Georgia, serif;
+    --mono: ui-monospace, "SF Mono", SFMono-Regular, Menlo, Consolas, monospace;
+
+    --measure: 66ch;
+    --rail: 12rem;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --ground:   #101211;
+      --surface:  #171A19;
+      --ink:      #E7EAE7;
+      --muted:    #9AA19C;
+      --faint:    #767D78;
+      --rule:     #2A2F2C;
+      --rule-soft:#212523;
+      --signal:   #F2793F;
+      --band:     #2FD3A6;
+      --band-soft:#2FD3A628;
+      --warn:     #D8A63A;
+    }
+  }
+  :root[data-theme="dark"] {
+    --ground:   #101211;
+    --surface:  #171A19;
+    --ink:      #E7EAE7;
+    --muted:    #9AA19C;
+    --faint:    #767D78;
+    --rule:     #2A2F2C;
+    --rule-soft:#212523;
+    --signal:   #F2793F;
+    --band:     #2FD3A6;
+    --band-soft:#2FD3A628;
+    --warn:     #D8A63A;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    background: var(--ground);
+    color: var(--ink);
+    font-family: var(--serif);
+    font-size: 17px;
+    line-height: 1.62;
+    margin: 0;
+    padding: 0 1.5rem 6rem;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .wrap {
+    max-width: calc(var(--measure) + var(--rail) + 3rem);
+    margin: 0 auto;
+  }
+
+  /* ---- masthead ---- */
+
+  header.masthead {
+    padding: 4.5rem 0 2rem;
+    border-bottom: 1px solid var(--ink);
+    margin-bottom: 2.5rem;
+  }
+  .eyebrow {
+    font-family: var(--sans);
+    font-size: 0.7rem;
+    font-weight: 700;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--signal);
+    margin: 0 0 1.2rem;
+  }
+  h1 {
+    font-family: var(--sans);
+    font-size: clamp(2rem, 5.5vw, 3.1rem);
+    font-weight: 700;
+    letter-spacing: -0.028em;
+    line-height: 1.04;
+    text-wrap: balance;
+    margin: 0 0 1rem;
+    max-width: 20ch;
+  }
+  .standfirst {
+    font-size: 1.12rem;
+    color: var(--muted);
+    max-width: 58ch;
+    margin: 0 0 2.4rem;
+    text-wrap: pretty;
+  }
+
+  .figures {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(8.5rem, 1fr));
+    gap: 1.5rem 2rem;
+    border-top: 1px solid var(--rule);
+    padding-top: 1.4rem;
+  }
+  .figures div { display: flex; flex-direction: column; gap: 0.25rem; }
+  .figures dt, .fig-k {
+    font-family: var(--sans);
+    font-size: 0.66rem;
+    font-weight: 600;
+    letter-spacing: 0.11em;
+    text-transform: uppercase;
+    color: var(--faint);
+  }
+  .fig-v {
+    font-family: var(--mono);
+    font-size: 1.45rem;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: -0.02em;
+  }
+  .fig-note { font-family: var(--sans); font-size: 0.76rem; color: var(--muted); }
+
+  /* ---- body grid with margin rail ---- */
+
+  .band-row { display: grid; grid-template-columns: 1fr; gap: 0 2.5rem; }
+  @media (min-width: 62rem) {
+    .band-row { grid-template-columns: var(--rail) minmax(0, var(--measure)); }
+    .band-row > .body { grid-column: 2; }
+    .band-row > .note { grid-column: 1; grid-row: auto; }
+  }
+  .body { max-width: var(--measure); }
+
+  .note {
+    font-family: var(--sans);
+    font-size: 0.78rem;
+    line-height: 1.5;
+    color: var(--muted);
+    border-top: 1px solid var(--rule);
+    padding-top: 0.5rem;
+    margin: 1.5rem 0;
+  }
+  .note b { color: var(--ink); font-weight: 600; }
+
+  /* ---- sections ---- */
+
+  section { margin: 3.4rem 0 0; }
+  h2 {
+    font-family: var(--sans);
+    font-size: 1.32rem;
+    font-weight: 700;
+    letter-spacing: -0.015em;
+    margin: 0 0 1rem;
+    text-wrap: balance;
+    display: flex;
+    align-items: baseline;
+    gap: 0.75rem;
+  }
+  h2 .num {
+    font-family: var(--mono);
+    font-size: 0.78rem;
+    font-weight: 400;
+    color: var(--signal);
+    letter-spacing: 0;
+    flex: none;
+  }
+  h3 {
+    font-family: var(--sans);
+    font-size: 0.95rem;
+    font-weight: 700;
+    letter-spacing: 0.005em;
+    margin: 2rem 0 0.6rem;
+  }
+  p { margin: 0 0 1rem; text-wrap: pretty; }
+  strong { font-weight: 600; }
+  em { font-style: italic; }
+  a { color: var(--signal); }
+
+  code {
+    font-family: var(--mono);
+    font-size: 0.87em;
+    background: var(--rule-soft);
+    padding: 0.08em 0.32em;
+    border-radius: 2px;
+  }
+
+  pre {
+    font-family: var(--mono);
+    font-size: 0.79rem;
+    line-height: 1.62;
+    background: var(--surface);
+    border: 1px solid var(--rule);
+    border-left: 2px solid var(--signal);
+    padding: 1rem 1.1rem;
+    overflow-x: auto;
+    margin: 1.4rem 0;
+    tab-size: 2;
+  }
+  pre code { background: none; padding: 0; font-size: inherit; }
+  pre .c { color: var(--faint); }
+
+  /* ---- figures ---- */
+
+  figure {
+    margin: 2.2rem 0;
+    max-width: calc(var(--measure) + 6rem);
+  }
+  figure svg { display: block; width: 100%; height: auto; color: var(--ink); }
+  .svg-scroll { overflow-x: auto; }
+  figcaption {
+    font-family: var(--sans);
+    font-size: 0.79rem;
+    line-height: 1.5;
+    color: var(--muted);
+    border-top: 1px solid var(--rule);
+    padding-top: 0.5rem;
+    margin-top: 0.7rem;
+  }
+  figcaption b { color: var(--ink); font-weight: 600; }
+
+  /* ---- table ---- */
+
+  .tw { overflow-x: auto; margin: 1.6rem 0; }
+  table {
+    border-collapse: collapse;
+    width: 100%;
+    font-family: var(--sans);
+    font-size: 0.83rem;
+  }
+  caption {
+    font-family: var(--sans);
+    font-size: 0.66rem;
+    font-weight: 600;
+    letter-spacing: 0.11em;
+    text-transform: uppercase;
+    color: var(--faint);
+    text-align: left;
+    padding-bottom: 0.6rem;
+  }
+  th, td {
+    text-align: left;
+    padding: 0.5rem 0.9rem 0.5rem 0;
+    border-bottom: 1px solid var(--rule-soft);
+    vertical-align: top;
+  }
+  thead th {
+    font-size: 0.66rem;
+    font-weight: 600;
+    letter-spacing: 0.09em;
+    text-transform: uppercase;
+    color: var(--faint);
+    border-bottom: 1px solid var(--rule);
+    white-space: nowrap;
+  }
+  td.n, th.n { text-align: right; font-family: var(--mono); font-variant-numeric: tabular-nums; white-space: nowrap; }
+  tr.pick td { color: var(--ink); }
+  tr.pick td:first-child { box-shadow: inset 2px 0 0 var(--signal); padding-left: 0.7rem; font-weight: 600; }
+
+  /* ---- callout ---- */
+
+  .crux {
+    border-top: 2px solid var(--signal);
+    border-bottom: 1px solid var(--rule);
+    padding: 1.1rem 0 1.2rem;
+    margin: 2.2rem 0;
+  }
+  .crux .fig-k { color: var(--signal); margin-bottom: 0.5rem; display: block; }
+  .crux p { margin: 0; font-size: 1.02rem; }
+
+  ul { margin: 0 0 1rem; padding-left: 1.1rem; }
+  li { margin-bottom: 0.4rem; }
+  li::marker { color: var(--faint); }
+
+  footer {
+    margin-top: 4rem;
+    border-top: 1px solid var(--rule);
+    padding-top: 1rem;
+    font-family: var(--sans);
+    font-size: 0.76rem;
+    color: var(--faint);
+  }
+
+  /* diagram tokens — var() does not resolve in SVG presentation attributes */
+  svg .bandsoft-f { fill: var(--band-soft); }
+  svg .band-f { fill: var(--band); }
+  svg .band-s { stroke: var(--band); }
+  svg .sig-f { fill: var(--signal); }
+  svg .sig-s { stroke: var(--signal); }
+  svg .rule-s { stroke: var(--rule); }
+  svg .faint-f { fill: var(--faint); }
+  svg .faint-s { stroke: var(--faint); }
+  svg .muted-f { fill: var(--muted); }
+  svg .warn-f { fill: var(--warn); }
+  svg .warn-s { stroke: var(--warn); }
+  svg .mono { font-family: var(--mono); }
+  svg .sans { font-family: var(--sans); }
+</style>
+</head>
+<body>
+
+<div class="wrap">
+
+<header class="masthead">
+  <p class="eyebrow">Sequence tube map · renderer spike</p>
+  <h1>Six Floats Per Band</h1>
+  <p class="standfirst">
+    A GPU has no curve primitive. The map is nothing but curves — 464 haplotypes drawn
+    as forty thousand separate pieces, stacked into a strip a hundred and fifty thousand
+    units wide. What follows is how they get drawn: one draw call, six floats per piece,
+    and no tessellator.
+  </p>
+  <p class="standfirst">
+    <b>Written 13 August 2026 as a design, and revised 14 August after building it.</b>
+    The geometry held exactly. Several conclusions about antialiasing and about what
+    would survive from the old viewer did not, and each is corrected in place below
+    rather than quietly edited away.
+  </p>
+  <dl class="figures">
+    <div><dt>Haplotypes</dt><dd class="fig-v">464</dd></div>
+    <div><dt>Pieces drawn</dt><dd class="fig-v">40,442</dd></div>
+    <div><dt>Floats per piece</dt><dd class="fig-v">6</dd></div>
+    <div><dt>Draw calls</dt><dd class="fig-v">1</dd></div>
+    <div><dt>Piece height at fit scale</dt><dd class="fig-v">0.19<span class="fig-note"> px</span></dd></div>
+    <div><dt>Frame time, fit to 200× zoom</dt><dd class="fig-v">8.3<span class="fig-note"> ms</span></dd></div>
+  </dl>
+</header>
+
+<div class="band-row">
+<div class="body">
+
+<section>
+<h2><span class="num">01</span> The shape of the problem</h2>
+
+<p>
+The server sends an SVG. Inside it, every haplotype that crosses this stretch of the
+genome is drawn as a coloured ribbon running left to right, stepping up and down as it
+threads between sequence segments.
+</p>
+
+<p>
+That ribbon is not one shape. It arrives already cut into pieces — a median of 28 of
+them per haplotype in the reference document, around 87 in the largest node measured —
+alternating strictly between a rectangle where the ribbon crosses a sequence segment
+and a curve where it travels between two. Each piece is a <strong>band</strong>: a
+closed shape bounded above and below by cubic curves, filled flat, no stroke. So the
+forty thousand figure counts <em>shapes</em>, not strands, and the fragmentation turns
+out to be the reason any of the rest works.
+</p>
+
+<p>
+Drawing this through the DOM stopped working twice in two days — once at style
+invalidation, once at raster. So the pixels have to come from somewhere else. The
+obvious cost is that WebGL draws triangles, and a triangle is not a curve. The usual
+answer is to flatten each curve into short line segments and triangulate, which means
+choosing a tolerance, rebuilding geometry when the zoom changes, and living with
+faceting when you guess low.
+</p>
+
+<p>
+None of that turned out to be necessary, because of what the data actually is.
+</p>
+</section>
+
+<section>
+<h2><span class="num">02</span> Six floats</h2>
+
+<p>
+Every band path matches a single grammar. Not most — <strong>127,101 out of
+127,101</strong>, across every document the API would return: seventeen nodes, spans
+from 1 to 7,967 base pairs, 369 to 464 haplotypes each.
+</p>
+
+<pre><code>M x0 y0  C cx y0  cx y1  x1 y1
+V y1+15  C dx y1+15  dx y0+15  x0 y0+15  Z</code></pre>
+
+<p>Two properties fall out of that, and they are what the whole renderer rests on.</p>
+
+<h3>The vertical profile is <code>smoothstep</code></h3>
+
+<p>
+Look at the control points of the top curve: <code>(cx, y0)</code> and
+<code>(cx, y1)</code>. Both y-values are just copies of the endpoints. Expand the cubic
+in y and the control points cancel:
+</p>
+
+<pre><code>y(t) = y0(1-t)³ + 3y0(1-t)²t + 3y1(1-t)t² + y1t³
+     = y0 + (y1 - y0)·(3t² - 2t³)</code></pre>
+
+<p>
+<code>3t² − 2t³</code> is exactly what <code>smoothstep</code> computes. So the vertical
+motion of a band is one built-in call. There is no bezier evaluation in y at all.
+</p>
+
+<h3>The horizontal sweep never doubles back</h3>
+
+<p>
+The shared control x always lands between 30% and 70% of the way across the band's
+span — measured, never outside it. That makes <code>x'(t)</code> strictly positive, so
+<code>x(t)</code> is monotone and each edge is a genuine function of x. That is what
+makes per-pixel evaluation possible: a pixel's x maps to exactly one point on the curve.
+</p>
+
+<p>
+And band thickness is <strong>15 units for every band in the map</strong>. The 4,603
+<code>&lt;rect&gt;</code> elements are the same primitive with <code>y0 == y1</code>.
+</p>
+
+<h3>Why the pieces are a gift, not a nuisance</h3>
+
+<p>
+The uniformity and the fragmentation are the same fact. A haplotype's real path swoops,
+flattens, swoops again — an arbitrary curve that would need a genuine tessellator. But
+the server has already cut it at every segment boundary, and each cut leaves a piece
+that is exactly one smoothstep transition. <strong>The hard decomposition was done
+upstream.</strong> That is why there are no arbitrary beziers left to flatten.
+</p>
+
+<p>
+Cutting a shape into pieces normally introduces a new problem: where two pieces meet,
+each contributes partial coverage to the boundary pixel and blends against the
+background rather than against its neighbour, leaving a visible hairline at every
+junction. At 28 to 87 pieces per haplotype that would be a great many hairlines.
+</p>
+
+<p>
+It doesn't happen, and the reason is in the data. Across 9,883 junctions in the
+reference document, <strong>every single one overlaps its neighbour by exactly 1.0
+unit</strong>, with identical y on both sides. The generator laps the pieces rather
+than butting them. And because lapped pieces belong to the same haplotype and carry the
+same colour, blending one over the other changes nothing. The seam problem was solved
+before it reached us.
+</p>
+
+<figure>
+<div class="svg-scroll">
+<svg viewBox="0 0 720 210" role="img" aria-label="Consecutive pieces of one haplotype overlap by one unit rather than butting together, so no seam appears where they meet.">
+  <g class="sans" font-size="11.5">
+
+    <text x="14" y="20" font-weight="700" class="warn-f">Butted — a seam at every junction</text>
+    <path d="M 20 46 C 96 46 96 74 172 74 V 90 C 96 90 96 62 20 62 Z"
+          class="bandsoft-f band-s" stroke-width="1.2"/>
+    <path d="M 172 74 L 300 74 V 90 L 172 90 Z"
+          class="bandsoft-f band-s" stroke-width="1.2"/>
+    <path d="M 300 74 C 376 74 376 46 452 46 V 62 C 376 62 376 90 300 90 Z"
+          class="bandsoft-f band-s" stroke-width="1.2"/>
+    <line x1="172" y1="38" x2="172" y2="100" class="warn-s" stroke-width="1.4"/>
+    <line x1="300" y1="38" x2="300" y2="100" class="warn-s" stroke-width="1.4"/>
+    <text x="152" y="116" class="warn-f" font-size="10.5">seam</text>
+    <text x="280" y="116" class="warn-f" font-size="10.5">seam</text>
+
+    <text x="500" y="20" font-weight="700" class="sig-f">Lapped — what the data does</text>
+    <path d="M 506 46 C 570 46 570 74 636 74 V 90 C 570 90 570 62 506 62 Z"
+          class="bandsoft-f band-s" stroke-width="1.2"/>
+    <path d="M 630 74 L 706 74 V 90 L 630 90 Z"
+          class="bandsoft-f band-s" stroke-width="1.2"/>
+    <rect x="630" y="74" width="6" height="16" class="sig-f" opacity="0.5"/>
+    <line x1="630" y1="60" x2="630" y2="100" class="sig-s" stroke-width="1"/>
+    <line x1="636" y1="60" x2="636" y2="100" class="sig-s" stroke-width="1"/>
+    <text x="596" y="116" class="sig-f" font-size="10.5">1.0 unit lap</text>
+
+    <line x1="14" y1="146" x2="706" y2="146" class="rule-s" stroke-width="1"/>
+    <text x="14" y="166" class="mono" font-size="11" fill="currentColor">9,883 junctions examined</text>
+    <text x="14" y="184" class="mono band-f" font-size="11">9,883 lapped by exactly 1.0 · 0 butted · 0 gapped</text>
+  </g>
+</svg>
+</div>
+<figcaption>
+  <b>The generator laps consecutive pieces by one unit.</b> Two shapes that merely touch
+  would each blend half-covered pixels against the background, leaving a hairline. An
+  overlap removes the boundary entirely — and since both pieces carry the same
+  haplotype's colour, drawing one over the other is invisible.
+</figcaption>
+</figure>
+
+<p>
+One consequence worth recording: the piece count is irreducible. Merging consecutive
+collinear pieces to shrink the instance buffer saves <strong>nothing</strong> —
+rectangles and curves strictly alternate, so no haplotype ever has two flat pieces in a
+row at the same height.
+</p>
+
+<figure>
+<div class="svg-scroll">
+<svg viewBox="0 0 720 280" role="img" aria-label="Anatomy of a band: two cubic curves sharing a vertical control axis, separated by a constant thickness of 15 units, defined by six numbers.">
+  <defs>
+    <marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="currentColor"/>
+    </marker>
+  </defs>
+
+  <!-- the band itself, literally the grammar -->
+  <path class="bandsoft-f band-s" d="M 150 70 C 355 70 355 165 560 165 V 201 C 350 201 350 106 150 106 Z"
+        stroke-width="1.6"/>
+
+  <!-- shared control axis -->
+  <line class="sig-s" x1="355" y1="46" x2="355" y2="232" stroke-width="1"
+        stroke-dasharray="3 4"/>
+  <circle class="sig-f" cx="355" cy="70" r="3.2"/>
+  <circle class="sig-f" cx="355" cy="165" r="3.2"/>
+  <text class="sig-f mono" x="361" y="42" font-size="12">cx</text>
+  <text class="sig-f mono" x="361" y="245" font-size="12">dx</text>
+
+  <!-- endpoints -->
+  <circle class="band-f" cx="150" cy="70" r="3.2"/>
+  <circle class="band-f" cx="560" cy="165" r="3.2"/>
+  <text class="mono" x="112" y="66" font-size="12" fill="currentColor">x0,y0</text>
+  <text class="mono" x="568" y="162" font-size="12" fill="currentColor">x1,y1</text>
+
+  <!-- thickness bracket -->
+  <line x1="596" y1="165" x2="596" y2="201" stroke="currentColor" stroke-width="1"
+        marker-start="url(#ar)" marker-end="url(#ar)"/>
+  <text class="mono" x="604" y="180" font-size="12" fill="currentColor">15</text>
+  <text class="faint-f sans" x="604" y="195" font-size="10.5">always</text>
+
+  <!-- t annotation -->
+  <text class="faint-f mono" x="150" y="245" font-size="11.5">t = 0</text>
+  <text class="faint-f mono" x="533" y="245" font-size="11.5">t = 1</text>
+  <line class="faint-s" x1="150" y1="228" x2="560" y2="228" stroke-width="0.8"/>
+
+  <text class="faint-f sans" x="150" y="30" font-size="11.5" font-weight="600">
+    y(t) = y0 + (y1 − y0) · smoothstep(t)
+  </text>
+</svg>
+</div>
+<figcaption>
+  <b>A band is six numbers.</b> Both control points of each cubic sit on the same
+  vertical axis (orange), which is why the y profile collapses to <code>smoothstep</code>
+  and the x sweep stays monotone. The two edges use slightly different control x —
+  <code>cx</code> and <code>dx</code> — so the band is not simply a copy of itself offset
+  downward; only the endpoints are exactly 15 apart. Thickness is exaggerated here for
+  legibility: at fit scale a band is thinner than a pixel.
+</figcaption>
+</figure>
+</section>
+
+<section>
+<h2><span class="num">03</span> Three ways to draw it</h2>
+
+<p>
+With the geometry reduced to six numbers, there are three plausible techniques. They
+differ in where the curve gets evaluated — on the CPU, in the vertex shader, or in the
+fragment shader — and that choice sets both the cost and the antialiasing quality.
+</p>
+
+<figure>
+<div class="svg-scroll">
+<svg viewBox="0 0 760 300" role="img" aria-label="Three techniques compared on the same band: a ladder mesh with MSAA edges, a bounding-box quad discarding most fragments, and a fitted strip with analytic coverage.">
+  <g class="sans" font-size="11.5">
+
+    <!-- ============ A ============ -->
+    <text x="14" y="18" font-weight="700" fill="currentColor">A · Ladder mesh</text>
+    <text class="faint-f" x="14" y="34">curve in the vertex shader</text>
+    <path class="bandsoft-f band-s" d="M 24 76 C 118 76 118 132 212 132 V 152 C 118 152 118 96 24 96 Z"
+          stroke-width="1.2"/>
+    <g class="band-s" stroke-width="0.7" opacity="0.85">
+      <line x1="24"  y1="76"  x2="24"  y2="96"/>
+      <line x1="55"  y1="79"  x2="55"  y2="99"/>
+      <line x1="86"  y1="90"  x2="86"  y2="110"/>
+      <line x1="118" y1="104" x2="118" y2="124"/>
+      <line x1="150" y1="118" x2="150" y2="138"/>
+      <line x1="181" y1="129" x2="181" y2="149"/>
+      <line x1="212" y1="132" x2="212" y2="152"/>
+    </g>
+    <text class="muted-f" x="24" y="182">Rungs placed on the curve,</text>
+    <text class="muted-f" x="24" y="197">edges antialiased by MSAA.</text>
+    <text class="faint-f mono" x="24" y="228" font-size="11">overdraw   0.87×</text>
+    <text class="warn-f mono" x="24" y="245" font-size="11">coverage   quantised</text>
+
+    <!-- ============ B ============ -->
+    <text x="268" y="18" font-weight="700" fill="currentColor">B · Bounding quad</text>
+    <text class="faint-f" x="268" y="34">curve in the fragment shader</text>
+    <rect class="warn-s" x="276" y="70" width="190" height="88" fill="none"
+          stroke-width="1.1" stroke-dasharray="4 3"/>
+    <g class="warn-s" stroke-width="0.5" opacity="0.4">
+      <line x1="276" y1="80" x2="466" y2="80"/><line x1="276" y1="92" x2="466" y2="92"/>
+      <line x1="276" y1="104" x2="466" y2="104"/><line x1="276" y1="116" x2="466" y2="116"/>
+      <line x1="276" y1="128" x2="466" y2="128"/><line x1="276" y1="140" x2="466" y2="140"/>
+      <line x1="276" y1="152" x2="466" y2="152"/>
+    </g>
+    <path class="bandsoft-f band-s" d="M 276 76 C 370 76 370 132 464 132 V 152 C 370 152 370 96 276 96 Z"
+          stroke-width="1.2"/>
+    <text class="muted-f" x="276" y="182">Exact at any zoom, but most</text>
+    <text class="muted-f" x="276" y="197">fragments are thrown away.</text>
+    <text class="warn-f mono" x="276" y="228" font-size="11">overdraw   8.07×</text>
+    <text class="faint-f mono" x="276" y="245" font-size="11">coverage   analytic</text>
+
+    <!-- ============ C ============ -->
+    <text class="sig-f" x="522" y="18" font-weight="700">C · Fitted strip</text>
+    <text class="faint-f" x="522" y="34">both — chosen</text>
+    <path class="sig-s" d="M 530 70 C 624 70 624 126 718 126 V 158 C 624 158 624 102 530 102 Z"
+          fill="none" stroke-width="1.1" stroke-dasharray="4 3"/>
+    <path class="bandsoft-f band-s" d="M 530 76 C 624 76 624 132 718 132 V 152 C 624 152 624 96 530 96 Z"
+          stroke-width="1.2"/>
+    <g class="band-s" stroke-width="0.7" opacity="0.85">
+      <line x1="530" y1="76" x2="530" y2="96"/>
+      <line x1="561" y1="79" x2="561" y2="99"/>
+      <line x1="592" y1="90" x2="592" y2="110"/>
+      <line x1="624" y1="104" x2="624" y2="124"/>
+      <line x1="656" y1="118" x2="656" y2="138"/>
+      <line x1="687" y1="129" x2="687" y2="149"/>
+      <line x1="718" y1="132" x2="718" y2="152"/>
+    </g>
+    <text class="muted-f" x="530" y="182">A's geometry, inflated one</text>
+    <text class="muted-f" x="530" y="197">pixel, with B's coverage math.</text>
+    <text class="faint-f mono" x="530" y="228" font-size="11">overdraw   0.87×</text>
+    <text class="faint-f mono" x="530" y="245" font-size="11">coverage   analytic</text>
+  </g>
+  <line class="rule-s" x1="14" y1="268" x2="746" y2="268" stroke-width="1"/>
+  <text class="faint-f sans" x="14" y="286" font-size="11">
+    Overdraw measured across the reference document: total covered area ÷ map area.
+  </text>
+</svg>
+</div>
+<figcaption>
+  <b>The bounding quad is defeated by the tall bands.</b> A haplotype that jumps most of
+  the height of the map does so over a narrow horizontal span, so its bounding box is
+  enormous and the band inside it is a sliver: <b>89% of B's fragments are discarded</b>,
+  and it costs 9.3× the fill of the fitted strip. The fitted strip keeps the
+  fragment-shader coverage while paying only the ladder's cost.
+  <br><br>
+  <b>Never priced, though.</b> 8.07× overdraw on a viewport-sized canvas is about 20
+  megapixels of fill per frame, which is unremarkable on the hardware this runs on. The
+  overdraw is real; the rejection rests on it mattering, and that was never tested. B
+  remains the answer if the built techniques ever facet at high zoom.
+</figcaption>
+</figure>
+
+<div class="crux">
+  <span class="fig-k">Why not simply A</span>
+  <p>
+    At fit scale a band is well under a pixel tall — 0.19 CSS px on the largest
+    document — and hundreds of them are stacked. Four-sample MSAA can only report
+    coverage as 0, ¼, ½, ¾ or 1, where analytic coverage returns the exact fraction.
+    That is what SVG's rasteriser does, and it is the reason the SVG looked right.
+  </p>
+</div>
+
+<aside class="note">
+  <b>Measured, 14 August 2026.</b> Both techniques were built and compared live on one
+  frame. The original text here predicted that MSAA would <i>dissolve</i> the banding
+  into noise. It does not dissolve — it <b>discards</b>. Each of four samples is won
+  outright by a single band, so no background survives and the result looks
+  <i>more</i> saturated than analytic coverage; but at most four of the bands covering a
+  pixel can be represented and the rest are lost. At fit on the largest document, 464
+  tracks land on 177 device rows, and a column carries 101 distinct values under MSAA
+  against 119 under analytic coverage. The conclusion stands; the mechanism was wrong.
+</aside>
+
+<aside class="note">
+  <b>And the choice barely matters.</b> At 40× zoom, where a band is 7.7 CSS px, the two
+  techniques differ by 6.18% of pixels at a mean channel delta of 2.32 out of 255 —
+  entirely on band edges. The whole question lives below one pixel per band, which is
+  the regime where hundreds of tracks share every pixel row and nothing is legible under
+  any technique. Analytic coverage is kept because it preserves about ten times more
+  distinct colour at no cost, not because the difference is visible where anyone works.
+</aside>
+</section>
+
+<section>
+<h2><span class="num">04</span> The geometry: one mesh, replicated</h2>
+
+<p>
+There is exactly one mesh in the scene: a <em>ladder</em>. It carries no positions —
+only, for each vertex, a parameter <code>t</code> along the band and a
+<code>side</code> flag saying whether it belongs to the upper or lower edge.
+</p>
+
+<p>
+That ladder is instanced once per band, with the six floats attached as per-instance
+attributes. The vertex shader places each rung where it belongs:
+</p>
+
+<pre><code><span class="c">// per-instance: x0, y0, x1, y1, cxTop, cxBot
+// per-vertex:   t, side</span>
+
+float cx = mix(cxTop, cxBot, side);
+float x  = cubicX(x0, cx, cx, x1, t);
+float y  = mix(y0, y1, smoothstep(0.0, 1.0, t)) + side * 15.0;
+
+<span class="c">// inflate one device pixel so the coverage
+// calculation has somewhere to land</span>
+y += (side * 2.0 - 1.0) * pixelSize;</code></pre>
+
+<p>
+Nothing here touches the CPU. Zooming changes the camera and nothing else — no
+retessellation, no buffer rebuild, no tolerance to pick. A shared 64-rung ladder over
+40,442 bands is about 5 million vertices in one draw call, which is unremarkable work
+for a GPU.
+</p>
+
+<p>
+<b>Rung count, measured 14 August 2026.</b> Sixty-four leaves a worst-case chord error
+of 0.41 px in x and 0.06 px in y at maximum zoom on the widest piece in the largest
+document. A sweep of 16, 32, 64 and 128 rungs showed flat frame time throughout, so the
+count is free in this range, and no evidence emerged that 64 is insufficient. The pixel
+comparison across that sweep was inconclusive rather than favourable: all three counts
+differed from 128 by the same fraction, which is camera reproducibility across page
+loads rather than tessellation.
+</p>
+</section>
+
+<section>
+<h2><span class="num">05</span> The pixels: coverage, not colour</h2>
+
+<p>
+<b>Corrected 14 August 2026.</b> Placing rungs at even <i>x</i> is what forces an
+inversion of <code>x(t)</code>, because the two edges have different control abscissae
+and so do not share an x at equal <code>t</code>. Placing them at even <i>t</i> removes
+the question entirely: both edges reach <code>x0</code> at <code>t=0</code> and
+<code>x1</code> at <code>t=1</code> whatever their control abscissae, so sampling both
+at the same parameter inscribes a correct polygon with vertical ends. The built renderer
+does that, and has no root-finding in its vertex shader at all. A Newton step survives
+only in the fragment shader, where the coverage calculation genuinely needs the
+parameter at the fragment's own x.
+</p>
+
+<p>
+Each fragment receives an interpolated <code>t</code> from the rungs on either side.
+That is close but not exact — the interpolation is linear and the curve is not — so one
+Newton step against the fragment's true x refines it. Then the shader evaluates both
+edges at that point and asks a simple question: <em>how much of this pixel is inside
+the band?</em>
+</p>
+
+<pre><code>float yTop = mix(y0, y1, smoothstep(0.0, 1.0, tTop));
+float yBot = mix(y0, y1, smoothstep(0.0, 1.0, tBot)) + 15.0;
+
+<span class="c">// overlap between the pixel's vertical extent
+// and the band, in device pixels</span>
+float half     = 0.5 * fwidth(vY);
+float coverage = clamp(min(yBot, vY + half) - max(yTop, vY - half), 0.0, 1.0);</code></pre>
+
+<p>
+A band covering a fifth of the pixel contributes exactly a fifth. That single line is
+what preserves the map's appearance at fit scale, and it is why this technique was
+chosen over the simpler one.
+</p>
+
+<figure>
+<div class="svg-scroll">
+<svg viewBox="0 0 720 250" role="img" aria-label="A sub-pixel band crossing a row of pixels: multisampling quantises its coverage to five levels, while analytic coverage reproduces the exact fraction.">
+  <g class="sans" font-size="11.5">
+    <text x="14" y="18" font-weight="700" fill="currentColor">4× multisampling</text>
+    <text class="sig-f" x="382" y="18" font-weight="700">Analytic coverage</text>
+
+    <!-- LEFT: MSAA -->
+    <g>
+      <rect class="rule-s" x="14" y="34" width="320" height="64" fill="none"/>
+      <g class="rule-s" stroke-width="1">
+        <line x1="78" y1="34" x2="78" y2="98"/><line x1="142" y1="34" x2="142" y2="98"/>
+        <line x1="206" y1="34" x2="206" y2="98"/><line x1="270" y1="34" x2="270" y2="98"/>
+      </g>
+      <!-- sample points -->
+      <g class="faint-f">
+        <circle cx="30" cy="50" r="1.8"/><circle cx="62" cy="66" r="1.8"/>
+        <circle cx="30" cy="82" r="1.8"/><circle cx="62" cy="50" r="1.8"/>
+        <circle cx="94" cy="50" r="1.8"/><circle cx="126" cy="66" r="1.8"/>
+        <circle cx="94" cy="82" r="1.8"/><circle cx="126" cy="50" r="1.8"/>
+        <circle cx="158" cy="50" r="1.8"/><circle cx="190" cy="66" r="1.8"/>
+        <circle cx="158" cy="82" r="1.8"/><circle cx="190" cy="50" r="1.8"/>
+        <circle cx="222" cy="50" r="1.8"/><circle cx="254" cy="66" r="1.8"/>
+        <circle cx="222" cy="82" r="1.8"/><circle cx="254" cy="50" r="1.8"/>
+        <circle cx="286" cy="50" r="1.8"/><circle cx="318" cy="66" r="1.8"/>
+        <circle cx="286" cy="82" r="1.8"/><circle cx="318" cy="50" r="1.8"/>
+      </g>
+      <!-- the thin band -->
+      <path class="band-f" d="M 14 62 C 110 62 110 74 206 74 C 302 74 302 68 334 68 L 334 72 C 302 72 302 78 206 78 C 110 78 110 66 14 66 Z"
+            opacity="0.95"/>
+      <!-- resulting pixels -->
+      <text class="faint-f" x="14" y="120" font-size="10.5">RESULT</text>
+      <g>
+        <rect class="band-f" x="14" y="126" width="64" height="26" opacity="0.5"/>
+        <rect class="band-f" x="78" y="126" width="64" height="26" opacity="0.25"/>
+        <rect class="band-f" x="142" y="126" width="64" height="26" opacity="0.5"/>
+        <rect class="band-f" x="206" y="126" width="64" height="26" opacity="0"/>
+        <rect class="band-f" x="270" y="126" width="64" height="26" opacity="0.25"/>
+        <rect class="rule-s" x="14" y="126" width="320" height="26" fill="none"/>
+      </g>
+      <text class="warn-f mono" x="14" y="172" font-size="10.5">.50  .25  .50  .00  .25</text>
+      <text class="muted-f" x="14" y="196" font-size="11">Five possible values. The ribbon</text>
+      <text class="muted-f" x="14" y="211" font-size="11">breaks up and crawls as it moves.</text>
+    </g>
+
+    <!-- RIGHT: analytic -->
+    <g>
+      <rect class="rule-s" x="382" y="34" width="320" height="64" fill="none"/>
+      <g class="rule-s" stroke-width="1">
+        <line x1="446" y1="34" x2="446" y2="98"/><line x1="510" y1="34" x2="510" y2="98"/>
+        <line x1="574" y1="34" x2="574" y2="98"/><line x1="638" y1="34" x2="638" y2="98"/>
+      </g>
+      <path class="band-f" d="M 382 62 C 478 62 478 74 574 74 C 670 74 670 68 702 68 L 702 72 C 670 72 670 78 574 78 C 478 78 478 66 382 66 Z"
+            opacity="0.95"/>
+      <text class="faint-f" x="382" y="120" font-size="10.5">RESULT</text>
+      <g>
+        <rect class="band-f" x="382" y="126" width="64" height="26" opacity="0.38"/>
+        <rect class="band-f" x="446" y="126" width="64" height="26" opacity="0.41"/>
+        <rect class="band-f" x="510" y="126" width="64" height="26" opacity="0.36"/>
+        <rect class="band-f" x="574" y="126" width="64" height="26" opacity="0.40"/>
+        <rect class="band-f" x="638" y="126" width="64" height="26" opacity="0.39"/>
+        <rect class="rule-s" x="382" y="126" width="320" height="26" fill="none"/>
+      </g>
+      <text class="band-f mono" x="382" y="172" font-size="10.5">.38  .41  .36  .40  .39</text>
+      <text class="muted-f" x="382" y="196" font-size="11">A continuous thin line, stable</text>
+      <text class="muted-f" x="382" y="211" font-size="11">under motion. What SVG produces.</text>
+    </g>
+  </g>
+</svg>
+</div>
+<figcaption>
+  <b>The whole argument for technique C, in one row of pixels.</b> The band is thinner
+  than the pixel it crosses. Sampling asks "is the band here?" at four fixed points and
+  can only answer in fifths; coverage asks "how much of the pixel does the band fill?"
+  and answers exactly. Multiply the left-hand failure by 464 stacked ribbons and the
+  structure in the colours is gone.
+</figcaption>
+</figure>
+</section>
+
+<section>
+<h2><span class="num">06</span> Appearance is a table, not a stylesheet</h2>
+
+<p>
+Highlighting one haplotype used to mean swapping a CSS rule, which made the browser
+recompute style for every element in the map — measured at 28 ms, far past a frame.
+That was the second reason to leave the DOM.
+</p>
+
+<p>
+In the new renderer, each instance carries the track id it already had in the SVG, and
+a small texture holds one texel of appearance per track: RGB for its colour, alpha for
+how much it is dimmed. The fragment shader reads its own row and multiplies:
+</p>
+
+<pre><code>vec4 look = texelFetch(uTrackLUT, ivec2(vTrackID, 0), 0);
+outColor   = vec4(look.rgb, look.a * coverage);</code></pre>
+
+<figure>
+<div class="svg-scroll">
+<svg viewBox="0 0 720 200" role="img" aria-label="Instance data carries a track id which indexes a small appearance texture; highlighting rewrites two kilobytes of that texture and touches no geometry.">
+  <defs>
+    <marker id="ar2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="currentColor"/>
+    </marker>
+  </defs>
+  <g class="sans" font-size="11.5">
+
+    <rect x="14" y="60" width="150" height="52" fill="none" stroke="currentColor" stroke-width="1.2"/>
+    <text x="26" y="82" font-weight="600" fill="currentColor">Instance buffer</text>
+    <text class="faint-f mono" x="26" y="99" font-size="10.5">40,442 × (6f + id)</text>
+
+    <line x1="164" y1="86" x2="252" y2="86" stroke="currentColor" stroke-width="1.2" marker-end="url(#ar2)"/>
+    <text class="muted-f" x="172" y="78" font-size="10.5">trackID</text>
+
+    <!-- LUT -->
+    <text x="256" y="52" font-weight="600" fill="currentColor">Appearance table</text>
+    <g>
+      <rect class="band-f" x="256" y="60" width="26" height="30" opacity="0.30"/>
+      <rect class="band-f" x="282" y="60" width="26" height="30" opacity="0.30"/>
+      <rect class="sig-f" x="308" y="60" width="26" height="30" opacity="0.95"/>
+      <rect class="band-f" x="334" y="60" width="26" height="30" opacity="0.30"/>
+      <rect class="band-f" x="360" y="60" width="26" height="30" opacity="0.30"/>
+      <rect class="band-f" x="386" y="60" width="26" height="30" opacity="0.30"/>
+      <rect x="256" y="60" width="156" height="30" fill="none" stroke="currentColor" stroke-width="1.2"/>
+    </g>
+    <text class="faint-f mono" x="256" y="107" font-size="10.5">512 × 1 RGBA · one row per track</text>
+    <text class="sig-f" x="299" y="128" font-size="10.5">↑ lit</text>
+
+    <line x1="412" y1="75" x2="500" y2="75" stroke="currentColor" stroke-width="1.2" marker-end="url(#ar2)"/>
+    <text class="muted-f" x="418" y="67" font-size="10.5">texelFetch</text>
+
+    <rect x="504" y="49" width="150" height="52" fill="none" stroke="currentColor" stroke-width="1.2"/>
+    <text x="516" y="71" font-weight="600" fill="currentColor">Fragment</text>
+    <text class="faint-f mono" x="516" y="88" font-size="10.5">rgb × coverage</text>
+
+    <!-- the write -->
+    <path class="sig-s" d="M 334 160 L 334 96" stroke-width="1.4" marker-end="url(#ar2)" fill="none"/>
+    <text class="sig-f" x="256" y="178" font-size="11.5" font-weight="600">Highlight = a 2 KB write here.</text>
+    <text class="muted-f" x="256" y="193" font-size="11">No geometry is touched. Cost does not depend on how many strands are lit.</text>
+  </g>
+</svg>
+</div>
+<figcaption>
+  <b>Every appearance change becomes the same two-kilobyte upload.</b> Lighting one
+  strand, lighting two hundred, dimming everything else, or recolouring the map by
+  sample — all identical work, because none of them touch the 40,442 instances.
+</figcaption>
+</figure>
+
+<p>
+Hit-testing comes back the same way it left. A second pass renders track ids as colours
+into a one-pixel scissored buffer under the cursor; reading that pixel names the strand.
+About forty lines, given the attribute already exists.
+</p>
+</section>
+
+<section>
+<h2><span class="num">07</span> What it costs</h2>
+
+<div class="tw">
+<table>
+  <caption>Per frame, largest node measured</caption>
+  <thead>
+    <tr><th>Quantity</th><th class="n">Value</th><th>Note</th></tr>
+  </thead>
+  <tbody>
+    <tr><td>Draw calls</td><td class="n">1</td><td>All bands in one instanced call</td></tr>
+    <tr><td>Instances</td><td class="n">40,442</td><td>One per band</td></tr>
+    <tr><td>Vertices</td><td class="n">~5.2 M</td><td>64-rung ladder, shared</td></tr>
+    <tr><td>Instance data</td><td class="n">1.1 MB</td><td>Uploaded once at load</td></tr>
+    <tr><td>Overdraw</td><td class="n">0.87×</td><td>Less than one full screen of fill</td></tr>
+    <tr class="pick"><td>Highlight change</td><td class="n">2 KB</td><td>Independent of strands lit</td></tr>
+    <tr><td>Zoom or pan</td><td class="n">0 bytes</td><td>Camera only; no geometry work</td></tr>
+  </tbody>
+</table>
+</div>
+
+<p>
+The DOM renderer's failure was that the picture had to exist somewhere as pixels — a
+composited layer 35,562 units wide became 900 megapixels at device resolution, and
+14.4 gigapixels when zoomed. Here the canvas is the size of the window. There is no
+oversized surface to tile, so that failure is not fixed so much as made impossible.
+</p>
+</section>
+
+<section>
+<h2><span class="num">08</span> What would break it</h2>
+
+<p>
+The design rests on a measured claim about someone else's output, and it is worth being
+explicit about which stone to pull.
+</p>
+
+<ul>
+  <li><strong>A band that isn't the canonical shape.</strong> The parser is not a path
+  parser; it recognises one grammar and extracts six numbers. Anything else is rejected
+  — the whole document, loudly, falling back to the SVG renderer that still ships
+  alongside. Partial rendering is never offered, because a half-drawn map looks like a
+  correct map of different data.</li>
+
+  <li><strong>Text.</strong> There is none in any of the seventeen documents. It is the
+  hardest thing to draw well in WebGL and it would need a genuinely different answer,
+  not an extension of this one.</li>
+
+  <li><strong>A control point outside the span.</strong> It would make the horizontal
+  sweep non-monotone, a pixel's x would map to two points on the curve, and the coverage
+  calculation loses its meaning. Measured at u ∈ [0.30, 0.70] on every document, so
+  there is real margin — but it is margin, not a guarantee.</li>
+
+  <li><strong>Butted pieces instead of lapped ones.</strong> The 1-unit overlap is the
+  generator's choice, not a property of the format. Remove it and every junction becomes
+  a seam. Worth asserting at parse time, since it would be a subtle, uniform degradation
+  rather than an obvious break.</li>
+
+  <li><strong>A thickness other than 15.</strong> Harmless — it becomes a seventh float.
+  Noted only because so much else follows from the constants.</li>
+</ul>
+
+<p>
+The first of those is the real exposure. Displaying someone's picture is robust to them
+changing it; interpreting their geometry is not. That trade is the price of the
+renderer, and it is paid deliberately: the picture, drawn the old way, no longer
+appears on screen.
+</p>
+</section>
+
+</div>
+
+<aside class="note">
+  <b>Why not just fix the SVG?</b> Two failures, three days apart, from the same cause:
+  the browser recomputing style for ten thousand elements on hover, and failing to
+  rasterise a layer far past the GPU's maximum texture size. Both are the data defeating
+  a different stage of the same pipeline.
+</aside>
+
+<aside class="note">
+  <b>Verified, not assumed.</b> 127,101 of 127,101 band paths conform, across all 17
+  documents the API returned. Thickness is 15 in every one; the control point never
+  leaves the middle 40% of the span; there is no text, and no stroke anywhere among the
+  bands.
+</aside>
+
+<aside class="note">
+  <b>The untested part.</b> Thirteen of thirty nodes could not be fetched — the API
+  throws an unhandled exception somewhere above a 14 MB response. So the grammar is
+  confirmed across 127,101 paths but only up to that size, and the largest nodes are
+  <i>untested</i> rather than tested and passing.
+</aside>
+
+<aside class="note">
+  <b>Reversed 14 August 2026 — this was wrong.</b> The pan and zoom maths in the SVG
+  viewer turned out to be a hand-written reimplementation of the parent application's
+  own <code>MapControls</code> factory, written only because that viewer had no
+  three.js. The renderer uses <code>MapControls</code> with the parent's configuration
+  verbatim: zoom is <code>camera.zoom</code>, pan is <code>camera.position</code>, and
+  there is no <code>{x, y, scale}</code> object anywhere. The fit-to-width clamp does
+  not survive either — its 4× ceiling never resolves a haplotype on the documents that
+  matter, and the renderer clamps at 200×.
+</aside>
+
+<aside class="note">
+  <b>Segment boxes — reversed 14 August 2026.</b> The translucent, stroked outlines
+  marking sequence boundaries were to stay as real SVG in a layer above the canvas, for
+  free hit-testing. That is the same reasoning that kept the whole map in the DOM, and
+  it collapsed for the same reason. They become geometry, picked with a raycaster; an
+  SVG layer transformed in lockstep with the camera is exactly the coupling this
+  renderer exists to escape.
+</aside>
+</div>
+
+<footer>
+  Sequence tube map · renderer spike · 13 August 2026, measured 14 August 2026 ·
+  figures drawn from measurements of the committed fixtures, the live UCSD API, and a
+  working renderer on an Apple M1 Pro
+</footer>
+
+</div>
+</body>
+</html>

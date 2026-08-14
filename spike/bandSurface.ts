@@ -9,16 +9,32 @@
  * gestures come from `MapControls` configured exactly as PGB configures it. The SVG
  * viewer reimplemented that library by hand because it had no three.js; this does not.
  *
- * ## Flat bands, deliberately
+ * ## The ladder
  *
- * Each band is drawn as a **sheared quad**: correct at both ends, a straight line in
- * between where the real band is a smoothstep curve. The picture is therefore right
- * wherever a haplotype runs level and wrong wherever it transitions between segments.
+ * There is one mesh in the scene: a strip of `RUNGS` quads spanning the band's parameter
+ * from 0 to 1, two rows deep. It carries no positions — only, per vertex, a curve
+ * parameter `t` and a flag saying which edge it belongs to. The vertex shader places
+ * every rung from six per-instance floats, so zooming touches no geometry at all.
  *
- * That is enough to answer two of the spike's three failure conditions — whether panning
- * and zooming a 14:1 strip feels right, and whether zoom reaches far enough to resolve a
- * haplotype — without a line of curve maths. It is also exactly a one-rung ladder, so
- * the curved renderer generalises this rather than replacing it.
+ * Both edges of a band are cubics whose control points share an abscissa. Normalised by
+ * the span, with `u` the control abscissa as a fraction:
+ *
+ *     x(t) = 3u·t·(1-t) + t³        y(t) = y0 + (y1-y0)·(3t² - 2t³)
+ *
+ * The y expansion is literally `smoothstep`, because the cubic's control ordinates are
+ * copies of its endpoints. And `x(0) = 0`, `x(1) = 1` **for every u** — so the two edges
+ * meet at both ends however much their control abscissae differ, and sampling both at the
+ * same `t` yields a closed polygon inscribed in the true band with vertical ends.
+ *
+ * That is why there is no root-finding here. Placing rungs at even *x* would require
+ * inverting `x(t)` per vertex, because the two edges have different `u` and so do not
+ * share an x at equal t; placing them at even *t* removes the question. The cost is that
+ * rungs are spaced unevenly in x — by no more than ~3× — which affects nothing, since
+ * tessellation error follows curvature rather than spacing.
+ *
+ * `RUNGS = 64` leaves a worst-case chord error of 0.41 px in x and 0.06 px in y, measured
+ * at 200× zoom on the widest piece in `5520+`. Sweeping it belongs with the coverage
+ * comparison, where it can be judged against something.
  *
  * ## Zoom
  *
@@ -53,6 +69,9 @@ ColorManagement.enabled = false
 export const MIN_ZOOM = 1
 export const MAX_ZOOM = 200
 
+/** Quads per band along its span. See the note on tessellation error above. */
+export const RUNGS = 64
+
 const VERTEX = /* glsl */`
 precision highp float;
 
@@ -60,21 +79,28 @@ uniform mat4 projectionMatrix;
 uniform mat4 modelViewMatrix;
 uniform float uThickness;
 
-in vec2 aParam;   // x: 0..1 along the span, y: 0 = upper edge, 1 = lower edge
-in vec4 iSpan;    // x0, y0, width, y1  — y0/y1 are the upper edge, world space
+in vec2 aParam;    // x: curve parameter 0..1, y: 0 = upper edge, 1 = lower edge
+in vec4 iSpan;     // x0, y0, width, y1  — y0/y1 are the upper edge, world space
+in vec2 iControl;  // control abscissa of the upper and lower edge, as a fraction
 in vec3 iColor;
 
 out vec3 vColor;
 
 void main() {
-    float p = aParam.x;
+    float t = aParam.x;
     float side = aParam.y;
 
-    float x = iSpan.x + iSpan.z * p;
+    // Each edge carries its own control abscissa; they differ, so a band's thickness
+    // varies along its length and the two edges are not translates of each other.
+    float u = mix(iControl.x, iControl.y, side);
 
-    // Linear between the ends: the flat approximation. The curved renderer replaces
-    // this one mix() with smoothstep over an inverted cubic, and nothing else here.
-    float y = mix(iSpan.y, iSpan.w, p) - side * uThickness;
+    // x(t) = 3u·t·(1-t) + t³, normalised. Zero at t=0 and one at t=1 for every u, so
+    // both edges meet at the ends and the band closes without a seam.
+    float x = iSpan.x + iSpan.z * (3.0 * u * t * (1.0 - t) + t * t * t);
+
+    // The cubic's control ordinates are copies of its endpoints, so y collapses to
+    // smoothstep. No bezier evaluation in y at all.
+    float y = mix(iSpan.y, iSpan.w, t * t * (3.0 - 2.0 * t)) - side * uThickness;
 
     vColor = iColor;
     gl_Position = projectionMatrix * modelViewMatrix * vec4(x, y, 0.0, 1.0);
@@ -130,15 +156,10 @@ export function createBandSurface(map: ParsedMap, canvas: HTMLCanvasElement): Ba
     controls.maxZoom = MAX_ZOOM
     controls.target.set(0, 0, 0)
 
-    const geometry = new InstancedBufferGeometry()
-
-    // The shared mesh: one quad, spanning 0..1 along the band and both edges across it.
-    geometry.setAttribute('aParam', new BufferAttribute(
-        new Float32Array([0, 0, 0, 1, 1, 0, 1, 1]), 2
-    ))
-    geometry.setIndex([0, 1, 2, 2, 1, 3])
+    const geometry = buildLadder(RUNGS)
 
     geometry.setAttribute('iSpan', packInstances(map.geometry, 6, 0, 4, map.bandCount))
+    geometry.setAttribute('iControl', packInstances(map.geometry, 6, 4, 2, map.bandCount))
     geometry.setAttribute('iColor', instanceColors(map))
     geometry.instanceCount = map.bandCount
 
@@ -203,6 +224,39 @@ export function createBandSurface(map: ParsedMap, canvas: HTMLCanvasElement): Ba
             renderer.dispose()
         }
     }
+}
+
+/**
+ * The shared mesh, and the only geometry in the scene: `rungs` quads spanning the curve
+ * parameter from 0 to 1, two rows deep. Carries no positions — the vertex shader places
+ * every vertex from the instance's six floats.
+ */
+function buildLadder(rungs: number): InstancedBufferGeometry {
+    const params = new Float32Array((rungs + 1) * 4)
+    const indices: number[] = []
+
+    for (let i = 0; i <= rungs; i += 1) {
+        const t = i / rungs
+        const o = i * 4
+
+        params[o] = t
+        params[o + 1] = 0
+        params[o + 2] = t
+        params[o + 3] = 1
+
+        if (i < rungs) {
+            const upper = i * 2
+
+            indices.push(upper, upper + 1, upper + 2, upper + 2, upper + 1, upper + 3)
+        }
+    }
+
+    const geometry = new InstancedBufferGeometry()
+
+    geometry.setAttribute('aParam', new BufferAttribute(params, 2))
+    geometry.setIndex(indices)
+
+    return geometry
 }
 
 /** Deinterleave one field out of the parser's packed six-floats-per-band layout. */

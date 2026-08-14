@@ -86,6 +86,15 @@ in vec3 iColor;
 
 out vec3 vColor;
 
+#ifdef ANALYTIC
+uniform float uPad;
+
+flat out vec4 vSpan;
+flat out vec2 vControl;
+out float vT;
+out vec2 vWorld;
+#endif
+
 void main() {
     float t = aParam.x;
     float side = aParam.y;
@@ -103,6 +112,19 @@ void main() {
     float y = mix(iSpan.y, iSpan.w, t * t * (3.0 - 2.0 * t)) - side * uThickness;
 
     vColor = iColor;
+
+#ifdef ANALYTIC
+    // Grow the band by a pixel on each side so a band thinner than one pixel still
+    // covers a fragment to compute coverage in. Without this a 0.19 px band would
+    // simply miss every sample point and vanish.
+    y += (1.0 - 2.0 * side) * uPad;
+
+    vSpan = iSpan;
+    vControl = iControl;
+    vT = t;
+    vWorld = vec2(x, y);
+#endif
+
     gl_Position = projectionMatrix * modelViewMatrix * vec4(x, y, 0.0, 1.0);
 }
 `
@@ -113,10 +135,86 @@ precision highp float;
 in vec3 vColor;
 out vec4 fragColor;
 
+#ifdef ANALYTIC
+
+uniform float uThickness;
+uniform float uHalfPixel;
+
+flat in vec4 vSpan;
+flat in vec2 vControl;
+in float vT;
+in vec2 vWorld;
+
+/**
+ * Recover the curve parameter at this fragment's own x. The rungs give a value that is
+ * close — it is linearly interpolated between two points on a curve — and two Newton
+ * steps from there are exact to well inside a pixel.
+ *
+ * f(t)  = 3u·t·(1-t) + t³ - p
+ * f'(t) = 3u·(1-2t) + 3t²,  which bottoms out at 3u(1-u) > 0, so this cannot stall.
+ */
+float parameterAt(float p, float u, float t) {
+    for (int i = 0; i < 2; i += 1) {
+        float f = 3.0 * u * t * (1.0 - t) + t * t * t - p;
+        float d = 3.0 * u * (1.0 - 2.0 * t) + 3.0 * t * t;
+
+        t -= f / max(d, 1e-5);
+    }
+
+    return clamp(t, 0.0, 1.0);
+}
+
+#endif
+
 void main() {
+#ifdef ANALYTIC
+    float p = clamp((vWorld.x - vSpan.x) / vSpan.z, 0.0, 1.0);
+
+    // Each edge has its own control abscissa, so each needs its own parameter at this x.
+    float tTop = parameterAt(p, vControl.x, vT);
+    float tBot = parameterAt(p, vControl.y, vT);
+
+    float yTop = mix(vSpan.y, vSpan.w, tTop * tTop * (3.0 - 2.0 * tTop));
+    float yBot = mix(vSpan.y, vSpan.w, tBot * tBot * (3.0 - 2.0 * tBot)) - uThickness;
+
+    // What fraction of this pixel's height the band actually fills. A band covering a
+    // fifth of the pixel contributes exactly a fifth — this one line is the whole
+    // difference from MSAA, which can only answer in quarters.
+    float lo = max(yBot, vWorld.y - uHalfPixel);
+    float hi = min(yTop, vWorld.y + uHalfPixel);
+    float coverage = clamp((hi - lo) / (2.0 * uHalfPixel), 0.0, 1.0);
+
+    // Horizontal coverage at the two ends is ignored. Bands lap their neighbours by a
+    // whole unit and are hundreds of units wide, so the ends are interior to the track.
+    if (0.0 >= coverage) {
+        discard;
+    }
+
+    fragColor = vec4(vColor, coverage);
+#else
     fragColor = vec4(vColor, 1.0);
+#endif
 }
 `
+
+/**
+ * Where a band's antialiasing comes from.
+ *
+ * `msaa` — opaque fragments, four hardware samples. Coverage can only be reported as
+ * 0, ¼, ½, ¾ or 1, and `MAX_SAMPLES` is 4 on this hardware, so that is the ceiling.
+ *
+ * `analytic` — the fragment shader computes the exact fraction of the pixel the band
+ * fills. This is what SVG's rasteriser does, and the reason the SVG looked right at
+ * sub-pixel band heights.
+ */
+export type Coverage = 'msaa' | 'analytic'
+
+/** Enough to rebuild the same view after the context is replaced. */
+export interface CameraState {
+    zoom: number
+    position: [number, number, number]
+    target: [number, number, number]
+}
 
 export interface BandSurface {
     /** Advance controls and draw. Call once per animation frame. */
@@ -126,11 +224,29 @@ export interface BandSurface {
     zoom(): number
     /** How tall one band is on screen right now, in CSS pixels. */
     bandHeightInPixels(): number
+    /** For handing the view to a surface built with the other coverage. */
+    cameraState(): CameraState
     dispose(): void
 }
 
-export function createBandSurface(map: ParsedMap, canvas: HTMLCanvasElement): BandSurface {
-    const renderer = new WebGLRenderer({ canvas, antialias: true, alpha: false })
+export function createBandSurface(
+    map: ParsedMap,
+    canvas: HTMLCanvasElement,
+    coverage: Coverage,
+    restore?: CameraState,
+    rungs: number = RUNGS
+): BandSurface {
+    const analytic = 'analytic' === coverage
+
+    // Hardware multisampling is the whole of the `msaa` arm and would double-count
+    // against analytic coverage, so the two need different contexts. That is why
+    // switching arms replaces the canvas rather than swapping a uniform.
+    const renderer = new WebGLRenderer({
+        canvas,
+        antialias: false === analytic,
+        alpha: false,
+        premultipliedAlpha: false
+    })
 
     renderer.outputColorSpace = LinearSRGBColorSpace
     renderer.setClearColor(0xffffff, 1)
@@ -156,7 +272,13 @@ export function createBandSurface(map: ParsedMap, canvas: HTMLCanvasElement): Ba
     controls.maxZoom = MAX_ZOOM
     controls.target.set(0, 0, 0)
 
-    const geometry = buildLadder(RUNGS)
+    if (undefined !== restore) {
+        camera.zoom = restore.zoom
+        camera.position.set(...restore.position)
+        controls.target.set(...restore.target)
+    }
+
+    const geometry = buildLadder(rungs)
 
     geometry.setAttribute('iSpan', packInstances(map.geometry, 6, 0, 4, map.bandCount))
     geometry.setAttribute('iControl', packInstances(map.geometry, 6, 4, 2, map.bandCount))
@@ -167,7 +289,16 @@ export function createBandSurface(map: ParsedMap, canvas: HTMLCanvasElement): Ba
         glslVersion: GLSL3,
         vertexShader: VERTEX,
         fragmentShader: FRAGMENT,
-        uniforms: { uThickness: { value: THICKNESS } },
+        defines: analytic ? { ANALYTIC: '' } : {},
+        uniforms: {
+            uThickness: { value: THICKNESS },
+            uHalfPixel: { value: 0 },
+            uPad: { value: 0 }
+        },
+        // Coverage arrives as alpha, so the arm blends; the MSAA arm is opaque. Neither
+        // uses a depth buffer: bands are opaque in the document and painted in order,
+        // so instance order carries z-order where two tracks cross.
+        transparent: analytic,
         depthTest: false,
         depthWrite: false
     })
@@ -204,6 +335,17 @@ export function createBandSurface(map: ParsedMap, canvas: HTMLCanvasElement): Ba
 
         render(): void {
             controls.update()
+
+            if (analytic) {
+                // One device pixel, in world units. Everything sub-pixel is measured
+                // against this, so it has to follow the device ratio and not just zoom.
+                const pixel = map.content.width
+                    / (camera.zoom * canvas.clientWidth * renderer.getPixelRatio())
+
+                material.uniforms.uHalfPixel.value = pixel * 0.5
+                material.uniforms.uPad.value = pixel
+            }
+
             renderer.render(scene, camera)
         },
 
@@ -215,6 +357,14 @@ export function createBandSurface(map: ParsedMap, canvas: HTMLCanvasElement): Ba
 
         bandHeightInPixels(): number {
             return THICKNESS * camera.zoom * canvas.clientWidth / map.content.width
+        },
+
+        cameraState(): CameraState {
+            return {
+                zoom: camera.zoom,
+                position: camera.position.toArray(),
+                target: controls.target.toArray()
+            }
         },
 
         dispose(): void {

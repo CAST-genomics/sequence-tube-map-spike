@@ -6,7 +6,13 @@
  * this stage can answer are about those.
  */
 
-import { createBandSurface, MAX_ZOOM } from './bandSurface.ts'
+import {
+    createBandSurface,
+    MAX_ZOOM,
+    RUNGS,
+    type CameraState,
+    type Coverage
+} from './bandSurface.ts'
 import { createFrameMeter } from './frameMeter.ts'
 import { NonConformingDocument, parseBands } from './parseBands.ts'
 
@@ -66,10 +72,40 @@ async function start(canvas: HTMLCanvasElement, readout: HTMLElement): Promise<v
     }
 
     const parseMs = performance.now() - began
-    const surface = createBandSurface(map, canvas)
+
+    // Rung count is swept from the URL rather than rebuilt, so the same session can
+    // compare counts at one camera.
+    const asked = Number(new URLSearchParams(window.location.search).get('rungs'))
+    const rungs = Number.isFinite(asked) && 0 < asked ? asked : RUNGS
     const meter = createFrameMeter()
 
+    let coverage: Coverage = 'msaa'
+    let live = canvas
+    let surface = createBandSurface(map, live, coverage, undefined, rungs)
+
     window.addEventListener('resize', () => surface.resize())
+
+    // Space swaps the arm. Hardware multisampling lives in the WebGL context's
+    // attributes and cannot be turned off after the fact, so the arms need separate
+    // contexts — hence a fresh canvas, handed the outgoing camera so both arms show
+    // the same frame. Comparing them at a different view would compare nothing.
+    window.addEventListener('keydown', event => {
+        if ('Space' !== event.code) {
+            return
+        }
+
+        event.preventDefault()
+
+        const state: CameraState = surface.cameraState()
+        const replacement = live.cloneNode() as HTMLCanvasElement
+
+        live.replaceWith(replacement)
+        surface.dispose()
+
+        coverage = 'msaa' === coverage ? 'analytic' : 'msaa'
+        live = replacement
+        surface = createBandSurface(map, live, coverage, state, rungs)
+    })
 
     const fixed = [
         fixture.label,
@@ -83,6 +119,7 @@ async function start(canvas: HTMLCanvasElement, readout: HTMLElement): Promise<v
 
         readout.textContent = [
             fixed,
+            `${describe(coverage)} · ${rungs} rungs   ⟨space⟩`,
             `zoom ${surface.zoom().toFixed(1)}× of ${MAX_ZOOM}×`,
             `band ${surface.bandHeightInPixels().toFixed(2)} css px`,
             `frame ${meter.mean().toFixed(1)} ms · worst ${meter.worst().toFixed(1)} ms`
@@ -92,6 +129,12 @@ async function start(canvas: HTMLCanvasElement, readout: HTMLElement): Promise<v
     }
 
     requestAnimationFrame(frame)
+}
+
+function describe(coverage: Coverage): string {
+    return 'msaa' === coverage
+        ? 'MSAA — coverage in quarters'
+        : 'ANALYTIC — exact coverage'
 }
 
 function fixtureName(): FixtureName {

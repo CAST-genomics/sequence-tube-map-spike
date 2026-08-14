@@ -44,6 +44,11 @@ export interface TubeMapSurfaceOptions {
      * the per-hover restyle of ~10,000 track elements tears and renders partially.
      */
     strandFeeler?: boolean
+    /**
+     * Report the track under the cursor on the WebGL surface, with what the pick cost.
+     * Harness instrumentation for #38; ignored by the SVG surface.
+     */
+    pickReadout?: boolean
 }
 
 export interface TubeMapSurfaceHandle {
@@ -73,7 +78,7 @@ export function mountTubeMapSurface(
 
     const renderer: SurfaceRenderer = 'svg' === options.renderer
         ? createSvgSurface(root, { strandFeeler: options.strandFeeler })
-        : createBandSurface(root)
+        : createBandSurface(root, { pickReadout: options.pickReadout })
 
     // Appended after the renderer's own nodes so the spinner and the error state cover
     // the picture rather than sitting under it.

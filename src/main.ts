@@ -40,7 +40,16 @@ if (strandFeeler) {
     hint.textContent += ' · hold shift to feel strands'
 }
 
-const viewer = mountTubeMapSurface(container, { renderer, strandFeeler })
+// `?pick` reads the pick pass out loud: the track under the cursor and what asking cost.
+// Nothing consumes picks yet, so this is the only thing that runs one — #38 is the
+// capability, #39 is the interaction over it.
+const pickReadout = parameters.has('pick')
+
+if (pickReadout) {
+    hint.textContent += ' · picking the track under the cursor'
+}
+
+const viewer = mountTubeMapSurface(container, { renderer, strandFeeler, pickReadout })
 
 rendererChooser.value = renderer
 

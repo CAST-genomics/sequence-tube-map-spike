@@ -113,6 +113,24 @@ export function visibleContentRect(view: CameraView, viewport: Viewport, content
     }
 }
 
+/**
+ * Where a point in the viewport lands in the world.
+ *
+ * This is the projection run backwards, and it is two lines only because the frustum is
+ * symmetric, measured in css pixels, and never rotated: `zoom` reads as css pixels per
+ * world unit, so an offset from the middle of the viewport divides straight through it.
+ *
+ * `point` is css pixels from the viewport's top-left with y down — what a pointer event
+ * reports over the canvas. The world it returns has y up, like everything downstream of
+ * `parseBands`.
+ */
+export function worldFromViewportPoint(point: Point, viewport: Viewport, view: CameraView): Point {
+    return {
+        x: view.x + (point.x - viewport.width * 0.5) / view.zoom,
+        y: view.y + (viewport.height * 0.5 - point.y) / view.zoom
+    }
+}
+
 /** The inverse for a point: where the camera goes to put `point` at the middle of the view. */
 export function worldFromContentPoint(point: Point, content: Size): Point {
     return {

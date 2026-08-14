@@ -133,6 +133,24 @@ export const SURFACE_STYLES = `
     z-index: 3;
 }
 
+/* Instrumentation, not chrome: only ?pick puts this on the surface.
+
+   Top left and below the ?fps pill, which is the one corner nothing else claims: the
+   harness's URL picker fills the top right at a higher z-index and hid this completely,
+   and the navigator owns the bottom left. */
+.stm-pick {
+    position: absolute;
+    left: 12px;
+    top: 46px;
+    padding: 4px 10px;
+    border-radius: 4px;
+    background: var(--stm-chrome);
+    color: var(--stm-ink);
+    font-variant-numeric: tabular-nums;
+    pointer-events: none;
+    z-index: 3;
+}
+
 .stm-navigator {
     position: absolute;
     left: 16px;

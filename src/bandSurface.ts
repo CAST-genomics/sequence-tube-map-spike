@@ -65,6 +65,7 @@ import {
     InstancedBufferGeometry,
     LinearSRGBColorSpace,
     Mesh,
+    NoBlending,
     OrthographicCamera,
     RawShaderMaterial,
     Scene,
@@ -82,6 +83,7 @@ import {
     zoomRange,
     type Viewport
 } from './bandCamera.ts'
+import { createBandPicker, type BandPicker } from './bandPicker.ts'
 import { createNavigator, type NavigatorHandle } from './navigator.ts'
 import { THICKNESS, parseBands, type ParsedMap } from './parseBands.ts'
 import type { SurfaceRenderer } from './surfaceRenderer.ts'
@@ -106,11 +108,13 @@ in vec2 aParam;    // x: curve parameter 0..1, y: 0 = upper edge, 1 = lower edge
 in vec4 iSpan;     // x0, y0, width, y1  — y0/y1 are the upper edge, world space
 in vec2 iControl;  // control abscissa of the upper and lower edge, as a fraction
 in vec3 iColor;
+in float iTrackId; // the haplotype this band belongs to; read only by the pick pass
 
 out vec3 vColor;
 
 flat out vec4 vSpan;
 flat out vec2 vControl;
+flat out float vTrackId;
 out float vT;
 out vec2 vWorld;
 
@@ -138,6 +142,7 @@ void main() {
     vColor = iColor;
     vSpan = iSpan;
     vControl = iControl;
+    vTrackId = iTrackId;
     vT = t;
     vWorld = vec2(x, y);
 
@@ -145,19 +150,23 @@ void main() {
 }
 `
 
-const FRAGMENT = /* glsl */`
-precision highp float;
-
+/**
+ * The coverage test, shared verbatim by the visible pass and the pick pass.
+ *
+ * Sharing it is a correctness property rather than a tidiness one. Picking answers "which
+ * band put ink in this pixel", and the only way that answer cannot drift from what the
+ * screen shows is for both passes to run the *same* test over the same varyings from the
+ * same vertex shader. Two copies of this arithmetic would be two opinions about where a
+ * band is, and they would disagree exactly at the sub-pixel edges where it matters.
+ */
+const COVERAGE = /* glsl */`
 uniform float uThickness;
 uniform float uHalfPixel;
 
-in vec3 vColor;
 flat in vec4 vSpan;
 flat in vec2 vControl;
 in float vT;
 in vec2 vWorld;
-
-out vec4 fragColor;
 
 /**
  * Recover the curve parameter at this fragment's own x. The rungs give a value that is
@@ -178,7 +187,15 @@ float parameterAt(float p, float u, float t) {
     return clamp(t, 0.0, 1.0);
 }
 
-void main() {
+/**
+ * What fraction of this pixel's height the band actually fills. A band covering a fifth
+ * of the pixel returns exactly a fifth — this is what MSAA, which can only answer in
+ * quarters, cannot do. Zero means the band put no ink in this pixel at all.
+ *
+ * Horizontal coverage at the two ends is ignored. Bands lap their neighbours by a whole
+ * unit and are hundreds of units wide, so the ends are interior to the track.
+ */
+float bandCoverage() {
     float p = clamp((vWorld.x - vSpan.x) / vSpan.z, 0.0, 1.0);
 
     // Each edge has its own control abscissa, so each needs its own parameter at this x.
@@ -188,20 +205,64 @@ void main() {
     float yTop = mix(vSpan.y, vSpan.w, tTop * tTop * (3.0 - 2.0 * tTop));
     float yBot = mix(vSpan.y, vSpan.w, tBot * tBot * (3.0 - 2.0 * tBot)) - uThickness;
 
-    // What fraction of this pixel's height the band actually fills. A band covering a
-    // fifth of the pixel contributes exactly a fifth — this one line is what MSAA, which
-    // can only answer in quarters, cannot do.
     float lo = max(yBot, vWorld.y - uHalfPixel);
     float hi = min(yTop, vWorld.y + uHalfPixel);
-    float coverage = clamp((hi - lo) / (2.0 * uHalfPixel), 0.0, 1.0);
 
-    // Horizontal coverage at the two ends is ignored. Bands lap their neighbours by a
-    // whole unit and are hundreds of units wide, so the ends are interior to the track.
+    return clamp((hi - lo) / (2.0 * uHalfPixel), 0.0, 1.0);
+}
+`
+
+const FRAGMENT = /* glsl */`
+precision highp float;
+${COVERAGE}
+
+in vec3 vColor;
+
+out vec4 fragColor;
+
+void main() {
+    float coverage = bandCoverage();
+
     if (0.0 >= coverage) {
         discard;
     }
 
     fragColor = vec4(vColor, coverage);
+}
+`
+
+/**
+ * The pick pass: the same bands, drawn as their own track ids.
+ *
+ * Two bytes of colour carry the id, low byte first, which is why `MAX_TRACK_ID` is 65535
+ * — the parser refuses a document that would wrap this.
+ *
+ * **Alpha is the hit flag, not a colour.** Every fragment this keeps writes alpha 1, and
+ * the target is cleared to alpha 0, so "no band here" is distinguishable from track 0 —
+ * which is a real haplotype (`CHM13#0#chr1` on every document we have) and would
+ * otherwise be indistinguishable from empty space.
+ *
+ * There is no blending and no depth buffer, so the last fragment written wins. Instances
+ * are drawn in document order, so that is the topmost band — the same answer SVG's own
+ * hit-testing gave, and the one the researcher is looking at where tracks cross.
+ */
+const PICK_FRAGMENT = /* glsl */`
+precision highp float;
+${COVERAGE}
+
+flat in float vTrackId;
+
+out vec4 fragColor;
+
+void main() {
+    if (0.0 >= bandCoverage()) {
+        discard;
+    }
+
+    float low = mod(vTrackId, 256.0);
+    float high = floor(vTrackId / 256.0);
+
+    fragColor = vec4(low / 255.0, high / 255.0, 0.0, 1.0);
 }
 `
 
@@ -212,6 +273,8 @@ interface Context {
     camera: OrthographicCamera
     controls: MapControls
     material: RawShaderMaterial
+    pickMaterial: RawShaderMaterial
+    picker: BandPicker
 }
 
 /** The document currently on screen, and the resources drawing it. */
@@ -221,17 +284,46 @@ interface Drawing {
     mesh: Mesh
 }
 
-export function createBandSurface(host: HTMLElement): SurfaceRenderer {
+export interface BandSurfaceOptions {
+    /**
+     * Report the track under the cursor, and what asking cost, in a corner of the surface.
+     * Harness instrumentation for #38: picking has no consumer yet, and this is what makes
+     * the answer checkable against the document by hand. The interaction is #39.
+     */
+    pickReadout?: boolean
+}
 
-    const canvas = host.ownerDocument.createElement('canvas')
+export function createBandSurface(host: HTMLElement, options: BandSurfaceOptions = {}): SurfaceRenderer {
+
+    const doc = host.ownerDocument
+
+    const canvas = doc.createElement('canvas')
     canvas.className = 'stm-canvas'
     host.append(canvas)
+
+    const readout = true === options.pickReadout ? doc.createElement('div') : null
+
+    if (null !== readout) {
+        readout.className = 'stm-pick'
+        readout.textContent = 'track —'
+        host.append(readout)
+
+        // Nothing else consumes picks yet, so the readout is the only reason to run one.
+        // #39 promotes this to the renderer's own interface, where the interaction can
+        // reach it; until then a pass nobody reads would be pure cost.
+        canvas.addEventListener('pointermove', onPointerMove)
+        canvas.addEventListener('pointerleave', onPointerLeave)
+    }
 
     let context: Context | null = null
     let drawing: Drawing | null = null
     /** True until the researcher moves the view — a resize re-fits only while the framing is still ours. */
     let untouched = true
     let frame = 0
+    /** Where the pointer last was, in css pixels from the canvas, or null once it leaves. */
+    let cursor: Point | null = null
+    let pickFrame = 0
+    let worstPick = 0
     /** The viewport the camera was last framed for. Kept so `draw` — which runs on every
      *  panned frame — never reads layout back out of the DOM to place the navigator rect. */
     let framed: Viewport = { width: 0, height: 0 }
@@ -326,7 +418,36 @@ export function createBandSurface(host: HTMLElement): SurfaceRenderer {
             depthWrite: false
         })
 
-        context = { renderer, scene, camera, controls, material }
+        // The band material's twin: same vertex shader, so picking rasterizes exactly the
+        // geometry drawing does, and the same coverage test, so it agrees about which
+        // pixels a band put ink in. Only what it writes differs.
+        const pickMaterial = new RawShaderMaterial({
+            glslVersion: GLSL3,
+            vertexShader: VERTEX,
+            fragmentShader: PICK_FRAGMENT,
+            uniforms: {
+                uThickness: { value: THICKNESS },
+                uHalfPixel: { value: 0 },
+                uPad: { value: 0 }
+            },
+            // Ids are not colours: blending two of them would produce a third that names
+            // a track neither band belongs to. Without blending the last write wins, and
+            // instance order is document order, so that is the topmost band.
+            transparent: false,
+            blending: NoBlending,
+            depthTest: false,
+            depthWrite: false
+        })
+
+        context = {
+            renderer,
+            scene,
+            camera,
+            controls,
+            material,
+            pickMaterial,
+            picker: createBandPicker(renderer, scene, pickMaterial)
+        }
 
         return context
     }
@@ -427,6 +548,63 @@ export function createBandSurface(host: HTMLElement): SurfaceRenderer {
     }
 
     /**
+     * Ask what the cursor is over, at most once per frame.
+     *
+     * Coalescing to `requestAnimationFrame` rather than picking per event is what keeps
+     * this bounded: pointer devices report well above 60 Hz and every pick is a
+     * synchronous readback, so answering each event would stall the pipeline several
+     * times for one frame's worth of movement — and only the last answer is ever read.
+     */
+    function schedulePick(): void {
+        if (0 !== pickFrame) {
+            return
+        }
+
+        pickFrame = requestAnimationFrame(() => {
+            pickFrame = 0
+            runPick()
+        })
+    }
+
+    function runPick(): void {
+        if (null === context || null === drawing || null === cursor || null === readout) {
+            return
+        }
+
+        const { camera, picker } = context
+        const result = picker.pick(
+            cursor,
+            framed,
+            { x: camera.position.x, y: camera.position.y, zoom: camera.zoom }
+        )
+
+        // The worst pick is the number that decides whether this is usable at pointer
+        // rate; a mean hides exactly the stalls being hunted.
+        worstPick = Math.max(worstPick, result.milliseconds)
+
+        const track = null === result.trackId ? '—' : String(result.trackId)
+
+        readout.textContent = `track ${track} · ${result.milliseconds.toFixed(2)} ms`
+            + ` · worst ${worstPick.toFixed(2)} ms`
+    }
+
+    function onPointerMove(event: PointerEvent): void {
+        // `offsetX`/`offsetY` are css pixels from the canvas's own padding box, which is
+        // what the pick camera wants — and reading them costs no layout, where a
+        // `getBoundingClientRect` on every move would.
+        cursor = { x: event.offsetX, y: event.offsetY }
+        schedulePick()
+    }
+
+    function onPointerLeave(): void {
+        cursor = null
+
+        if (null !== readout) {
+            readout.textContent = 'track —'
+        }
+    }
+
+    /**
      * Render the whole map into an offscreen target at thumbnail size and read it back.
      *
      * Same scene, same shader, same instance buffer — only the camera differs, so the
@@ -478,6 +656,11 @@ export function createBandSurface(host: HTMLElement): SurfaceRenderer {
             geometry.setAttribute('iSpan', deinterleave(map.geometry, 6, 0, 4, map.bandCount))
             geometry.setAttribute('iControl', deinterleave(map.geometry, 6, 4, 2, map.bandCount))
             geometry.setAttribute('iColor', instanceColors(map))
+
+            // The parser's own array, uploaded without a copy. Declared `in float` in the
+            // shader, so GL widens the two bytes on the way in and nothing here has to
+            // decide whether an integer attribute is worth the plumbing.
+            geometry.setAttribute('iTrackId', new InstancedBufferAttribute(map.trackIds, 1))
             geometry.instanceCount = map.bandCount
 
             const mesh = new Mesh(geometry, built.material)
@@ -532,12 +715,23 @@ export function createBandSurface(host: HTMLElement): SurfaceRenderer {
                 frame = 0
             }
 
+            if (0 !== pickFrame) {
+                cancelAnimationFrame(pickFrame)
+                pickFrame = 0
+            }
+
+            canvas.removeEventListener('pointermove', onPointerMove)
+            canvas.removeEventListener('pointerleave', onPointerLeave)
+            readout?.remove()
+
             releaseDrawing()
             mapNavigator.destroy()
 
             if (null !== context) {
                 context.controls.dispose()
                 context.material.dispose()
+                context.picker.dispose()
+                context.pickMaterial.dispose()
 
                 // `dispose()` releases three's own resources but **not** the WebGL
                 // context; only `forceContextLoss()` does, and browsers cap live

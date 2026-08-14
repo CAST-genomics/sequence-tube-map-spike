@@ -17,6 +17,7 @@ import {
     usable,
     visibleContentRect,
     worldFromContentPoint,
+    worldFromViewportPoint,
     zoomRange
 } from '../bandCamera.ts'
 
@@ -164,5 +165,48 @@ describe('worldFromContentPoint', () => {
             expect(world.x).toBeCloseTo(view.x, 6)
             expect(world.y).toBeCloseTo(view.y, 6)
         }
+    })
+})
+
+/**
+ * Picking aims a one-pixel camera with this, so an error here does not look like an
+ * error: it returns a real track, just the wrong one, and only ever by a little.
+ */
+describe('worldFromViewportPoint', () => {
+
+    const viewport = { width: 1400, height: 900 }
+
+    it('puts the middle of the viewport at the camera', () => {
+        const view = { x: 12000, y: -900, zoom: 0.05 }
+
+        expect(worldFromViewportPoint({ x: 700, y: 450 }, viewport, view))
+            .toEqual({ x: 12000, y: -900 })
+    })
+
+    it('flips y, because the viewport counts down and the world counts up', () => {
+        const view = { x: 0, y: 0, zoom: 1 }
+
+        expect(worldFromViewportPoint({ x: 700, y: 0 }, viewport, view).y).toBe(450)
+        expect(worldFromViewportPoint({ x: 700, y: 900 }, viewport, view).y).toBe(-450)
+    })
+
+    it('divides pixel offsets by the zoom, so a pixel is smaller world the closer you are', () => {
+        const near = worldFromViewportPoint({ x: 701, y: 450 }, viewport, { x: 0, y: 0, zoom: 10 })
+        const far = worldFromViewportPoint({ x: 701, y: 450 }, viewport, { x: 0, y: 0, zoom: 0.1 })
+
+        expect(near.x).toBeCloseTo(0.1, 12)
+        expect(far.x).toBeCloseTo(10, 12)
+    })
+
+    it('inverts visibleContentRect, so what picking aims at is what the navigator draws', () => {
+        const content = { width: 35562.43, height: 6325 }
+        const view = { x: -4000, y: 1200, zoom: 0.32 }
+
+        // The viewport's top-left corner, both ways round.
+        const visible = visibleContentRect(view, viewport, content)
+        const world = worldFromViewportPoint({ x: 0, y: 0 }, viewport, view)
+
+        expect(world.x).toBeCloseTo(visible.x - content.width * 0.5, 6)
+        expect(world.y).toBeCloseTo(content.height * 0.5 - visible.y, 6)
     })
 })

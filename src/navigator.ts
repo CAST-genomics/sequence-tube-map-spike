@@ -38,9 +38,6 @@ import { clamp, type Point, type Rect, type Size } from './viewportTransform.ts'
  */
 const THUMBNAIL_WIDTH = 720
 
-/** Inset from the surface's lower-left corner, matching `.stm-navigator` in the stylesheet. */
-const MARGIN = 16
-
 /**
  * Fill the thumbnail canvas, already sized to `size` CSS pixels at `pixelRatio` device
  * pixels per CSS pixel. May be async; a failure costs the picture, not the affordance.
@@ -53,8 +50,8 @@ export interface NavigatorHandle {
     setMap(content: Size, paint: ThumbnailPainter): Promise<void>
     /** `visible` is the slice of content space on screen, unclipped. */
     update(visible: Rect): void
-    /** The host changed size; re-fit the widget to it. The thumbnail is not redrawn — the
-     *  baked bitmap is scaled, which is the whole reason it is a bitmap. */
+    /** The host changed size; re-fit the widget to it. The thumbnail is never redrawn — the
+     *  bitmap is baked at full size once and scaled by CSS, which is why it is a bitmap. */
     relayout(): void
     clear(): void
     destroy(): void
@@ -87,27 +84,31 @@ export function createNavigator(parent: HTMLElement, options: NavigatorOptions):
     let thumbnail: Size = { width: THUMBNAIL_WIDTH, height: 1 }
     let grabOffset: Point = { x: 0, y: 0 }
     /** The unclipped viewport rect in navigator pixels — what the *view* covers, which is what a drag moves. */
-    let viewRect: Rect | null = null
-    /** The last slice reported, kept so a relayout can redraw the rect without one. */
-    let visibleRect: Rect | null = null
+    let viewRectInThumbnail: Rect | null = null
+    /** The last slice reported, in content units, kept so a relayout can redraw without one. */
+    let lastVisibleContent: Rect | null = null
 
     function navigatorScale(): number {
         return null === content ? 1 : thumbnail.width / content.width
+    }
+
+    /** The widget's size at a given width, at the map's own aspect. */
+    function sizeFor(width: number, mapContent: Size): Size {
+        return { width, height: Math.max(1, Math.round(width * mapContent.height / mapContent.width)) }
     }
 
     /**
      * Size the widget to the map's aspect, as wide as `THUMBNAIL_WIDTH` or as wide as the
      * host allows — a navigator wider than the surface it sits in would run off the edge
      * it is meant to describe.
+     *
+     * The inset is read off the element rather than restated here, so the stylesheet stays
+     * the only place the navigator's position is decided.
      */
     function layout(mapContent: Size): void {
-        const available = parent.clientWidth - MARGIN * 2
-        const width = Math.max(1, Math.min(THUMBNAIL_WIDTH, available))
+        const available = parent.clientWidth - element.offsetLeft * 2
 
-        thumbnail = {
-            width,
-            height: Math.max(1, Math.round(width * mapContent.height / mapContent.width))
-        }
+        thumbnail = sizeFor(Math.max(1, Math.min(THUMBNAIL_WIDTH, available)), mapContent)
 
         element.style.width = `${thumbnail.width}px`
         element.style.height = `${thumbnail.height}px`
@@ -117,7 +118,7 @@ export function createNavigator(parent: HTMLElement, options: NavigatorOptions):
     function drawRect(visible: Rect): void {
         const scale = navigatorScale()
 
-        viewRect = {
+        viewRectInThumbnail = {
             x: visible.x * scale,
             y: visible.y * scale,
             width: visible.width * scale,
@@ -129,10 +130,10 @@ export function createNavigator(parent: HTMLElement, options: NavigatorOptions):
         // spilling into the surrounding empty space. The size is never floored — a rect
         // that stopped shrinking would over-report the visible slice while still looking
         // plausible.
-        const left = clamp(viewRect.x, 0, thumbnail.width)
-        const top = clamp(viewRect.y, 0, thumbnail.height)
-        const right = clamp(viewRect.x + viewRect.width, 0, thumbnail.width)
-        const bottom = clamp(viewRect.y + viewRect.height, 0, thumbnail.height)
+        const left = clamp(viewRectInThumbnail.x, 0, thumbnail.width)
+        const top = clamp(viewRectInThumbnail.y, 0, thumbnail.height)
+        const right = clamp(viewRectInThumbnail.x + viewRectInThumbnail.width, 0, thumbnail.width)
+        const bottom = clamp(viewRectInThumbnail.y + viewRectInThumbnail.height, 0, thumbnail.height)
 
         rect.style.left = `${left}px`
         rect.style.top = `${top}px`
@@ -172,8 +173,11 @@ export function createNavigator(parent: HTMLElement, options: NavigatorOptions):
             // drawn one would make a grab there jump the view.
             const position = pointerPosition(event)
 
-            grabOffset = null !== viewRect && contains(viewRect, position)
-                ? { x: position.x - (viewRect.x + viewRect.width / 2), y: position.y - (viewRect.y + viewRect.height / 2) }
+            grabOffset = null !== viewRectInThumbnail && contains(viewRectInThumbnail, position)
+                ? {
+                    x: position.x - (viewRectInThumbnail.x + viewRectInThumbnail.width / 2),
+                    y: position.y - (viewRectInThumbnail.y + viewRectInThumbnail.height / 2)
+                }
                 : { x: 0, y: 0 }
 
             element.classList.add('is-dragging')
@@ -195,19 +199,25 @@ export function createNavigator(parent: HTMLElement, options: NavigatorOptions):
 
         async setMap(mapContent: Size, paint: ThumbnailPainter): Promise<void> {
             content = mapContent
+
+            // Shown before it is measured: a hidden element has no offset to read the
+            // stylesheet's inset from.
+            element.hidden = false
             layout(mapContent)
 
             const ratio = doc.defaultView?.devicePixelRatio || 1
 
-            // The bitmap is baked at the size the widget has now and scaled by CSS after
-            // that, so a later resize costs no repaint.
-            canvas.width = Math.round(thumbnail.width * ratio)
-            canvas.height = Math.round(thumbnail.height * ratio)
+            // Baked at full width whatever the widget is currently showing, and scaled by
+            // CSS from there. So a resize costs no repaint, a host that widens later gets
+            // a sharp thumbnail rather than a stretched one, and a map that arrives while
+            // the host is collapsed is not permanently a one-pixel picture.
+            const baked = sizeFor(THUMBNAIL_WIDTH, mapContent)
 
-            element.hidden = false
+            canvas.width = Math.round(baked.width * ratio)
+            canvas.height = Math.round(baked.height * ratio)
 
             try {
-                await paint(canvas, thumbnail, ratio)
+                await paint(canvas, baked, ratio)
             } catch (error) {
                 console.warn('Navigator thumbnail could not be drawn; the viewport rect still works.', error)
             }
@@ -218,7 +228,7 @@ export function createNavigator(parent: HTMLElement, options: NavigatorOptions):
                 return
             }
 
-            visibleRect = visible
+            lastVisibleContent = visible
             drawRect(visible)
         },
 
@@ -229,21 +239,24 @@ export function createNavigator(parent: HTMLElement, options: NavigatorOptions):
 
             layout(content)
 
-            if (null !== visibleRect) {
-                drawRect(visibleRect)
+            if (null !== lastVisibleContent) {
+                drawRect(lastVisibleContent)
             }
         },
 
         clear(): void {
             drag.cancel()
             content = null
-            viewRect = null
-            visibleRect = null
+            viewRectInThumbnail = null
+            lastVisibleContent = null
             element.hidden = true
             canvas.getContext('2d')?.clearRect(0, 0, canvas.width, canvas.height)
         },
 
         destroy(): void {
+            // Nulled as well as detached: a late `update` from a frame already in flight
+            // would otherwise write styles into a node that is no longer on the page.
+            content = null
             drag.destroy()
             element.remove()
         }

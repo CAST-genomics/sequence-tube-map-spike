@@ -51,12 +51,21 @@ reads as a marker rather than as dirt on the screen. 900 was also rendered and i
 better again by a hair; 720 is where the gain flattens and it is already half of a
 1400 px window, which is a lot of chrome to spend on a widget that is not the map.
 
-The width is a maximum, not a fixed size: the widget takes `min(720, host − 32)`, so a
+The width is a maximum, not a fixed size: the widget takes `min(720, host − inset)`, so a
 narrow host gets a smaller navigator instead of one running off the edge it exists to
-describe. The bitmap is baked at whatever width the widget had when the map loaded and
-scaled by CSS after that, so a resize costs no re-render — a window widened well past
-its original width will show a slightly soft thumbnail, which is the trade for a
-navigator that costs nothing to resize.
+describe. That clamp is not a feature anybody asked for — it is what raising 360 to 720
+costs, since 720 is wider than a PGB panel might be. The bitmap is always baked at the
+full 720, whatever width the widget is showing, and scaled by CSS from there: a resize
+then costs no re-render at all, a host that widens later gets a sharp thumbnail rather
+than a stretched one, and a map that happens to load while the host is collapsed does not
+end up permanently a one-pixel picture.
+
+**There is no margin left at 26 px.** `5514+` at 720 is exactly the density this note
+calls the floor, and it is the widest document in the set — a strip appreciably longer
+than 28:1 would land under it. The answer then is not a wider widget, which is already
+half the window: it is to stop deriving the height from the aspect and letterbox a
+taller thumbnail against a fixed floor, or to break the strip across two rows. Neither is
+worth building against a document nobody has seen.
 
 ## Why the thumbnail comes from the render target
 

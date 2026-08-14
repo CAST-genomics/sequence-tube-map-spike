@@ -148,7 +148,7 @@ because the two answer those in different vocabularies.
 | `src/parseBands.ts` | the document as six floats per band; rejects anything off-grammar |
 | `src/bandCamera.ts` | the WebGL camera's framing, and the navigator's content coordinates — pure, DOM-free, tested |
 | `src/svgSurface.ts` | the SVG surface: `{x, y, scale}`, the interactions, the SVG thumbnail bake |
-| `src/viewportTransform.ts` | the SVG surface's transform math — pure, DOM-free, tested |
+| `src/viewportTransform.ts` | the SVG surface's transform math, and the geometry vocabulary both surfaces speak — pure, DOM-free, tested |
 | `src/navigator.ts` | the navigator's chrome: viewport rect, drag and press-to-jump. Each surface paints its own thumbnail |
 | `src/interaction.ts` | modes, highlight rule, tooltips, drag-pan and wheel-zoom |
 | `src/fetchDocument.ts` | the fetch, and the failures worth naming |

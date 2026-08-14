@@ -232,6 +232,9 @@ export function createBandSurface(host: HTMLElement): SurfaceRenderer {
     /** True until the researcher moves the view — a resize re-fits only while the framing is still ours. */
     let untouched = true
     let frame = 0
+    /** The viewport the camera was last framed for. Kept so `draw` — which runs on every
+     *  panned frame — never reads layout back out of the DOM to place the navigator rect. */
+    let framed: Viewport = { width: 0, height: 0 }
 
     const mapNavigator: NavigatorHandle = createNavigator(host, {
         onNavigate(center: Point): void {
@@ -341,16 +344,11 @@ export function createBandSurface(host: HTMLElement): SurfaceRenderer {
         }
 
         const { renderer, camera, controls } = context
-        const frustum = pixelFrustum(size)
 
         renderer.setPixelRatio(window.devicePixelRatio)
         renderer.setSize(size.width, size.height, false)
 
-        camera.left = frustum.left
-        camera.right = frustum.right
-        camera.top = frustum.top
-        camera.bottom = frustum.bottom
-        camera.updateProjectionMatrix()
+        frameCamera(camera, size)
 
         // Fit moves with the viewport, so the clamp does too — and `update()` is what
         // pulls the current zoom back inside it.
@@ -359,6 +357,8 @@ export function createBandSurface(host: HTMLElement): SurfaceRenderer {
         controls.minZoom = range.min
         controls.maxZoom = range.max
         controls.update()
+
+        framed = size
 
         scheduleDraw()
     }
@@ -413,18 +413,15 @@ export function createBandSurface(host: HTMLElement): SurfaceRenderer {
         }
 
         const { renderer, scene, camera, material } = context
-        const pixel = devicePixel(camera.zoom, renderer.getPixelRatio())
 
-        material.uniforms.uHalfPixel.value = pixel * 0.5
-        material.uniforms.uPad.value = pixel
-
+        setCoverage(material, camera.zoom, renderer.getPixelRatio())
         renderer.render(scene, camera)
 
         // Two style writes on an element that is already in the DOM. The thumbnail under
         // it is untouched — it was rendered once, at load.
         mapNavigator.update(visibleContentRect(
             { x: camera.position.x, y: camera.position.y, zoom: camera.zoom },
-            viewport(),
+            framed,
             drawing.map.content
         ))
     }
@@ -451,16 +448,10 @@ export function createBandSurface(host: HTMLElement): SurfaceRenderer {
             return
         }
 
-        const { renderer, scene, material } = context
+        context2d.putImageData(renderThumbnail(context, drawing.map.content, size, pixelRatio), 0, 0)
 
-        context2d.putImageData(
-            renderThumbnail(renderer, scene, material, drawing.map.content, size, pixelRatio),
-            0,
-            0
-        )
-
-        // The coverage uniforms were left set for the thumbnail's zoom, which is ~1/300 of
-        // the surface's. The scheduled frame recomputes them from the real camera.
+        // Nothing on the visible canvas changed — this is only what puts the rect on the
+        // thumbnail that was just drawn under it.
         scheduleDraw()
     }
 
@@ -566,7 +557,7 @@ export function createBandSurface(host: HTMLElement): SurfaceRenderer {
  *
  * The camera is the surface's own arithmetic at a different zoom: a pixel-measured
  * frustum the size of the thumbnail, at exactly the zoom that fits the content's width
- * into it. So the thumbnail is the map fitted to a 360 px window and nothing more
+ * into it. So the thumbnail is the map fitted to a 720 px window and nothing more
  * special than that.
  *
  * The coverage uniforms follow the thumbnail's device pixel, which is ~300 world units
@@ -579,45 +570,40 @@ export function createBandSurface(host: HTMLElement): SurfaceRenderer {
  * `readRenderTargetPixels` hands back rows bottom-up, as GL stores them; `ImageData` wants
  * them top-down.
  */
-function renderThumbnail(
-    renderer: WebGLRenderer,
-    scene: Scene,
-    material: RawShaderMaterial,
-    content: Size,
-    size: Size,
-    pixelRatio: number
-): ImageData {
+function renderThumbnail(context: Context, content: Size, size: Size, pixelRatio: number): ImageData {
+    const { renderer, scene, material } = context
+
     const width = Math.max(1, Math.round(size.width * pixelRatio))
     const height = Math.max(1, Math.round(size.height * pixelRatio))
 
     const camera = new OrthographicCamera()
-    const frustum = pixelFrustum(size)
 
-    camera.left = frustum.left
-    camera.right = frustum.right
-    camera.top = frustum.top
-    camera.bottom = frustum.bottom
     camera.near = 0.1
     camera.far = 100
     camera.position.set(0, 0, 5)
     camera.zoom = fitZoom(content.width, size)
-    camera.updateProjectionMatrix()
+    frameCamera(camera, size)
 
-    const pixel = devicePixel(camera.zoom, pixelRatio)
+    const surfaceCoverage = {
+        halfPixel: material.uniforms.uHalfPixel.value,
+        pad: material.uniforms.uPad.value
+    }
 
-    material.uniforms.uHalfPixel.value = pixel * 0.5
-    material.uniforms.uPad.value = pixel
+    setCoverage(material, camera.zoom, pixelRatio)
 
     const target = new WebGLRenderTarget(width, height)
     const pixels = new Uint8Array(width * height * 4)
 
     try {
         renderer.setRenderTarget(target)
-        renderer.clear()
         renderer.render(scene, camera)
         renderer.readRenderTargetPixels(target, 0, 0, width, height, pixels)
     } finally {
+        // The material is the surface's own, so everything borrowed from it is handed
+        // back here rather than left for the next frame to notice.
         renderer.setRenderTarget(null)
+        material.uniforms.uHalfPixel.value = surfaceCoverage.halfPixel
+        material.uniforms.uPad.value = surfaceCoverage.pad
         target.dispose()
     }
 
@@ -631,6 +617,26 @@ function renderThumbnail(
     }
 
     return image
+}
+
+/** Point an orthographic camera at a viewport-sized frustum, in CSS pixels. */
+function frameCamera(camera: OrthographicCamera, size: Viewport): void {
+    const frustum = pixelFrustum(size)
+
+    camera.left = frustum.left
+    camera.right = frustum.right
+    camera.top = frustum.top
+    camera.bottom = frustum.bottom
+    camera.updateProjectionMatrix()
+}
+
+/** How much world one device pixel covers, which is what the fragment shader measures
+ *  coverage against and what keeps a sub-pixel band from missing every sample. */
+function setCoverage(material: RawShaderMaterial, zoom: number, pixelRatio: number): void {
+    const pixel = devicePixel(zoom, pixelRatio)
+
+    material.uniforms.uHalfPixel.value = pixel * 0.5
+    material.uniforms.uPad.value = pixel
 }
 
 /**

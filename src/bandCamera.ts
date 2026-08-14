@@ -16,10 +16,21 @@
  * is what `zoomRange` is for.
  */
 
+import type { Point, Rect, Size } from './viewportTransform.ts'
+
 /** A viewport in CSS pixels. */
 export interface Viewport {
     width: number
     height: number
+}
+
+/** Where the camera looks and how close, which is all the navigator needs of it. */
+export interface CameraView {
+    /** Camera position in world units — the point at the middle of the viewport. */
+    x: number
+    y: number
+    /** CSS pixels per world unit. */
+    zoom: number
 }
 
 /** A symmetric orthographic frustum, in CSS pixels. */
@@ -75,4 +86,37 @@ export function devicePixel(zoom: number, pixelRatio: number): number {
  *  zoom of zero or infinity, so callers wait rather than commit one. */
 export function usable(viewport: Viewport): boolean {
     return viewport.width > 0 && viewport.height > 0
+}
+
+/**
+ * The slice of the map on screen, in **content coordinates** — origin at the map's
+ * top-left corner, y down, the same vocabulary the SVG surface's transform speaks.
+ *
+ * This is the translation the navigator needs, and the only place the two coordinate
+ * systems meet. `parseBands.ts` centres the map on the origin and flips y so nothing
+ * downstream has to know the source was SVG; the navigator is a picture of the *whole
+ * map*, so it thinks in the map's own corner-origin frame and this converts back.
+ *
+ * The rect is unclipped: at fit-to-width on a 14:1 strip the viewport is taller than the
+ * map, so the visible slice legitimately runs off both ends of it. Clipping is the
+ * navigator's business, and only for drawing.
+ */
+export function visibleContentRect(view: CameraView, viewport: Viewport, content: Size): Rect {
+    const width = viewport.width / view.zoom
+    const height = viewport.height / view.zoom
+
+    return {
+        x: view.x + content.width * 0.5 - width * 0.5,
+        y: content.height * 0.5 - view.y - height * 0.5,
+        width,
+        height
+    }
+}
+
+/** The inverse for a point: where the camera goes to put `point` at the middle of the view. */
+export function worldFromContentPoint(point: Point, content: Size): Point {
+    return {
+        x: point.x - content.width * 0.5,
+        y: content.height * 0.5 - point.y
+    }
 }

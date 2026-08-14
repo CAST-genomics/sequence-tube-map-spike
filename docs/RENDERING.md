@@ -121,6 +121,22 @@ Not built, because it costs order-independence — where two tracks genuinely ov
 painter's-algorithm z-order that instance order currently carries would be lost — and
 because the regime it improves is one that cannot be read regardless.
 
+## The same shader at thumbnail scale
+
+The navigator renders this scene into a `WebGLRenderTarget` at 720 px wide — one camera
+change, once per document. That puts the coverage path at the far end of the regime the
+table above measures: a device pixel is ~300 world units and a band is 15, so ~20 tracks
+share every pixel row instead of 2.6.
+
+Two consequences follow, both of them the arithmetic behaving as designed rather than
+anything new. `uPad` is doing real work — without a band grown to cover a pixel, a 0.05 px
+band falls between sample rows and the thumbnail becomes a picture of whichever tracks
+happened to land on one. And the wash toward white is stronger still, for the reason given
+above: twenty independently-composited 0.05-coverage bands leave most of the background
+showing. The thumbnail is pale, and it is pale in proportion to what is there, which is
+what a thumbnail is for. The unbuilt third option — normalising by total coverage instead
+of compositing over white — would help here more than anywhere.
+
 ## What would break any of this
 
 - **A band that isn't the canonical shape.** The parser recognises one grammar and rejects

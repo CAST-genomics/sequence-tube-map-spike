@@ -59,7 +59,7 @@ arrive.
 | Reads the document as | six floats per band, by regex | a live DOM tree |
 | Draws with | one instanced draw call | ~10,345 elements under a CSS transform |
 | Zoom range | fit – 200× | fit – 4× |
-| Has | analytic coverage, PGB's `MapControls` | segment tooltips, the navigator, feeler mode |
+| Has | analytic coverage, PGB's `MapControls` | segment tooltips, feeler mode |
 | Refuses | a document off the band grammar, loudly | nothing |
 
 WebGL is the default because the SVG surface has a ceiling and reaches it on every
@@ -82,11 +82,18 @@ comparison arm reachable by hand at `?renderer=svg`.
 ## Using it
 
 Drag with the primary button to pan; a Magic Mouse swipe, a mouse wheel, or a
-trackpad pinch zooms about the cursor. On the SVG surface, hovering a segment box
-shows its id and sequence, and the navigator, bottom left, can be clicked to jump or
-dragged to travel — the segment boxes, the navigator and highlighting are all still
-to come on the WebGL surface, and will arrive as geometry rather than as a DOM
-overlay and a baked bitmap.
+trackpad pinch zooms about the cursor. The navigator, bottom left, shows the whole
+map with a rect around what is on screen: drag the rect to travel, press anywhere
+else to centre that point. Both surfaces have it. On the SVG surface, hovering a
+segment box also shows its id and sequence — the segment boxes and highlighting are
+still to come on the WebGL surface.
+
+The navigator's thumbnail is drawn from the surface's own scene: on the WebGL
+surface, one render into a render target at thumbnail size, read back once per
+document, so the picture in the corner cannot disagree with the picture on screen.
+It is 720 px wide at most, which is 51 px tall on `5520+` and 26 px on `5514+`;
+360 px was tried first and leaves `5514+` a 13 px hairline
+([`notes/2026-08-14-navigator-thumbnail-aspect.md`](./notes/2026-08-14-navigator-thumbnail-aspect.md)).
 
 Pan and zoom are PGB's, gesture for gesture. The WebGL surface *is* three.js
 `MapControls` with PGB's configuration verbatim; the SVG surface matches it by hand
@@ -139,10 +146,10 @@ because the two answer those in different vocabularies.
 | `src/surfaceRenderer.ts` | what a renderer is — `show(text)`, `clear`, `resize`, `destroy` |
 | `src/bandSurface.ts` | the WebGL surface: one instanced draw call, `MapControls`, the shaders |
 | `src/parseBands.ts` | the document as six floats per band; rejects anything off-grammar |
-| `src/bandCamera.ts` | the WebGL camera's framing — pure, DOM-free, tested |
-| `src/svgSurface.ts` | the SVG surface: `{x, y, scale}`, the navigator, the interactions |
+| `src/bandCamera.ts` | the WebGL camera's framing, and the navigator's content coordinates — pure, DOM-free, tested |
+| `src/svgSurface.ts` | the SVG surface: `{x, y, scale}`, the interactions, the SVG thumbnail bake |
 | `src/viewportTransform.ts` | the SVG surface's transform math — pure, DOM-free, tested |
-| `src/navigator.ts` | baked thumbnail, viewport rect, drag and click-to-jump |
+| `src/navigator.ts` | the navigator's chrome: viewport rect, drag and press-to-jump. Each surface paints its own thumbnail |
 | `src/interaction.ts` | modes, highlight rule, tooltips, drag-pan and wheel-zoom |
 | `src/fetchDocument.ts` | the fetch, and the failures worth naming |
 | `src/svgDocument.ts` | parse, strip `<title>`, measure the viewBox |

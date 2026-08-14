@@ -192,6 +192,14 @@ That note flags its metadata table as inferred-not-confirmed. Both inferences ar
     [`notes/2026-08-13-svg-rendering-hits-its-ceiling.md`](./notes/2026-08-13-svg-rendering-hits-its-ceiling.md).
 7. **Single `{x, y, scale}` state object** drives both surface and navigator, so the
    two cannot disagree.
+
+    **Generalized 2026-08-14.** The WebGL surface has no `{x, y, scale}` — it steers
+    `camera.position` and `camera.zoom` — so what the navigator is handed is the
+    *conclusion* rather than the state: the slice of content space currently on screen,
+    computed by whichever surface is drawing. The property that mattered is intact and
+    now holds across both: the navigator stores no view of its own, so it cannot
+    disagree with the surface about where the view is. The translation for the WebGL
+    surface is `visibleContentRect` / `worldFromContentPoint` in `bandCamera.ts`.
 8. **Gestures are PGB's** (three.js `MapControls`, `zoomToCursor`, `zoomSpeed: 1.2`):
    primary-button drag = pan; any `wheel`, ctrl-modified or not = zoom about the
    cursor. A researcher crosses between the two viewers constantly and must not have
@@ -210,9 +218,29 @@ That note flags its metadata table as inferred-not-confirmed. Both inferences ar
     interactions *with* strands, so live vectors buy nothing at ~90× reduction. Rect
     resizes with zoom.
 
-    **Not yet on the WebGL surface, 2026-08-14.** The navigator, the segment boxes and
-    highlighting are all still SVG-surface-only. When they land there they land as
-    three.js geometry and a second camera — not as a baked bitmap and a DOM overlay.
+    **On the WebGL surface, 2026-08-14, and still a baked bitmap.** The prediction
+    above was that it would land as three.js geometry and a second camera rather than
+    as a bitmap and a DOM overlay. Half of that was right and the half that was wrong
+    is worth keeping straight:
+
+    - **The thumbnail is baked, from the scene.** One render into a `WebGLRenderTarget`
+      at thumbnail size, read back, drawn to the canvas — same scene, same shader, same
+      instance buffer, a second camera fitted to the whole map. So it *is* the second
+      camera; what it produces is a bitmap, because the image is static and re-rendering
+      it per frame would spend a draw call to reproduce the same pixels. What the
+      original objection was really about — a second, independently serialized copy of
+      the document that can drift from the picture — does not arise.
+    - **The rect stays in the DOM.** It is chrome *over* the thumbnail, not map content,
+      which is what decision #11 said in the first place. Nothing about the renderer
+      change argues for drawing a 1 px border in WebGL.
+
+    **The width changed before anything was built.** `360` came from the 600 bp fixture
+    at 360 × 64 and gives 26 px on `5520+` and 13 px on `5514+`. Rendered and looked at:
+    26 survives, 13 is a hairline holding a 1.8 px rect. `THUMBNAIL_WIDTH` is now 720 —
+    a maximum, shrinking to fit a narrow host. See
+    [`notes/2026-08-14-navigator-thumbnail-aspect.md`](./notes/2026-08-14-navigator-thumbnail-aspect.md).
+
+    The segment boxes and highlighting remain SVG-surface-only.
 12. **Load with `DOMParser`, not `innerHTML`** — strip all `<title>` elements before
     attaching. Spinner in the body until ready.
 
@@ -272,6 +300,14 @@ That note flags its metadata table as inferred-not-confirmed. Both inferences ar
     map that is merely upside down somewhere else. Both are pure and DOM-free, as this
     decision requires. `spikeIsGone.test.ts` is not a unit test but a rule nobody would
     otherwise check.
+
+    **A fourth, 2026-08-14:** the navigator's content-coordinate translation
+    (`visibleContentRect` / `worldFromContentPoint`). The map is centred on the origin
+    with y up and the navigator thinks in the map's own corner-origin frame, so a rect
+    that tracks the view perfectly while sitting half a map height off — or that drifts
+    with zoom rather than with position — is a plausible-looking widget and a wrong one.
+    Pure, DOM-free, and tested in `bandCamera.test.ts`; the widget itself is judged by
+    looking.
 
 ### Repo
 

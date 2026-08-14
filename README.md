@@ -26,6 +26,9 @@ node selector, a URL field, and Open. Three query parameters:
   bar rather than off the page's memory.
 - `?url=…` — open a different tube map. Defaults to the committed fixture.
 - `?fps=1` — frame meter, top left. Click it to reset the worst-frame figure.
+- `?pick` — on the WebGL surface, read the pick pass and the feeler out loud: the track
+  under the cursor, what the pick cost, how many tracks are lit, and what the last and
+  worst appearance-table writes cost. Instrumentation; feeler mode runs without it.
 
 The selector lists the committed fixture and every minigraph node of a PGB dataset
 that GRCh38 places — 30 of `cici.json`'s 45 — in chromosome order. Picking one fills
@@ -59,7 +62,7 @@ arrive.
 | Reads the document as | six floats per band, by regex | a live DOM tree |
 | Draws with | one instanced draw call | ~10,345 elements under a CSS transform |
 | Zoom range | fit – 200× | fit – 4× |
-| Has | analytic coverage, PGB's `MapControls` | segment tooltips, feeler mode |
+| Has | analytic coverage, PGB's `MapControls`, feeler mode | segment tooltips |
 | Refuses | a document off the band grammar, loudly | nothing |
 
 WebGL is the default because the SVG surface has a ceiling and reaches it on every
@@ -92,8 +95,8 @@ Drag with the primary button to pan; a Magic Mouse swipe, a mouse wheel, or a
 trackpad pinch zooms about the cursor. The navigator, bottom left, shows the whole
 map with a rect around what is on screen: drag the rect to travel, press anywhere
 else to centre that point. Both surfaces have it. On the SVG surface, hovering a
-segment box also shows its id and sequence — the segment boxes and highlighting are
-still to come on the WebGL surface.
+segment box also shows its id and sequence — the segment boxes are still to come on the
+WebGL surface.
 
 The navigator's thumbnail is drawn from the surface's own scene: on the WebGL
 surface, one render into a render target at thumbnail size, read back once per
@@ -106,34 +109,45 @@ Pan and zoom are PGB's, gesture for gesture. The WebGL surface *is* three.js
 `MapControls` with PGB's configuration verbatim; the SVG surface matches it by hand
 at PGB's `zoomSpeed`, so a notch travels the same distance in all three.
 
-### Feeler mode is off
+### Feeler mode
 
-Holding `Shift` was meant to turn the cursor into a probe — strands highlighting on
-contact and accumulating, releasing clearing them all. It is **disabled by default**,
-because a real map tears and renders partially under it: restyling the ~10,000 track
-elements costs ~28 ms, and a sweep asks for that several times a second.
+Hold `Shift` and the cursor becomes a feeler: the track it touches lights, touches
+accumulate, everything else recedes, releasing clears. Hover alone does nothing —
+highlighting is deliberate rather than incidental. Pan and zoom are suppressed while the
+key is held, because a strand that slides out from under the cursor cannot be felt.
 
-The finding generalizes past this one feature: **changing how the strands look, in
-real time, from pointer position is not going to perform** — highlighting,
-de-emphasis, or anything else that restyles the ribbons live. The wall is the
-coupling of appearance change to pointer rate, and no constant fixes it.
-
-What that does *not* mean is that the ideas are abandoned. Every one of them
-survives; only the way they get invoked changes, from direct to indirect — a strand
-list, a menu, a palette assigning colors to samples, selection driven by the host, a
-click instead of a hover. A highlight already standing was measured to cost nothing
-to pan and zoom under, so the budget is roughly 28 ms per user decision rather than
-per pointer move. Plenty of room, and plenty of ways to spend it.
-
-The mechanism is intact behind `strandFeeler`, and the harness re-arms it with
-`?feeler` for judging it against smaller maps or a cheaper highlight:
+It is **on, on the WebGL surface, and off on the SVG surface** — the same interaction with
+two different costs behind it. On the SVG surface each swap invalidates style across
+~10,000 elements at ~28 ms, real maps tear, and that is not fixable by tuning; it stays
+behind `?feeler` there
+([`notes/2026-08-13-direct-strand-interaction-is-not-viable.md`](./notes/2026-08-13-direct-strand-interaction-is-not-viable.md)):
 
 ```
-http://localhost:5173/?feeler
+http://localhost:5173/?renderer=svg&feeler
 ```
 
-Full observation, measurements and reasoning:
-[`notes/2026-08-13-direct-strand-interaction-is-not-viable.md`](./notes/2026-08-13-direct-strand-interaction-is-not-viable.md).
+On the WebGL surface, track appearance is a `DataTexture` of one texel per track — RGB
+plus an emphasis byte — so lighting a strand writes one byte per *track*, nothing per band
+and nothing per already-lit track, and the frame uploads 2 KB. On `5520+`, 464 tracks and
+40,442 bands, a sweep lighting 198 of them holds a median table write of 0.000 ms — under
+what the page timer resolves — flat from the first track to the hundred-and-ninety-eighth,
+and the worst frame while sweeping equals the worst frame over the same moves with the key
+released. Lighting one strand and lighting two hundred cost the same.
+
+What it does not do is work at fit-to-width, where a band on `5520+` is 0.19 css pixels
+tall and 5.7 tracks share a device pixel row: there is no pixel in which lit and receded
+can differ. It reads unmistakably from about one css pixel per band upward. That is a pixel
+budget rather than a performance one, and
+[`docs/DISAMBIGUATING-TRACKS.md`](./docs/DISAMBIGUATING-TRACKS.md) is where the candidates
+for the other regime are weighed.
+
+Measurements, screenshots and the choices behind the treatment:
+[`notes/2026-08-14-feeler-mode-on-the-gpu.md`](./notes/2026-08-14-feeler-mode-on-the-gpu.md).
+Rerun them with `npm run dev` up:
+
+```
+node scripts/verify_highlight.mjs '<url>'
+```
 
 ## Shape of the code
 

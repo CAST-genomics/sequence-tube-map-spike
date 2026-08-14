@@ -144,6 +144,42 @@ holds regardless of which treatment above wins.
    (story 34)? If yes, the navigator should show it too — which is an argument for the
    thumbnail being re-rendered on selection, cheap because it is one render.
 
+### Built and measured, 2026-08-14 (#39) — three of those four answered
+
+Record: [`notes/2026-08-14-feeler-mode-on-the-gpu.md`](../notes/2026-08-14-feeler-mode-on-the-gpu.md).
+Rerun it with `node scripts/verify_highlight.mjs '<url>'`.
+
+1. **Fast enough, measured, at pointer rate on `5520+`.** Emphasis moved into an appearance
+   table — one texel per track, RGB plus an emphasis byte — so a touch writes one byte per
+   *track* and the frame uploads 2 KB. Median table write **0.000 ms, below what the page
+   timer resolves, flat from 1 track lit to 198 of 464**; worst frame while sweeping 18.0 ms
+   against 17.9 ms for the identical moves with the key released. The ~28 ms was the DOM.
+   The mechanism at the bottom of this document under *Not yet discussed* is no longer a
+   proposal; it is what this is built on.
+2. **It does not survive the sub-pixel regime, and the affordance is now honest about it.**
+   Unmistakable from ~1 css pixel per band upward; at fit on `5520+` — 0.19 css pixels per
+   band, 5.7 tracks per device pixel row — a lit strand cannot be found among the receded
+   ones by eye. The shader draws a touched band as though it were at least a pixel thick,
+   which stops a lit strand compositing at a fraction of its own colour, and that buys a
+   solid hairline rather than a findable one. **This is constraint 3 and it is a pixel
+   budget, not a treatment that needs tuning.** The candidates that would change the answer
+   are a screen-space minimum thickness or an outline — both below, both making the lit
+   track wider than the map says it is, neither attempted.
+3. **Picking is built** (#38) and it is what the feeler touches. Its own caveat stands
+   unchanged: it answers what is under the cursor, not what you are looking at three screens
+   to the right.
+4. **Open.** Emphasis does persist along the whole strand — it is a property of the track,
+   not of the bands on screen — but the navigator's thumbnail is baked once per document, so
+   the lit strand does not appear in it. One render would fix it and it was left alone.
+
+**Which treatment won, of the four in the table:** translucent. A receded band keeps its
+colour and drops its alpha, so it is a ghost of itself and whatever is behind it — the
+ground, or a lit track it crosses — shows through. Desaturation was rejected because grey
+already means `pclaiX="None"`; removal because a haplotype's path is read against its
+neighbours. The fear recorded against translucency, that dimming the crowd leaves nothing
+to sit against, did not materialise at working zooms: the bundle's envelope stays legible at
+8% and the lit strand sits inside it.
+
 ## Strategy B — use depth, now that we are in 3D
 
 *Raised 2026-08-14. New: it was not available on the SVG surface at all.*
@@ -214,11 +250,15 @@ Listed for completeness, from the same problem rather than from the conversation
 started this document. None of these have been thought through:
 
 - An **outline or halo** on the selected track — a screen-space stroke reads at any zoom
-  and does not touch the fill color.
-- **Appearance as a lookup table** — one texel per track, RGB plus a dim factor, so
-  emphasis costs a ~2 KB upload regardless of how many tracks are lit (#32). This is a
-  mechanism rather than a strategy, but it is the mechanism most of Strategy A would be
-  built on, and it was deliberately deferred out of the spike for exactly this.
+  and does not touch the fill color. **Promoted from idle to the obvious next move by the
+  2026-08-14 measurement**, together with its blunter cousin, a minimum *screen-space*
+  thickness for the lit track: both are the only things on this list that address the one
+  regime Strategy A demonstrably fails, and both trade the map's honesty about how thick a
+  band is for being able to find it. That trade has not been discussed.
+- ~~**Appearance as a lookup table**~~ — **built 2026-08-14** (#39, `src/trackAppearance.ts`),
+  and it is what Strategy A above rests on: one texel per track, RGB plus an emphasis byte,
+  2 KB uploaded however many tracks are lit. Kept in this list because the mechanism is
+  available to any strategy that needs per-track appearance, not only to A.
 - **Indirect selection**, which the 2026-08-13 note already argues for: a strand list, a
   search on `sample#haplotype#contig`, a palette assigning colors to samples, or selection
   arriving from PGB, which already knows which sample the researcher came in caring about.

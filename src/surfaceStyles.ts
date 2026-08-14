@@ -63,6 +63,13 @@ export const SURFACE_STYLES = `
     cursor: grabbing;
 }
 
+/* Feeler mode on the WebGL surface: the cursor is a feeler, not a grip. There is nothing
+   to make inert here — the canvas is one element and the pick pass answers with a track
+   id, so the dead zones the SVG surface had to rule out cannot arise. */
+.stm-root.is-feeling .stm-canvas {
+    cursor: crosshair;
+}
+
 /* A short transition keeps a sweep across many strands from strobing. */
 .stm-content g.track > * {
     transition: opacity 120ms ease-out;

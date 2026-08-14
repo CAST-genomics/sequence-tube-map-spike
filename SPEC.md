@@ -48,7 +48,7 @@ Three capabilities make the strip usable:
 2. **A navigator.** A thumbnail of the whole tube map, bottom-left, with a rect
    showing where the current view sits. It answers "where am I inside this node" at
    a glance, and can be dragged or clicked to move.
-3. **A feeler** *(built, disabled by default — see Feeler mode below)*. Holding
+3. **A feeler** *(built; on, on the WebGL surface — see Feeler mode below)*. Holding
    `Shift` turns the cursor into a probe: strands it touches
    light up and stay lit while the rest recede, accumulating a set as the researcher
    sweeps. Releasing clears everything. This is the deliberate tool that the
@@ -143,6 +143,32 @@ and interaction layer over someone else's picture.
 > highlight already standing was measured to cost nothing to navigate under.
 > Observation and measurements:
 > [`notes/2026-08-13-direct-strand-interaction-is-not-viable.md`](./notes/2026-08-13-direct-strand-interaction-is-not-viable.md).
+>
+> **Re-enabled on the WebGL surface (2026-08-14, #39), and the general finding above is
+> withdrawn for it.** The ~28 ms was style invalidation in the DOM, not a property of this
+> problem. Track appearance is now a `DataTexture` of one texel per track, so a touch writes
+> one byte per *track* — nothing per band, nothing per already-lit track — and the frame
+> uploads 2 KB: on `5520+` a sweep lighting 198 of 464 tracks holds a median table write
+> below what the page timer resolves, and the worst frame while sweeping equals the worst
+> frame over the same moves with the key released. **The direct route is what ships there.**
+> The indirect routes above are still worth having and are no longer the only option.
+>
+> Met there: 25, 26, 27 (crosshair and a badge), 28 — *from about one css pixel per band
+> upward* — 29, 30, 31, 32, 34, 36 (one canvas and a pick pass, so the dead zones this story
+> was written against cannot arise) and 37. **Two are not met and are not merely pending:**
+> **33**, a smooth rather than instant highlight change, which needs per-track animation and
+> a surface that draws every frame rather than on demand; and **35**, seeing *which* strand
+> is under the cursor, which needs `trackName` — the band parser reads geometry, colour and
+> `trackID` and nothing else, so the harness's `?pick` readout can name a track only by
+> number.
+>
+> At fit-to-width story 28 is not met at all: a band on `5520+` is 0.19 css pixels tall and
+> 5.7 tracks share a device pixel row, so there is no pixel in which a lit and a receded
+> track can differ. That is a pixel budget, and the candidates for it are weighed in
+> [`docs/DISAMBIGUATING-TRACKS.md`](./docs/DISAMBIGUATING-TRACKS.md). The SVG surface keeps
+> the paragraphs above unchanged: its feeler stays off, behind `?feeler`.
+> Measurements:
+> [`notes/2026-08-14-feeler-mode-on-the-gpu.md`](./notes/2026-08-14-feeler-mode-on-the-gpu.md).
 
 25. As a researcher, I want strands to stay quiet when I'm merely moving the cursor
     around, so that reading the map is not a strobing distraction.

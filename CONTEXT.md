@@ -45,8 +45,8 @@ resolution, used consistently throughout these documents:
 | **span** | A minigraph node's GRCh38 base-pair extent (`end − start`), as recorded in `data/nodeTable.json`. *Avoid* "size", which conflates four separate quantities — see the note under Risks. Added 2026-08-13. |
 | **surface** | The pannable/zoomable area holding the tube-map SVG. |
 | **navigator** | Thumbnail of the whole tube map, bottom-left, with a rect showing the current viewport. |
-| **feeler mode** | `Shift` held. Cursor acts as a feeler: strands highlight on contact, segments inert, pan/zoom suppressed. **Disabled by default** — see the note under Interaction. |
-| **inspect mode** | `Shift` released, and the only mode the viewer ships in. Segments hoverable, strands inert, pan/zoom live. |
+| **feeler mode** | `Shift` held. Cursor acts as a feeler: strands highlight on contact, segments inert, pan/zoom suppressed. **On by default on the WebGL surface** since 2026-08-14; off by default on the SVG surface, and staying that way — see the note under Interaction. |
+| **inspect mode** | `Shift` released. Segments hoverable, strands inert, pan/zoom live. |
 
 *If `segment` is wrong — if the team already says "node" at both scales, or prefers
 another term — say so, because it propagates through every document and identifier
@@ -257,7 +257,9 @@ That note flags its metadata table as inferred-not-confirmed. Both inferences ar
     a maximum, shrinking to fit a narrow host. See
     [`notes/2026-08-14-navigator-thumbnail-aspect.md`](./notes/2026-08-14-navigator-thumbnail-aspect.md).
 
-    The segment boxes and highlighting remain SVG-surface-only.
+    The segment boxes remain SVG-surface-only. **Highlighting does not, as of
+    2026-08-14** — see the note under #15; the WebGL surface highlights from an appearance
+    table and the SVG surface no longer has the better story.
 12. **Load with `DOMParser`, not `innerHTML`** — strip all `<title>` elements before
     attaching. Spinner in the body until ready.
 
@@ -296,6 +298,26 @@ That note flags its metadata table as inferred-not-confirmed. Both inferences ar
     selection driven by PGB, click rather than hover — a few swaps per minute instead
     of a few per second. See
     [`notes/2026-08-13-direct-strand-interaction-is-not-viable.md`](./notes/2026-08-13-direct-strand-interaction-is-not-viable.md).
+
+    **Reversed on the WebGL surface, 2026-08-14, by measurement.** The ~28 ms was a fact
+    about DOM style invalidation, not about this problem, and the prediction that indirect
+    invocation would be needed is withdrawn for that surface: feeler mode is wired to
+    pointer position there and **ships on**. Track appearance is a `DataTexture` of one
+    texel per track — RGB plus an emphasis byte — so lighting a strand writes one byte per
+    *track*, nothing per band and nothing per already-lit track, and the frame uploads 2 KB.
+    On `5520+` (464 tracks, 40,442 bands) a sweep lighting 198 of them holds a **median
+    table write of 0.000 ms — under what the page timer resolves — flat from the first
+    track lit to the hundred-and-ninety-eighth**, and the worst frame while sweeping (18.0
+    ms) equals the worst frame over the identical moves with `Shift` released (17.9 ms).
+    Both surfaces keep their own answer: the SVG surface's feeler stays off and stays
+    behind `?feeler`, because nothing about its 28 ms changed. Measured in
+    [`notes/2026-08-14-feeler-mode-on-the-gpu.md`](./notes/2026-08-14-feeler-mode-on-the-gpu.md).
+
+    **What did not reverse: legibility at fit.** The highlight reads unmistakably from about
+    one css pixel per band upward and locates nothing at fit-to-width, where a band on
+    `5520+` is 0.19 css pixels tall and 5.7 tracks share a device pixel row. That is
+    `docs/DISAMBIGUATING-TRACKS.md` constraint 3, and it is a pixel budget rather than a
+    performance one.
 16. **Strand tooltip: raw `trackName`, unparsed.**
 17. **Segment tooltip (inspect mode): `id` + `sequence`, verbatim.** At ≤130 chars it
     always fits — no truncation, no detail panel. Content is provisional; the
@@ -344,6 +366,14 @@ That note flags its metadata table as inferred-not-confirmed. Both inferences ar
   [`docs/DISAMBIGUATING-TRACKS.md`](./docs/DISAMBIGUATING-TRACKS.md) with the
   constraints each has to survive. Nothing is decided; the document is where proposals
   get checked before they get built.
+
+  **First strategy built and measured, 2026-08-14: A, modifier-held emphasis with the rest
+  receding** (#39, over the picking in #38). It answers the interaction half — from about
+  one css pixel per band upward a single haplotype is traceable across the window against
+  463 ghosts — and it does not answer the fit-to-width half, where there is no pixel in
+  which lit and receded can differ. It also only ever says which track is *under the
+  cursor*, which the document itself flags as a smaller question than the one being asked.
+  So this stays deferred as a whole; one tool in it now exists.
 - **`trackName` decoding.** `NA21309#2#CM092097.1` is `sample#haplotype#contig`, a
   3-part assembly-walk-shaped key addressable in PGB's vocabulary. Displayed
   verbatim in v1.

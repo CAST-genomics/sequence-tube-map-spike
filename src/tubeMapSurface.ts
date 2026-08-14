@@ -19,8 +19,12 @@
  *
  * `renderer` selects between them. `webgl` is the band renderer, which is what
  * `notes/2026-08-14-three-js-renderer-verdict.md` settled on; `svg` is the original
- * surface, which stays because it is the only one with per-element hit-testing and can
- * show a document the band grammar rejects.
+ * surface, which stays because it is the only one with per-element hit-testing.
+ *
+ * **It is not a fallback and this mount will never reach for it.** A document the band
+ * grammar refuses gets the error state and stops there — swapping surfaces underneath
+ * the researcher would leave what they are looking at depending on a validation result
+ * they never saw. Decided 2026-08-14; `CONTEXT.md` #1 carries the reasoning.
  */
 
 import { createBandSurface } from './bandSurface.ts'

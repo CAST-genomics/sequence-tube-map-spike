@@ -69,11 +69,15 @@ verdict that settled this, with the measurements, is
 [`notes/2026-08-14-three-js-renderer-verdict.md`](./notes/2026-08-14-three-js-renderer-verdict.md);
 how a band is drawn is [`docs/RENDERING.md`](./docs/RENDERING.md).
 
-The SVG surface stays because it is the only one with per-element hit-testing, and
-because a document the band grammar rejects can still be looked at there — by
-switching to it by hand. The **automatic** fallback ADR `0001` promises is not built:
-a refusal is currently a dead end with a named error state. See the amendment under
-`CONTEXT.md` decision #1.
+**The SVG surface is not a fallback.** A document the band grammar rejects gets a named
+error state and stops there; nothing is silently swapped in behind it, because a
+researcher who cannot tell which renderer drew what they are looking at is worse off
+than one who gets told the document could not be drawn. A refusal is something to deal
+with when it occurs, from the document that caused it. Decided 2026-08-14 — `CONTEXT.md`
+decision #1 and ADR `0001` carry the reasoning.
+
+What the SVG surface is, for now: the only surface with per-element hit-testing, and a
+comparison arm reachable by hand at `?renderer=svg`.
 
 ## Using it
 

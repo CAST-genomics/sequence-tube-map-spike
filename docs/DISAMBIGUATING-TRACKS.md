@@ -11,48 +11,31 @@ This document is the layer above the tickets that build pieces of an answer — 
 mode) — and it exists so those get built against a strategy rather than each inventing
 one.
 
-## What this panel is, so the scope is not overstated
+## The observation
 
-This is the **sequence tube map** panel: one visualization of one thing, reached by
-clicking a minigraph node in the PGB browser and asking to see inside it. It is not the
-application, and the problem below is not the application's problem. It is this
-visualization's central problem, and it has to be solved in this visualization's own terms.
+Tracks that run in proximity — parallel, in clusters, which is most of the strip — are
+often close enough in color that they cannot be told apart, and where the colors cannot be
+separated the tracks cannot be either. `SPEC.md` story 28 asks for the opposite:
+*"separate one haplotype from its neighbours even when they are nearly the same color."*
 
-## Why this is the problem, and not one feature among many
+That is the whole of it. A few details shape what an answer can look like:
 
-`SPEC.md` story 28: *"separate one haplotype from its neighbours even when they are nearly
-the same color, so that genetic similarity does not prevent me from reading individual
-paths."*
+- **Sometimes the colors are not merely close, they are equal.** On `5520+`, 464 tracks
+  carry 108 distinct colors and at least 356 share one with another track exactly (#32).
+  Where that happens, magnification does not help — so a strategy that assumes the picture
+  resolves once a band is a few pixels tall is answering a different question.
+- **At fit there is no room to draw a distinction.** 464 tracks land on ~177 device rows,
+  2.6 tracks per pixel row (`RENDERING.md`). Below one pixel per band only low-frequency
+  cues survive.
+- **A strand does not fit on the screen.** The strip is 14:1 to 28:1, so following one
+  haplotype means following it across tens of screens. Identifying a track only where the
+  cursor sits answers a smaller question than the one being asked.
+- **Crossings are where the eye loses the thread**, and where the picture offers least:
+  abutting bands of the same color.
 
-Everything else in this panel — pan, zoom, the navigator, the band renderer — exists to
-put the data on screen. This is the part that makes it *readable*, and it is the part we
-have not seen solved anywhere. The reason it is hard is specific:
+## Why the colors collide
 
-- **The palette is inherited, and it was derived for a different picture.** See below;
-  this is the crux and it is not a property of the data so much as of the encoding.
-- **Tracks share colors outright, not merely nearly.** On the tube map's own `5520+`,
-  464 tracks carry 108 distinct colors and at least 356 share a color with another track
-  *exactly* (#32). **No amount of magnification separates them** — this is not a
-  resolution problem with a zoom-shaped fix, and any strategy resting on "it resolves
-  once a band is several pixels tall" is answering the decimation problem instead of
-  this one.
-- **The scale is against us.** 464 tracks on `5520+`, 40,442 bands. At fit, 464 tracks
-  land on ~177 device rows — 2.6 tracks per pixel row (`RENDERING.md`). Below one pixel
-  per band, *no* appearance strategy is legible, because there is no pixel to spend on it.
-- **A strand does not fit on the screen.** The strip is 14:1 to 28:1. Following one
-  haplotype means following it across tens of screens, so anything that identifies a
-  strand only where the cursor is has answered a smaller question than the one asked.
-- **Crossings are the moment of ambiguity.** Two same-colored tracks that swap vertical
-  position are exactly where the eye loses the thread, and exactly where the picture
-  offers the least — abutting bands of the same color.
-
-So the target is not "make the selected one visible". It is **make one path followable
-across the whole node, without lying about color, at zoom levels where the strand is
-thinner than a pixel.**
-
-## Where the palette comes from, and what it was built to do
-
-This panel does not choose its track colors and should not start. They arrive in the
+The tube map does not choose its track colors and should not start. They arrive in the
 `RGB` field beside each PCLAI coordinate, computed upstream as a visual encoding of the
 haplotype's position in PCA space; PGB's 3D graph and its PCLAI chart read the same field.
 PGB's own note is explicit: *"The colors in PCLAI are not chosen — they ship with the
@@ -60,18 +43,17 @@ data … the model's own visual encoding of each point's PCA location (so that t
 close in PCA space are also close in color); the visualization reads them, it does not
 interpret."*
 
-**That encoding was designed for the PCLAI chart, and it is good there.** The chart is a
-2D scatter of PCA space against the reference-panel backdrop, where **position** does the
-separating: every point sits at its own coordinate, and color is a redundant, supporting
-cue that ties a dot to the same haplotype elsewhere. "Close in PCA → close in color" is a
-feature when position already tells the points apart.
+That encoding was designed for the PCLAI chart, and works there. The chart is a 2D
+scatter of PCA space against the reference-panel backdrop, where **position** does the
+separating: every point sits at its own coordinate, and color is a supporting cue tying a
+dot to the same haplotype elsewhere. "Close in PCA → close in color" is a feature when
+position already tells the points apart.
 
-**The tube map inherits that encoding into a picture with no position channel to spare.**
+The tube map inherits that encoding into a picture with no position channel to spare.
 Vertical order here is layout — where the server routed a ribbon so the bundle reads —
-not identity, and it changes along the strip. Color is left carrying the entire
-discrimination burden, and it was never built to bear it. So the limitation the tube map
-runs into is the chart's color derivation, arriving in a context the derivation was not
-designed for.
+not identity, and it changes along the strip. Color is left carrying the discrimination
+on its own, which is not what it was derived to do. That is the source of the
+observation above.
 
 Measured in PGB's own datasets rather than downstream of them
 (`scripts/pclai_color_collisions.py`, run over `pgb/public/datasets/api-v3`), for the node
@@ -96,12 +78,11 @@ busiest node, two haplotypes **8% of the PCA cloud's diameter apart** receive th
 RGB. Closeness in color does carry meaning; **equality of color does not** — that is
 quantisation, not a claim that two haplotypes are the same.
 
-**Why this framing matters for what gets built.** If the colors were simply the honest
-signal of genetic similarity, the only answer would be resignation. They are not: they are
-one encoding of a coordinate, chosen for a chart where position did the separating. The
-tube map's job is therefore to **add back a channel the chart never needed** — which is a
-data visualization problem with data visualization answers, and it is what the strategies
-below are for.
+**Why this matters for what gets built.** If the collisions were simply the honest signal
+of genetic similarity, there would be nothing to do about them. They are not: they are one
+encoding of a coordinate, chosen for a picture where position did the separating. So the
+tube map can add back a channel the chart did not need — a data visualization question,
+with data visualization answers, which is what the strategies below are for.
 
 Two constraints survive from this, and they pull in opposite directions:
 

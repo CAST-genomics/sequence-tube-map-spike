@@ -82,7 +82,8 @@ Consequences for this viewer, all verified against the sample data:
 
 **One correction, 2026-08-14 — where this section over-reaches.** Everything above is
 true of the PCLAI *coordinates*. It is not true of the 8-bit color the data ships, and
-the difference decides whether this panel's central problem is solvable. The `RGB` field
+the difference decides whether anything can be done about tracks that cannot be told
+apart. The `RGB` field
 is an encoding of the coordinate derived for **PGB's PCLAI chart**, a scatter where
 position separates the points and color is a supporting cue; a tube map has no position
 channel to spare. Measured across PGB's datasets (`scripts/pclai_color_collisions.py`):
@@ -92,8 +93,8 @@ cloud's diameter apart get the same RGB.
 
 So: near-identical colors *are* meaningful, and identical colors are **not** — that is
 quantisation, not a claim that two haplotypes are alike. Read as written, this section
-says the collisions are the signal and nothing can be done; that would be the wrong
-conclusion. See
+implies the collisions are the signal and nothing can be done about them, which is not
+the case. See
 [`docs/DISAMBIGUATING-TRACKS.md`](./docs/DISAMBIGUATING-TRACKS.md).
 
 ## Verified facts about the data
@@ -332,11 +333,12 @@ That note flags its metadata table as inferred-not-confirmed. Both inferences ar
 
 ## Deferred — deliberately, not overlooked
 
-- **Telling one track from another.** The sequence tube map's central problem
-  (`SPEC.md` story 28), and one it inherits: track color is PCLAI's shipped encoding,
-  derived for the PCLAI chart where *position* separates the points and color is a
-  supporting cue. Here there is no position channel to spare, so ~460 haplotypes arrive
-  encoded in 120–150 distinct colors with four in five sharing one exactly. The
+- **Telling one track from another.** Tracks running in proximity — parallel, in
+  clusters — are often too close in color to separate, and sometimes share a color
+  exactly (`SPEC.md` story 28). Track color is PCLAI's shipped encoding, derived for the
+  PCLAI chart where *position* separates the points and color supports it; a tube map has
+  no position channel to spare, so ~460 haplotypes arrive encoded in 120–150 distinct
+  colors with four in five sharing one exactly. The
   strategies on the table — modifier-held emphasis with the rest receding, and depth
   cues now that the renderer is 3D — are collected in
   [`docs/DISAMBIGUATING-TRACKS.md`](./docs/DISAMBIGUATING-TRACKS.md) with the

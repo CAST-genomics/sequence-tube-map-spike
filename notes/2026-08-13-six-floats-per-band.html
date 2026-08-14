@@ -1,3 +1,11 @@
+<!--
+  Standalone copy of the published artifact:
+  https://claude.ai/code/artifact/5dc227e9-5033-4676-97ff-7be47af87a39
+
+  The <html>/<head>/<body> wrapper below exists so this file opens directly in a
+  browser. The artifact runtime injects its own, so strip the wrapper before
+  republishing or the page ends up nested inside a second document.
+-->
 <!doctype html>
 <html lang="en">
 <head>
@@ -319,12 +327,19 @@
     units wide. What follows is how they get drawn: one draw call, six floats per piece,
     and no tessellator.
   </p>
+  <p class="standfirst">
+    <b>Written 13 August 2026 as a design, and revised 14 August after building it.</b>
+    The geometry held exactly. Several conclusions about antialiasing and about what
+    would survive from the old viewer did not, and each is corrected in place below
+    rather than quietly edited away.
+  </p>
   <dl class="figures">
     <div><dt>Haplotypes</dt><dd class="fig-v">464</dd></div>
     <div><dt>Pieces drawn</dt><dd class="fig-v">40,442</dd></div>
     <div><dt>Floats per piece</dt><dd class="fig-v">6</dd></div>
     <div><dt>Draw calls</dt><dd class="fig-v">1</dd></div>
-    <div><dt>Piece height at fit scale</dt><dd class="fig-v">0.6<span class="fig-note"> px</span></dd></div>
+    <div><dt>Piece height at fit scale</dt><dd class="fig-v">0.19<span class="fig-note"> px</span></dd></div>
+    <div><dt>Frame time, fit to 200× zoom</dt><dd class="fig-v">8.3<span class="fig-note"> ms</span></dd></div>
   </dl>
 </header>
 
@@ -625,14 +640,32 @@ fragment shader — and that choice sets both the cost and the antialiasing qual
 <div class="crux">
   <span class="fig-k">Why not simply A</span>
   <p>
-    At fit scale a band is <strong>0.6 CSS pixels</strong> tall, and 464 of them are
-    stacked. Four-sample MSAA can only report coverage as 0, ¼, ½, ¾ or 1 — so
-    sub-pixel ribbons flicker between those five values as you pan, and the colour
-    banding that encodes real genetic structure dissolves into noise. Analytic coverage
-    returns the exact fraction. That is what SVG's rasteriser does, and it is the reason
-    the SVG looked right.
+    At fit scale a band is well under a pixel tall — 0.19 CSS px on the largest
+    document — and hundreds of them are stacked. Four-sample MSAA can only report
+    coverage as 0, ¼, ½, ¾ or 1, where analytic coverage returns the exact fraction.
+    That is what SVG's rasteriser does, and it is the reason the SVG looked right.
   </p>
 </div>
+
+<aside class="note">
+  <b>Measured, 14 August 2026.</b> Both techniques were built and compared live on one
+  frame. The original text here predicted that MSAA would <i>dissolve</i> the banding
+  into noise. It does not dissolve — it <b>discards</b>. Each of four samples is won
+  outright by a single band, so no background survives and the result looks
+  <i>more</i> saturated than analytic coverage; but at most four of the bands covering a
+  pixel can be represented and the rest are lost. At fit on the largest document, 464
+  tracks land on 177 device rows, and a column carries 101 distinct values under MSAA
+  against 119 under analytic coverage. The conclusion stands; the mechanism was wrong.
+</aside>
+
+<aside class="note">
+  <b>And the choice barely matters.</b> At 40× zoom, where a band is 7.7 CSS px, the two
+  techniques differ by 6.18% of pixels at a mean channel delta of 2.32 out of 255 —
+  entirely on band edges. The whole question lives below one pixel per band, which is
+  the regime where hundreds of tracks share every pixel row and nothing is legible under
+  any technique. Analytic coverage is kept because it preserves about ten times more
+  distinct colour at no cost, not because the difference is visible where anyone works.
+</aside>
 </section>
 
 <section>
@@ -668,14 +701,30 @@ for a GPU.
 </p>
 
 <p>
-Rung count is the one number still to be settled by measurement rather than argument:
-render at maximum zoom with 16, 32, 64 and 128 rungs, pixel-diff each against the SVG,
-and take the smallest that is indistinguishable.
+<b>Rung count, measured 14 August 2026.</b> Sixty-four leaves a worst-case chord error
+of 0.41 px in x and 0.06 px in y at maximum zoom on the widest piece in the largest
+document. A sweep of 16, 32, 64 and 128 rungs showed flat frame time throughout, so the
+count is free in this range, and no evidence emerged that 64 is insufficient. The pixel
+comparison across that sweep was inconclusive rather than favourable: all three counts
+differed from 128 by the same fraction, which is camera reproducibility across page
+loads rather than tessellation.
 </p>
 </section>
 
 <section>
 <h2><span class="num">05</span> The pixels: coverage, not colour</h2>
+
+<p>
+<b>Corrected 14 August 2026.</b> Placing rungs at even <i>x</i> is what forces an
+inversion of <code>x(t)</code>, because the two edges have different control abscissae
+and so do not share an x at equal <code>t</code>. Placing them at even <i>t</i> removes
+the question entirely: both edges reach <code>x0</code> at <code>t=0</code> and
+<code>x1</code> at <code>t=1</code> whatever their control abscissae, so sampling both
+at the same parameter inscribes a correct polygon with vertical ends. The built renderer
+does that, and has no root-finding in its vertex shader at all. A Newton step survives
+only in the fragment shader, where the coverage calculation genuinely needs the
+parameter at the fragment's own x.
+</p>
 
 <p>
 Each fragment receives an interpolated <code>t</code> from the rungs on either side.
@@ -950,21 +999,30 @@ appears on screen.
 </aside>
 
 <aside class="note">
-  <b>The rest survives.</b> Pan and zoom maths, the fit-to-width clamp, the navigator
-  thumbnail and the loader are unchanged. The camera is driven from the same
-  <code>{x, y, scale}</code> object as before; no controls library is involved.
+  <b>Reversed 14 August 2026 — this was wrong.</b> The pan and zoom maths in the SVG
+  viewer turned out to be a hand-written reimplementation of the parent application's
+  own <code>MapControls</code> factory, written only because that viewer had no
+  three.js. The renderer uses <code>MapControls</code> with the parent's configuration
+  verbatim: zoom is <code>camera.zoom</code>, pan is <code>camera.position</code>, and
+  there is no <code>{x, y, scale}</code> object anywhere. The fit-to-width clamp does
+  not survive either — its 4× ceiling never resolves a haplotype on the documents that
+  matter, and the renderer clamps at 200×.
 </aside>
 
 <aside class="note">
-  <b>Segment boxes</b> — the 75 translucent, stroked outlines marking sequence
-  boundaries — stay as real SVG in a layer above the canvas. Seventy-five elements were
-  never the problem, and keeping them in the DOM keeps their tooltips working for free.
+  <b>Segment boxes — reversed 14 August 2026.</b> The translucent, stroked outlines
+  marking sequence boundaries were to stay as real SVG in a layer above the canvas, for
+  free hit-testing. That is the same reasoning that kept the whole map in the DOM, and
+  it collapsed for the same reason. They become geometry, picked with a raycaster; an
+  SVG layer transformed in lockstep with the camera is exactly the coupling this
+  renderer exists to escape.
 </aside>
 </div>
 
 <footer>
-  Sequence tube map · renderer spike · 13 August 2026 · figures drawn from measurements
-  of the committed fixture and the live UCSD API
+  Sequence tube map · renderer spike · 13 August 2026, measured 14 August 2026 ·
+  figures drawn from measurements of the committed fixtures, the live UCSD API, and a
+  working renderer on an Apple M1 Pro
 </footer>
 
 </div>

@@ -316,6 +316,12 @@ That note flags its metadata table as inferred-not-confirmed. Both inferences ar
 
 ## Deferred — deliberately, not overlooked
 
+- **Telling one track from another.** The open problem, and the one the viewer exists
+  for (`SPEC.md` story 28). The strategies on the table — modifier-held emphasis with
+  the rest receding, and depth cues now that the renderer is 3D — are collected in
+  [`docs/DISAMBIGUATING-TRACKS.md`](./docs/DISAMBIGUATING-TRACKS.md) with the
+  constraints each has to survive. Nothing is decided; the document is where proposals
+  get checked before they get built.
 - **`trackName` decoding.** `NA21309#2#CM092097.1` is `sample#haplotype#contig`, a
   3-part assembly-walk-shaped key addressable in PGB's vocabulary. Displayed
   verbatim in v1.

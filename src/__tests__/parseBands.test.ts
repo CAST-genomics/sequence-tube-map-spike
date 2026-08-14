@@ -1,5 +1,5 @@
 /**
- * The parser is the one part of the spike that can be silently wrong without looking
+ * The parser is the one part of the renderer that can be silently wrong without looking
  * wrong: a mis-numbered regex group yields plausible geometry, and a coordinate
  * conversion applied twice yields a picture that is merely upside down somewhere else.
  *
@@ -9,7 +9,7 @@
 
 import { readFileSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
-import { MAX_TRACK_ID, NonConformingDocument, THICKNESS, parseBands } from './parseBands.ts'
+import { MAX_TRACK_ID, NonConformingDocument, THICKNESS, parseBands } from '../parseBands.ts'
 
 const FIXTURES = {
     small: { path: 'public/stm-chr1-25331046-25331646.svg', bands: 10270, tracks: 369, width: 35562.42857142856 },

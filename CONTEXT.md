@@ -139,6 +139,15 @@ That note flags its metadata table as inferred-not-confirmed. Both inferences ar
 4. **`mountTubeMapSurface(container)`** renders surface + navigator into any
    container and knows nothing about panel chrome. The harness passes the full
    viewport (pure data, no chrome); PGB later passes a card body.
+
+    **Extended 2026-08-14.** The signature is now
+    `mountTubeMapSurface(container, { renderer })`, where `renderer` is `webgl` (the
+    band renderer, the default) or `svg` (the original surface). The mount kept the
+    fetch, the spinner and the error state; everything about the *view* — fit, zoom,
+    what a resize does — moved into the renderer, because the two answer it in
+    different vocabularies. The harness picks from `?renderer=`, so both surfaces are
+    comparable on one document without a rebuild. `open(url)` is unchanged and is
+    still the entire input surface.
 5. **Pure HTML / CSS / SVG / TypeScript. No Three.js.** Zero dependency overlap with
    PGB's 3D stack.
 
@@ -171,12 +180,22 @@ That note flags its metadata table as inferred-not-confirmed. Both inferences ar
    cursor. A researcher crosses between the two viewers constantly and must not have
    to change hands.
 9. **Open fit-to-width**; clamp zoom to `[fit, 4×]`; zoom about the cursor.
+
+    **Ceiling raised 2026-08-14, on the WebGL surface only.** `[fit, 200×]`. `4×` was
+    calibrated against the 600 bp fixture and resolves nothing on the documents that
+    matter — 0.77 css px per band on `5520+`, 0.47 on `5514+`, at maximum zoom. 200×
+    is ~38 px per band on `5520+`; float32 starts to show around 1000×. The SVG
+    surface keeps `4×`, which is a defect of that surface and filed separately.
 10. **Resize preserves `{x, y, scale}`** and reveals more/less. Exception: re-fit if
     the view is still untouched at initial fit.
 11. **Navigator is a baked bitmap** — serialize once on load, draw to canvas. Its
     affordances (drag rect, click to center) are chrome *over* the thumbnail, not
     interactions *with* strands, so live vectors buy nothing at ~90× reduction. Rect
     resizes with zoom.
+
+    **Not yet on the WebGL surface, 2026-08-14.** The navigator, the segment boxes and
+    highlighting are all still SVG-surface-only. When they land there they land as
+    three.js geometry and a second camera — not as a baked bitmap and a DOM overlay.
 12. **Load with `DOMParser`, not `innerHTML`** — strip all `<title>` elements before
     attaching. Spinner in the body until ready.
 

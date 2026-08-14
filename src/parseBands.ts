@@ -1,7 +1,5 @@
 /**
- * Band parser — copied into the spike, not imported, so the zero-imports rule holds
- * without exception. Originally written for the fidelity-gate spike and verified there
- * against all three fixtures.
+ * Band parser — the WebGL surface's whole reading of the server's document.
  *
  * Deliberately regex over raw response text, never `DOMParser`: building 40,442 DOM
  * nodes is exactly the cost this renderer exists to escape.

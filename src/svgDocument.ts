@@ -1,13 +1,17 @@
 /**
- * Fetch and prepare a tube map document.
+ * Prepare a fetched tube map document for the SVG surface.
  *
- * The response is parsed with `DOMParser` rather than assigned to `innerHTML`, so
- * it can be cleaned before it is ever attached: one reflow instead of two, and no
- * half-drawn flash. The server's layout is otherwise opaque and immutable — the
- * only edit made here is stripping the empty `<title>` elements, which are dead
- * weight (one per drawable, 10,345 in the sample) and fight custom tooltips.
+ * The response is parsed with `DOMParser` rather than assigned to `innerHTML`, so it can
+ * be cleaned before it is ever attached: one reflow instead of two, and no half-drawn
+ * flash. The server's layout is otherwise opaque and immutable — the only edit made here
+ * is stripping the empty `<title>` elements, which are dead weight (one per drawable,
+ * 10,345 in the sample) and fight custom tooltips.
+ *
+ * This is the SVG surface's reading of the bytes. The WebGL surface reads the same bytes
+ * with `parseBands.ts` and never builds a node.
  */
 
+import { TubeMapLoadError } from './fetchDocument.ts'
 import type { Size } from './viewportTransform.ts'
 
 export interface TubeMap {
@@ -19,39 +23,7 @@ export interface TubeMap {
     source: string
 }
 
-export class TubeMapLoadError extends Error {
-
-    constructor(message: string, readonly kind: 'network' | 'content') {
-        super(message)
-        this.name = 'TubeMapLoadError'
-    }
-}
-
-export async function loadTubeMap(url: string, signal?: AbortSignal): Promise<TubeMap> {
-    const text = await fetchText(url, signal)
-    return prepareTubeMap(text)
-}
-
-async function fetchText(url: string, signal?: AbortSignal): Promise<string> {
-    let response: Response
-
-    try {
-        response = await fetch(url, { signal })
-    } catch (error) {
-        if (signal?.aborted) {
-            throw error
-        }
-        throw new TubeMapLoadError(`Could not reach ${url} — ${describe(error)}`, 'network')
-    }
-
-    if (false === response.ok) {
-        throw new TubeMapLoadError(`Server returned ${response.status} ${response.statusText} for ${url}`, 'network')
-    }
-
-    return await response.text()
-}
-
-function prepareTubeMap(text: string): TubeMap {
+export function prepareTubeMap(text: string): TubeMap {
     if (0 === text.trim().length) {
         throw new TubeMapLoadError('The response was empty — no tube map for this minigraph node.', 'content')
     }
@@ -98,8 +70,4 @@ function contentSize(svg: SVGSVGElement): Size {
     }
 
     throw new TubeMapLoadError('The SVG declares no usable viewBox or size.', 'content')
-}
-
-function describe(error: unknown): string {
-    return error instanceof Error ? error.message : String(error)
 }

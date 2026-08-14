@@ -632,8 +632,14 @@ fragment shader — and that choice sets both the cost and the antialiasing qual
 <figcaption>
   <b>The bounding quad is defeated by the tall bands.</b> A haplotype that jumps most of
   the height of the map does so over a narrow horizontal span, so its bounding box is
-  enormous and the band inside it is a sliver — 9.2× of the fragments are discarded.
-  The fitted strip keeps the fragment-shader coverage while paying the ladder's cost.
+  enormous and the band inside it is a sliver: <b>89% of B's fragments are discarded</b>,
+  and it costs 9.3× the fill of the fitted strip. The fitted strip keeps the
+  fragment-shader coverage while paying only the ladder's cost.
+  <br><br>
+  <b>Never priced, though.</b> 8.07× overdraw on a viewport-sized canvas is about 20
+  megapixels of fill per frame, which is unremarkable on the hardware this runs on. The
+  overdraw is real; the rejection rests on it mattering, and that was never tested. B
+  remains the answer if the built techniques ever facet at high zoom.
 </figcaption>
 </figure>
 

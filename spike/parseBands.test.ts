@@ -9,7 +9,7 @@
 
 import { readFileSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
-import { NonConformingDocument, THICKNESS, parseBands } from './parseBands.ts'
+import { MAX_TRACK_ID, NonConformingDocument, THICKNESS, parseBands } from './parseBands.ts'
 
 const FIXTURES = {
     small: { path: 'public/stm-chr1-25331046-25331646.svg', bands: 10270, tracks: 369, width: 35562.42857142856 },
@@ -119,6 +119,37 @@ describe('parseBands', () => {
 
         expect(() => parseBands(text.replaceAll('trackID="0"', 'trackID="9000"')))
             .toThrow(NonConformingDocument)
+    })
+
+    it('reads the degenerate flat bands as level, mid-controlled bands', () => {
+        // The `<rect>` elements are the same primitive with y0 == y1. They are a third
+        // of the document and the shader draws them through the identical code path, so
+        // the parser has to hand them geometry a curve shader can consume: level, and
+        // with control abscissae that reproduce a straight edge.
+        const map = parseBands(readFileSync(FIXTURES.small.path, 'utf8'))
+
+        let flat = 0
+
+        for (let i = 0; i < map.bandCount; i += 1) {
+            if (map.geometry[i * 6 + 1] !== map.geometry[i * 6 + 3]) {
+                continue
+            }
+
+            flat += 1
+
+            expect(map.geometry[i * 6 + 4]).toBeCloseTo(0.5, 6)
+            expect(map.geometry[i * 6 + 5]).toBeCloseTo(0.5, 6)
+        }
+
+        // Every `<rect>` in the fixture, and nothing else is level.
+        expect(flat).toBe(4603)
+    })
+
+    it('rejects a track id too large for the instance buffer', () => {
+        const text = readFileSync(FIXTURES.small.path, 'utf8')
+        const broken = text.replaceAll('trackID="0"', `trackID="${MAX_TRACK_ID + 1}"`)
+
+        expect(() => parseBands(broken)).toThrow(NonConformingDocument)
     })
 
     it('holds THICKNESS at the surveyed constant', () => {

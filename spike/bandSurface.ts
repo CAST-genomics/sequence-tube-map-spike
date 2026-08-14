@@ -280,8 +280,12 @@ export function createBandSurface(
 
     const geometry = buildLadder(rungs)
 
-    geometry.setAttribute('iSpan', packInstances(map.geometry, 6, 0, 4, map.bandCount))
-    geometry.setAttribute('iControl', packInstances(map.geometry, 6, 4, 2, map.bandCount))
+    if (false === Number.isInteger(rungs) || 1 > rungs) {
+        throw new Error(`rungs must be a positive whole number, not ${rungs}.`)
+    }
+
+    geometry.setAttribute('iSpan', deinterleave(map.geometry, 6, 0, 4, map.bandCount))
+    geometry.setAttribute('iControl', deinterleave(map.geometry, 6, 4, 2, map.bandCount))
     geometry.setAttribute('iColor', instanceColors(map))
     geometry.instanceCount = map.bandCount
 
@@ -371,6 +375,12 @@ export function createBandSurface(
             controls.dispose()
             geometry.dispose()
             material.dispose()
+
+            // `dispose()` releases three's own resources but **not** the WebGL context;
+            // only `forceContextLoss()` does. Swapping coverage builds a new context
+            // each time, and browsers cap live contexts near 16, so without this the
+            // toggle would stop working after a dozen presses.
+            renderer.forceContextLoss()
             renderer.dispose()
         }
     }
@@ -409,8 +419,8 @@ function buildLadder(rungs: number): InstancedBufferGeometry {
     return geometry
 }
 
-/** Deinterleave one field out of the parser's packed six-floats-per-band layout. */
-function packInstances(
+/** Pull one field out of the parser's interleaved six-floats-per-band layout. */
+function deinterleave(
     source: Float32Array,
     stride: number,
     offset: number,
@@ -446,8 +456,6 @@ function instanceColors(map: ParsedMap): InstancedBufferAttribute {
     }
 
     // Four components rather than three so each instance starts on a 4-byte boundary.
-    const attribute = new InstancedBufferAttribute(rgba, 4, true)
-
-    // The shader reads a vec3; the alpha byte is padding.
-    return attribute
+    // The shader reads a vec3; the fourth byte is padding.
+    return new InstancedBufferAttribute(rgba, 4, true)
 }

@@ -36,6 +36,9 @@
 /** Constant across all 127,101 surveyed track paths, and every `<rect>` height. */
 export const THICKNESS = 15
 
+/** Largest track id the Uint16 instance buffer can hold without wrapping. */
+export const MAX_TRACK_ID = 65535
+
 export interface ParsedMap {
     /** Six floats per band, document order: x0, y0, width, y1, uTop, uBottom. World
      *  coordinates, y up, centred on the origin. `y0`/`y1` are the upper edge. */
@@ -99,40 +102,62 @@ export function parseBands(text: string): ParsedMap {
     ELEMENT.lastIndex = 0
 
     while (null !== (match = ELEMENT.exec(track))) {
-        const g = match
-        const isRect = undefined !== g[1]
+        const isRect = undefined !== match[1]
 
-        let x0: number, y0: number, x1: number, y1: number, cx: number, dx: number
-        let r: number, gr: number, b: number, id: number
+        let x0: number
+        let y0: number
+        let x1: number
+        let y1: number
+        let controlTop: number
+        let controlBottom: number
+        let red: number
+        let green: number
+        let blue: number
+        let id: number
 
         if (isRect) {
-            x0 = +g[1]
-            y0 = +g[2]
-            x1 = x0 + +g[3]
+            x0 = +match[1]
+            y0 = +match[2]
+            x1 = x0 + +match[3]
             y1 = y0
 
-            if (THICKNESS !== +g[4]) {
-                throw new NonConformingDocument(`rect height ${g[4]}, expected ${THICKNESS}.`)
+            if (THICKNESS !== +match[4]) {
+                throw new NonConformingDocument(`rect height ${match[4]}, expected ${THICKNESS}.`)
             }
 
-            if (0 >= +g[3]) {
-                throw new NonConformingDocument(`rect width ${g[3]}; width must be positive.`)
+            if (0 >= +match[3]) {
+                throw new NonConformingDocument(`rect width ${match[3]}; width must be positive.`)
             }
 
             // Flat: both edges are horizontal, so any control abscissa reproduces it.
-            cx = dx = x0 + (x1 - x0) * 0.5
-            r = +g[5]; gr = +g[6]; b = +g[7]; id = +g[8]
+            controlTop = x0 + (x1 - x0) * 0.5
+            controlBottom = controlTop
+
+            red = +match[5]
+            green = +match[6]
+            blue = +match[7]
+            id = +match[8]
         } else {
-            x0 = +g[9]
-            y0 = +g[10]
-            cx = +g[11]
-            x1 = +g[15]
-            y1 = +g[16]
-            dx = +g[18]
+            x0 = +match[9]
+            y0 = +match[10]
+            controlTop = +match[11]
+            x1 = +match[15]
+            y1 = +match[16]
+            controlBottom = +match[18]
 
-            assertGrammar(g, x0, y0, x1, y1, cx, dx)
+            assertGrammar(match, x0, y0, x1, y1, controlTop, controlBottom)
 
-            r = +g[24]; gr = +g[25]; b = +g[26]; id = +g[27]
+            red = +match[24]
+            green = +match[25]
+            blue = +match[26]
+            id = +match[27]
+        }
+
+        // The instance buffer stores ids as Uint16. Silently wrapping would draw a
+        // plausible map of the wrong haplotypes, which is the failure this parser
+        // exists to refuse.
+        if (id > MAX_TRACK_ID) {
+            throw new NonConformingDocument(`trackID ${id} exceeds the supported maximum of ${MAX_TRACK_ID}.`)
         }
 
         // Normalize the control abscissae in double before the cast to float. `5514+` is
@@ -140,18 +165,18 @@ export function parseBands(text: string): ParsedMap {
         // point measurably within a span of a few hundred units. Storing them as
         // fractions confines the large magnitude to `x0` alone.
         const width = x1 - x0
-        const o = bands * 6
+        const at = bands * 6
 
-        geometry[o] = x0 - centreX
-        geometry[o + 1] = centreY - y0
-        geometry[o + 2] = width
-        geometry[o + 3] = centreY - y1
-        geometry[o + 4] = (cx - x0) / width
-        geometry[o + 5] = (dx - x0) / width
+        geometry[at] = x0 - centreX
+        geometry[at + 1] = centreY - y0
+        geometry[at + 2] = width
+        geometry[at + 3] = centreY - y1
+        geometry[at + 4] = (controlTop - x0) / width
+        geometry[at + 5] = (controlBottom - x0) / width
         trackIds[bands] = id
 
         if (false === colors.has(id)) {
-            colors.set(id, [r, gr, b])
+            colors.set(id, [red, green, blue])
         }
 
         if (id > maxTrackId) {
@@ -203,8 +228,13 @@ export function parseBands(text: string): ParsedMap {
  * survey said 100%" into something this run re-establishes per document.
  */
 function assertGrammar(
-    g: RegExpExecArray,
-    x0: number, y0: number, x1: number, y1: number, cx: number, dx: number
+    match: RegExpExecArray,
+    x0: number,
+    y0: number,
+    x1: number,
+    y1: number,
+    controlTop: number,
+    controlBottom: number
 ): void {
     const expect = (actual: number, wanted: number, what: string): void => {
         if (actual !== wanted) {
@@ -212,15 +242,15 @@ function assertGrammar(
         }
     }
 
-    expect(+g[12], y0, 'first control ordinate')
-    expect(+g[13], cx, 'second control abscissa')
-    expect(+g[14], y1, 'second control ordinate')
-    expect(+g[17], y1 + THICKNESS, 'vertical closing edge')
-    expect(+g[19], y1 + THICKNESS, 'return first control ordinate')
-    expect(+g[20], dx, 'return second control abscissa')
-    expect(+g[21], y0 + THICKNESS, 'return second control ordinate')
-    expect(+g[22], x0, 'return endpoint abscissa')
-    expect(+g[23], y0 + THICKNESS, 'return endpoint ordinate')
+    expect(+match[12], y0, 'first control ordinate')
+    expect(+match[13], controlTop, 'second control abscissa')
+    expect(+match[14], y1, 'second control ordinate')
+    expect(+match[17], y1 + THICKNESS, 'vertical closing edge')
+    expect(+match[19], y1 + THICKNESS, 'return first control ordinate')
+    expect(+match[20], controlBottom, 'return second control abscissa')
+    expect(+match[21], y0 + THICKNESS, 'return second control ordinate')
+    expect(+match[22], x0, 'return endpoint abscissa')
+    expect(+match[23], y0 + THICKNESS, 'return endpoint ordinate')
 
     if (false === (x1 > x0)) {
         throw new NonConformingDocument(`band spans ${x0} to ${x1}; x must increase.`)

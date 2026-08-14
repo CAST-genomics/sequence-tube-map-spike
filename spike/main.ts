@@ -74,11 +74,13 @@ async function start(canvas: HTMLCanvasElement, readout: HTMLElement): Promise<v
     const parseMs = performance.now() - began
 
     // Rung count is swept from the URL rather than rebuilt, so the same session can
-    // compare counts at one camera.
-    const asked = Number(new URLSearchParams(window.location.search).get('rungs'))
-    const rungs = Number.isFinite(asked) && 0 < asked ? asked : RUNGS
-    const meter = createFrameMeter()
+    // compare counts at one camera. Whole numbers only: the ladder emits one quad per
+    // rung while indexing vertices it allocated from `rungs + 1`, and a fraction puts
+    // those two out of step.
+    const asked = Number(parameter('rungs'))
+    const rungs = Number.isInteger(asked) && 0 < asked ? asked : RUNGS
 
+    let meter = createFrameMeter()
     let coverage: Coverage = 'msaa'
     let live = canvas
     let surface = createBandSurface(map, live, coverage, undefined, rungs)
@@ -105,6 +107,11 @@ async function start(canvas: HTMLCanvasElement, readout: HTMLElement): Promise<v
         coverage = 'msaa' === coverage ? 'analytic' : 'msaa'
         live = replacement
         surface = createBandSurface(map, live, coverage, state, rungs)
+
+        // Start the frame numbers over. The decayed mean and the one-second worst would
+        // otherwise carry the outgoing arm's samples into the incoming one, and the
+        // whole point of the toggle is to compare the two.
+        meter = createFrameMeter()
     })
 
     const fixed = [
@@ -138,7 +145,11 @@ function describe(coverage: Coverage): string {
 }
 
 function fixtureName(): FixtureName {
-    const asked = new URLSearchParams(window.location.search).get('fixture')
+    const asked = parameter('fixture')
 
     return null !== asked && asked in FIXTURES ? asked as FixtureName : 'small'
+}
+
+function parameter(name: string): string | null {
+    return new URLSearchParams(window.location.search).get(name)
 }

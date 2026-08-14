@@ -7,6 +7,13 @@
  *
  * The reverse direction is checked too: nothing shipping may come to depend on code
  * whose stated contract is that it gets deleted.
+ *
+ * **`scripts/spike/` is deliberately out of scope.** It is the retired fidelity-gate
+ * spike, committed as a record and never run; it does import from `src/`, and that is
+ * part of what the restart rejected. Widening this guard to cover it would fail
+ * immediately and the only ways to make it pass are to delete the record or to edit
+ * dead code, neither of which is worth doing. The rule this file enforces is about
+ * `spike/`, which is live.
  */
 
 import { readdirSync, readFileSync, statSync } from 'node:fs'

@@ -3,3 +3,6 @@ dist
 .DS_Store
 .idea/
 __pycache__/
+
+# Pretty-printed copies of the fixtures. Derived: `xmllint --format` regenerates them.
+*.pretty.svg

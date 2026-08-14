@@ -69,6 +69,13 @@ verdict that settled this, with the measurements, is
 [`notes/2026-08-14-three-js-renderer-verdict.md`](./notes/2026-08-14-three-js-renderer-verdict.md);
 how a band is drawn is [`docs/RENDERING.md`](./docs/RENDERING.md).
 
+Tracks running in proximity are often too close in color to tell apart, and sometimes
+share a color exactly. Track color is PCLAI's shipped encoding of a PCA coordinate,
+derived for the PCLAI chart — where position separates the points and color supports it —
+and a tube map has no position channel to spare. The strategies for adding back a channel
+the chart did not need are collected in
+[`docs/DISAMBIGUATING-TRACKS.md`](./docs/DISAMBIGUATING-TRACKS.md).
+
 **The SVG surface is not a fallback.** A document the band grammar rejects gets a named
 error state and stops there; nothing is silently swapped in behind it, because a
 researcher who cannot tell which renderer drew what they are looking at is worse off

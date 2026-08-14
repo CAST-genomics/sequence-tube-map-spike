@@ -80,6 +80,23 @@ Consequences for this viewer, all verified against the sample data:
   why tracing an individual strand needs a deliberate tool (feeler mode) rather than
   better color separation — the similarity is the signal, not a defect to design away.
 
+**One correction, 2026-08-14 — where this section over-reaches.** Everything above is
+true of the PCLAI *coordinates*. It is not true of the 8-bit color the data ships, and
+the difference decides whether anything can be done about tracks that cannot be told
+apart. The `RGB` field
+is an encoding of the coordinate derived for **PGB's PCLAI chart**, a scatter where
+position separates the points and color is a supporting cue; a tube map has no position
+channel to spare. Measured across PGB's datasets (`scripts/pclai_color_collisions.py`):
+~460 placed haplotypes receive 120–150 distinct colors, four in five sharing a color with
+another haplotype *exactly*, and at `cici`'s busiest node two haplotypes 8% of the PCA
+cloud's diameter apart get the same RGB.
+
+So: near-identical colors *are* meaningful, and identical colors are **not** — that is
+quantisation, not a claim that two haplotypes are alike. Read as written, this section
+implies the collisions are the signal and nothing can be done about them, which is not
+the case. See
+[`docs/DISAMBIGUATING-TRACKS.md`](./docs/DISAMBIGUATING-TRACKS.md).
+
 ## Verified facts about the data
 
 Measured from `stm-chr1-25331046-25331646.svg` (sample response for one minigraph
@@ -316,6 +333,17 @@ That note flags its metadata table as inferred-not-confirmed. Both inferences ar
 
 ## Deferred — deliberately, not overlooked
 
+- **Telling one track from another.** Tracks running in proximity — parallel, in
+  clusters — are often too close in color to separate, and sometimes share a color
+  exactly (`SPEC.md` story 28). Track color is PCLAI's shipped encoding, derived for the
+  PCLAI chart where *position* separates the points and color supports it; a tube map has
+  no position channel to spare, so ~460 haplotypes arrive encoded in 120–150 distinct
+  colors with four in five sharing one exactly. The
+  strategies on the table — modifier-held emphasis with the rest receding, and depth
+  cues now that the renderer is 3D — are collected in
+  [`docs/DISAMBIGUATING-TRACKS.md`](./docs/DISAMBIGUATING-TRACKS.md) with the
+  constraints each has to survive. Nothing is decided; the document is where proposals
+  get checked before they get built.
 - **`trackName` decoding.** `NA21309#2#CM092097.1` is `sample#haplotype#contig`, a
   3-part assembly-walk-shaped key addressable in PGB's vocabulary. Displayed
   verbatim in v1.

@@ -80,6 +80,22 @@ Consequences for this viewer, all verified against the sample data:
   why tracing an individual strand needs a deliberate tool (feeler mode) rather than
   better color separation — the similarity is the signal, not a defect to design away.
 
+**One correction, 2026-08-14 — where this section over-reaches.** Everything above is
+true of the PCLAI *coordinates*. It is not true of the 8-bit color the data ships, and
+the difference decides whether this panel's central problem is solvable. The `RGB` field
+is an encoding of the coordinate derived for **PGB's PCLAI chart**, a scatter where
+position separates the points and color is a supporting cue; a tube map has no position
+channel to spare. Measured across PGB's datasets (`scripts/pclai_color_collisions.py`):
+~460 placed haplotypes receive 120–150 distinct colors, four in five sharing a color with
+another haplotype *exactly*, and at `cici`'s busiest node two haplotypes 8% of the PCA
+cloud's diameter apart get the same RGB.
+
+So: near-identical colors *are* meaningful, and identical colors are **not** — that is
+quantisation, not a claim that two haplotypes are alike. Read as written, this section
+says the collisions are the signal and nothing can be done; that would be the wrong
+conclusion. See
+[`docs/DISAMBIGUATING-TRACKS.md`](./docs/DISAMBIGUATING-TRACKS.md).
+
 ## Verified facts about the data
 
 Measured from `stm-chr1-25331046-25331646.svg` (sample response for one minigraph

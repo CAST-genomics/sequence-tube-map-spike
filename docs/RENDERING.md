@@ -1,6 +1,8 @@
 # How a band gets drawn
 
-Reference for the shader in `bandSurface.ts`. Forked 2026-08-14 from §03 of
+Reference for the shader in [`../src/bandSurface.ts`](../src/bandSurface.ts). Written for
+`spike/bandSurface.ts` and carried here when the spike was rewritten into `src/`; forked
+2026-08-14 from §03 of
 [`../notes/2026-08-13-six-floats-per-band.html`](../notes/2026-08-13-six-floats-per-band.html),
 which derives the geometry in full. **Only the technique comparison is carried here**; that
 document's architecture sections — a camera driven by an `{x, y, scale}` object, no controls
@@ -41,8 +43,11 @@ They differ in where the curve is evaluated, and that sets both cost and antiali
 | **B** | Bounding quad | fragment shader | 8.07× | analytic |
 | **C** | Fitted strip | both | 0.87× | analytic |
 
-**A and C are built**, sharing geometry and one shader, selected by the `ANALYTIC` define
-and swapped live with `space`. **B is not built.** It was rejected originally for overdraw —
+**C is what ships.** A and C were both built in the spike, sharing geometry and one shader
+behind an `ANALYTIC` define and swapped live with `space`, so the two could be judged on the
+same frame; the comparison below is that judgment, and the losing arm went with the spike —
+`src/bandSurface.ts` has no define and no MSAA path. **B was never built.** It was rejected
+originally for overdraw —
 a haplotype that jumps most of the map's height does so over a narrow horizontal span, so
 its bounding box is enormous and the band inside is a sliver. Worth recording that the
 rejection was never *priced*: 8.07× on a 2.5-megapixel canvas is ~20 megapixels of fill per
@@ -66,8 +71,9 @@ at 200× zoom on the widest piece in `5520+`. A sweep of 16/32/64/128 at 200× s
 frame time**, so rung count is free in this range. The pixel comparison across that sweep was
 **inconclusive** — all three differed from 128 by the same ~0.14%, which is camera
 reproducibility across page loads rather than tessellation, since wheel-driven
-zoom-to-cursor does not land bit-identically. No evidence 64 is insufficient. Override with
-`?rungs=`.
+zoom-to-cursor does not land bit-identically. No evidence 64 is insufficient. The spike
+swept it from `?rungs=`; the sweep is settled, so `RUNGS` is a constant in
+`src/bandSurface.ts` rather than a parameter nobody passes.
 
 ## Coverage: what was predicted, and what happened
 

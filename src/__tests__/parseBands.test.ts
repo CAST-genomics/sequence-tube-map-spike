@@ -1,5 +1,5 @@
 /**
- * The parser is the one part of the spike that can be silently wrong without looking
+ * The parser is the one part of the renderer that can be silently wrong without looking
  * wrong: a mis-numbered regex group yields plausible geometry, and a coordinate
  * conversion applied twice yields a picture that is merely upside down somewhere else.
  *
@@ -9,7 +9,7 @@
 
 import { readFileSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
-import { MAX_TRACK_ID, NonConformingDocument, THICKNESS, parseBands } from './parseBands.ts'
+import { MAX_TRACK_ID, NonConformingDocument, THICKNESS, parseBands } from '../parseBands.ts'
 
 const FIXTURES = {
     small: { path: 'public/stm-chr1-25331046-25331646.svg', bands: 10270, tracks: 369, width: 35562.42857142856 },
@@ -112,6 +112,14 @@ describe('parseBands', () => {
 
         expect(() => parseBands(text.replace('height="15"', 'height="16"')))
             .toThrow(NonConformingDocument)
+    })
+
+    it('says a response is not an SVG before it says anything about bands', () => {
+        // The common way to arrive with the wrong bytes is an HTML error page. Diagnosing
+        // that as a defect in the band grammar sends the reader hunting for a malformed
+        // tube map that was never there.
+        expect(() => parseBands('<!doctype html><html><body>500</body></html>'))
+            .toThrow(/not an SVG document/)
     })
 
     it('rejects a document whose track ids are sparse', () => {

@@ -130,6 +130,16 @@ That note flags its metadata table as inferred-not-confirmed. Both inferences ar
     non-conforming document outright and falls back to the SVG surface. The
     *no-layout* half of this decision stands: still no re-ordering, filtering or
     recoloring. See ADR [`0001`](./docs/adr/0001-webgl-band-renderer.md).
+
+    **Half-built as of 2026-08-14, and say so.** The gate rejects: a document off the
+    band grammar is refused whole, loudly, and the mount shows a named error state.
+    **The automatic fallback to the SVG surface is not built** — the refusal is
+    currently a dead end, and the only route to the other surface is the harness's
+    `?renderer=svg`. That is deliberate, not overlooked: the verdict fenced off
+    "whether it remains as a fallback" as separate work, and a fallback that swaps
+    surfaces underneath the researcher is a product decision, not a rendering one.
+    Until it is made, ADR `0001`'s promise is a promise, and this is the honest state
+    of it.
 2. **`open(url: string)` is the entire input surface.** PGB constructs the URL from
    the clicked minigraph node's ID and GRCh38 coordinates; the viewer never builds
    one, never checks eligibility, and never knows whether it is local or remote. A
@@ -139,6 +149,15 @@ That note flags its metadata table as inferred-not-confirmed. Both inferences ar
 4. **`mountTubeMapSurface(container)`** renders surface + navigator into any
    container and knows nothing about panel chrome. The harness passes the full
    viewport (pure data, no chrome); PGB later passes a card body.
+
+    **Extended 2026-08-14.** The signature is now
+    `mountTubeMapSurface(container, { renderer })`, where `renderer` is `webgl` (the
+    band renderer, the default) or `svg` (the original surface). The mount kept the
+    fetch, the spinner and the error state; everything about the *view* — fit, zoom,
+    what a resize does — moved into the renderer, because the two answer it in
+    different vocabularies. The harness picks from `?renderer=`, so both surfaces are
+    comparable on one document without a rebuild. `open(url)` is unchanged and is
+    still the entire input surface.
 5. **Pure HTML / CSS / SVG / TypeScript. No Three.js.** Zero dependency overlap with
    PGB's 3D stack.
 
@@ -171,12 +190,22 @@ That note flags its metadata table as inferred-not-confirmed. Both inferences ar
    cursor. A researcher crosses between the two viewers constantly and must not have
    to change hands.
 9. **Open fit-to-width**; clamp zoom to `[fit, 4×]`; zoom about the cursor.
+
+    **Ceiling raised 2026-08-14, on the WebGL surface only.** `[fit, 200×]`. `4×` was
+    calibrated against the 600 bp fixture and resolves nothing on the documents that
+    matter — 0.77 css px per band on `5520+`, 0.47 on `5514+`, at maximum zoom. 200×
+    is ~38 px per band on `5520+`; float32 starts to show around 1000×. The SVG
+    surface keeps `4×`, which is a defect of that surface and filed separately.
 10. **Resize preserves `{x, y, scale}`** and reveals more/less. Exception: re-fit if
     the view is still untouched at initial fit.
 11. **Navigator is a baked bitmap** — serialize once on load, draw to canvas. Its
     affordances (drag rect, click to center) are chrome *over* the thumbnail, not
     interactions *with* strands, so live vectors buy nothing at ~90× reduction. Rect
     resizes with zoom.
+
+    **Not yet on the WebGL surface, 2026-08-14.** The navigator, the segment boxes and
+    highlighting are all still SVG-surface-only. When they land there they land as
+    three.js geometry and a second camera — not as a baked bitmap and a DOM overlay.
 12. **Load with `DOMParser`, not `innerHTML`** — strip all `<title>` elements before
     attaching. Spinner in the body until ready.
 
@@ -226,6 +255,16 @@ That note flags its metadata table as inferred-not-confirmed. Both inferences ar
     DOM. Everything else is verified by looking at it. The three silently-wrong-able
     things are fit-to-width, zoom-about-cursor drift, and navigator-rect ↔ viewport
     scale.
+
+    **Restated 2026-08-14, same rule, more seams.** The rule was never "one file"; it
+    was *test what can be silently wrong without looking wrong, look at everything
+    else*, and the WebGL surface added two more of those. `bandCamera.ts` — where a
+    frustum in the wrong units gives a picture that is convincing at one window size
+    and stretched at every other — and `parseBands.ts`, where a mis-numbered regex
+    group yields plausible geometry and a coordinate conversion applied twice yields a
+    map that is merely upside down somewhere else. Both are pure and DOM-free, as this
+    decision requires. `spikeIsGone.test.ts` is not a unit test but a rule nobody would
+    otherwise check.
 
 ### Repo
 

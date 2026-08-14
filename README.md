@@ -17,9 +17,13 @@ npm run typecheck
 
 ## Harness
 
-`index.html` is a bare full-viewport container plus a picker: a node selector, a URL
-field, and Open. Two query parameters:
+`index.html` is a bare full-viewport container plus a picker: a renderer selector, a
+node selector, a URL field, and Open. Three query parameters:
 
+- `?renderer=webgl|svg` — which surface draws the map. Defaults to `webgl`. The
+  selector sets it by reloading, so the two surfaces can be compared on the same
+  document in the same session, and which one is running is readable off the address
+  bar rather than off the page's memory.
 - `?url=…` — open a different tube map. Defaults to the committed fixture.
 - `?fps=1` — frame meter, top left. Click it to reset the worst-frame figure.
 
@@ -43,15 +47,46 @@ Every URL is also reachable by hand — the live endpoint works directly:
 http://localhost:5173/?url=https%3A%2F%2Fpangenome-api.ucsd.edu%3A8000%2Fseqtubemap%3Fchrom%3Dchr1%26start%3D25331046%26end%3D25331646%26version%3Dv2%26pathnumoption%3Dnormal%26nodewidthoption%3Dcompressed%26minigraphnode%3D5519
 ```
 
+## Two surfaces
+
+The map is drawn either by the **WebGL band renderer** or by the original **SVG
+surface**. They are the same viewer — same entry point, same `open(url)`, same
+loading and error states — differing only in what happens to the bytes after they
+arrive.
+
+| | WebGL (default) | SVG |
+|---|---|---|
+| Reads the document as | six floats per band, by regex | a live DOM tree |
+| Draws with | one instanced draw call | ~10,345 elements under a CSS transform |
+| Zoom range | fit – 200× | fit – 4× |
+| Has | analytic coverage, PGB's `MapControls` | segment tooltips, the navigator, feeler mode |
+| Refuses | a document off the band grammar, loudly | nothing |
+
+WebGL is the default because the SVG surface has a ceiling and reaches it on every
+document larger than the 600 bp fixture: its composited layer is 900 megapixels at
+dpr 2, and its 4× zoom cap leaves a haplotype 0.77 css px tall on `5520+`. The
+verdict that settled this, with the measurements, is
+[`notes/2026-08-14-three-js-renderer-verdict.md`](./notes/2026-08-14-three-js-renderer-verdict.md);
+how a band is drawn is [`docs/RENDERING.md`](./docs/RENDERING.md).
+
+The SVG surface stays because it is the only one with per-element hit-testing, and
+because a document the band grammar rejects can still be looked at there — by
+switching to it by hand. The **automatic** fallback ADR `0001` promises is not built:
+a refusal is currently a dead end with a named error state. See the amendment under
+`CONTEXT.md` decision #1.
+
 ## Using it
 
 Drag with the primary button to pan; a Magic Mouse swipe, a mouse wheel, or a
-trackpad pinch zooms about the cursor. Hovering a segment box shows its id and
-sequence. The navigator, bottom left, can be clicked to jump or dragged to travel.
+trackpad pinch zooms about the cursor. On the SVG surface, hovering a segment box
+shows its id and sequence, and the navigator, bottom left, can be clicked to jump or
+dragged to travel — the segment boxes, the navigator and highlighting are all still
+to come on the WebGL surface, and will arrive as geometry rather than as a DOM
+overlay and a baked bitmap.
 
-Pan and zoom are PGB's, gesture for gesture: the browser drives three.js
-`MapControls`, and this matches it at PGB's `zoomSpeed`, so a notch travels the same
-distance in both.
+Pan and zoom are PGB's, gesture for gesture. The WebGL surface *is* three.js
+`MapControls` with PGB's configuration verbatim; the SVG surface matches it by hand
+at PGB's `zoomSpeed`, so a notch travels the same distance in all three.
 
 ### Feeler mode is off
 
@@ -85,23 +120,35 @@ Full observation, measurements and reasoning:
 ## Shape of the code
 
 `mountTubeMapSurface(container, options?)` is the only public entry point. It
-returns `{ open(url), destroy() }` — `open` is the entire input surface, and the one
-option is `strandFeeler`. The host builds the
+returns `{ open(url), destroy() }` — `open` is the entire input surface, and the
+options are `renderer` and `strandFeeler`. The host builds the
 URL and decides eligibility; the viewer never builds one, never inspects one, and
 never learns whether it is local or remote.
 
+The mount owns the fetch, the spinner and the error state. It owns nothing about the
+view: fitting, zooming and what a resize does to the framing belong to the renderer,
+because the two answer those in different vocabularies.
+
 | File | Holds |
 |---|---|
-| `src/tubeMapSurface.ts` | the entry point; owns `{x, y, scale}` and the load lifecycle |
-| `src/viewportTransform.ts` | all transform math — pure, DOM-free, the one tested seam |
+| `src/tubeMapSurface.ts` | the entry point; the fetch, the load lifecycle, the renderer choice |
+| `src/surfaceRenderer.ts` | what a renderer is — `show(text)`, `clear`, `resize`, `destroy` |
+| `src/bandSurface.ts` | the WebGL surface: one instanced draw call, `MapControls`, the shaders |
+| `src/parseBands.ts` | the document as six floats per band; rejects anything off-grammar |
+| `src/bandCamera.ts` | the WebGL camera's framing — pure, DOM-free, tested |
+| `src/svgSurface.ts` | the SVG surface: `{x, y, scale}`, the navigator, the interactions |
+| `src/viewportTransform.ts` | the SVG surface's transform math — pure, DOM-free, tested |
 | `src/navigator.ts` | baked thumbnail, viewport rect, drag and click-to-jump |
 | `src/interaction.ts` | modes, highlight rule, tooltips, drag-pan and wheel-zoom |
-| `src/loadTubeMap.ts` | fetch, parse, strip `<title>`, measure the viewBox |
+| `src/fetchDocument.ts` | the fetch, and the failures worth naming |
+| `src/svgDocument.ts` | parse, strip `<title>`, measure the viewBox |
 | `src/surfaceStyles.ts` | the viewer's stylesheet, as a string so the host imports no CSS |
 | `src/main.ts`, `src/frameMeter.ts` | harness only — PGB replaces both |
 
-The transform module is the only unit-tested seam, for the reasons `SPEC.md`
-§Testing Decisions gives. Everything else is verified by looking at it.
+The tested seams are the ones that can be silently wrong without looking wrong: the
+two lots of camera math, and the band parser, where a mis-numbered regex group yields
+plausible geometry. Everything else is verified by looking at it, for the reasons
+`SPEC.md` §Testing Decisions gives.
 
 Both week-one risks — CORS and the frame budget — are measured and closed;
 `CONTEXT.md` §"Settled by measurement" has the numbers, and records the two small

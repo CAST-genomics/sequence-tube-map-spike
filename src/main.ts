@@ -8,6 +8,7 @@
 import nodeTable from '../data/nodeTable.json'
 import { startFrameMeter } from './frameMeter.ts'
 import { catalogEntries, entryForUrl, formatLength, formatLocus } from './nodeCatalog.ts'
+import type { RendererName } from './surfaceRenderer.ts'
 import { mountTubeMapSurface } from './tubeMapSurface.ts'
 
 const DEFAULT_URL = '/stm-chr1-25331046-25331646.svg'
@@ -18,10 +19,12 @@ const container = document.getElementById('viewer') as HTMLElement
 const picker = document.getElementById('picker') as HTMLFormElement
 const field = document.getElementById('url') as HTMLInputElement
 const chooser = document.getElementById('node') as HTMLSelectElement
+const rendererChooser = document.getElementById('renderer') as HTMLSelectElement
 const hint = document.getElementById('hint') as HTMLElement
 
 const parameters = new URLSearchParams(window.location.search)
 const initialUrl = parameters.get('url') ?? DEFAULT_URL
+const renderer: RendererName = 'svg' === parameters.get('renderer') ? 'svg' : 'webgl'
 
 const entries = catalogEntries(nodeTable)
 
@@ -37,7 +40,22 @@ if (strandFeeler) {
     hint.textContent += ' · hold shift to feel strands'
 }
 
-const viewer = mountTubeMapSurface(container, { strandFeeler })
+const viewer = mountTubeMapSurface(container, { renderer, strandFeeler })
+
+rendererChooser.value = renderer
+
+// The renderer is chosen by the URL and changed by reloading against it, so the two
+// surfaces can be compared on the same document with the same fixture in the same
+// session — and so which one is running is always readable off the address bar rather
+// than off the page's memory.
+rendererChooser.addEventListener('change', () => {
+    const next = new URLSearchParams(window.location.search)
+
+    next.set('renderer', rendererChooser.value)
+    next.set('url', field.value.trim())
+
+    window.location.search = next.toString()
+})
 
 // The select is a shortcut into the field, not a second source of truth: it fills
 // the URL in, so what opened is always visible and still editable by hand.

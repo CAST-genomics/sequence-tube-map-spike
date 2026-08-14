@@ -1,7 +1,5 @@
 /**
- * Band parser — copied into the spike, not imported, so the zero-imports rule holds
- * without exception. Originally written for the fidelity-gate spike and verified there
- * against all three fixtures.
+ * Band parser — the WebGL surface's whole reading of the server's document.
  *
  * Deliberately regex over raw response text, never `DOMParser`: building 40,442 DOM
  * nodes is exactly the cost this renderer exists to escape.
@@ -74,6 +72,13 @@ const PATH = `<path d="M ${N} ${N} C ${N} ${N} ${N} ${N} ${N} ${N} V ${N} `
 const ELEMENT = new RegExp(`(?:${RECT})|(?:${PATH})`, 'g')
 
 export function parseBands(text: string): ParsedMap {
+    // Said before anything about bands, because the common way to arrive here with the
+    // wrong bytes is an HTML error page or a redirect, and "no drawable elements in
+    // g.track" reads as a defect in a tube map rather than as the absence of one.
+    if (false === text.includes('<svg')) {
+        throw new NonConformingDocument('The response is not an SVG document.')
+    }
+
     const viewBox = parseViewBox(text)
     const centreX = viewBox.minX + viewBox.width * 0.5
     const centreY = viewBox.minY + viewBox.height * 0.5

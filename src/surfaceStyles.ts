@@ -44,6 +44,25 @@ export const SURFACE_STYLES = `
     display: block;
 }
 
+/* The WebGL surface. The canvas is viewport-sized at every zoom level — the oversized
+   composited layer that broke the SVG surface is structurally impossible here — so it is
+   simply stretched over the root and MapControls takes the pointer. */
+.stm-canvas {
+    position: absolute;
+    inset: 0;
+    display: block;
+    width: 100%;
+    height: 100%;
+    touch-action: none;
+    overscroll-behavior: none;
+    user-select: none;
+    cursor: grab;
+}
+
+.stm-canvas:active {
+    cursor: grabbing;
+}
+
 /* A short transition keeps a sweep across many strands from strobing. */
 .stm-content g.track > * {
     transition: opacity 120ms ease-out;

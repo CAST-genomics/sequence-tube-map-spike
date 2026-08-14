@@ -1,47 +1,49 @@
 /**
  * The viewer's single public entry point.
  *
- * `mountTubeMapSurface(container)` renders a surface and navigator into any
- * container and knows nothing about panel chrome, cards, or PGB. Its entire input
- * surface is `open(url)`: the host constructs the URL — from a clicked minigraph
- * node's id and coordinates, or from a fixture in `public/` — and the viewer never
- * builds one, never inspects one, and never learns whether it is local or remote.
+ * `mountTubeMapSurface(container, { renderer })` renders a surface into any container and
+ * knows nothing about panel chrome, cards, or PGB. Its entire input surface is
+ * `open(url)`: the host constructs the URL — from a clicked minigraph node's id and
+ * coordinates, or from a fixture in `public/` — and the viewer never builds one, never
+ * inspects one, and never learns whether it is local or remote.
  *
- * The viewer performs no layout. The server returns a finished SVG; this is a
- * viewport and interaction layer over someone else's picture.
+ * The viewer performs no layout. The server returns a finished picture; this is a
+ * viewport and interaction layer over someone else's drawing.
+ *
+ * ## What this file owns, and what it does not
+ *
+ * It owns the mounted root, the fetch and its abort, the spinner, and the error state —
+ * the things that are the same whichever surface draws. It owns nothing about the view:
+ * fitting, zooming and what a resize does to the framing all belong to the renderer, and
+ * the two renderers answer those in different vocabularies. See `surfaceRenderer.ts`.
+ *
+ * `renderer` selects between them. `webgl` is the band renderer, which is what
+ * `notes/2026-08-14-three-js-renderer-verdict.md` settled on; `svg` is the original
+ * surface, which stays because it is the only one with per-element hit-testing and can
+ * show a document the band grammar rejects.
  */
 
-import { createInteractions, type InteractionHandle } from './interaction.ts'
-import { loadTubeMap, TubeMapLoadError } from './loadTubeMap.ts'
-import { createNavigator, type NavigatorHandle } from './navigator.ts'
+import { createBandSurface } from './bandSurface.ts'
+import { fetchDocument, TubeMapLoadError } from './fetchDocument.ts'
+import { NonConformingDocument } from './parseBands.ts'
 import { SURFACE_STYLES } from './surfaceStyles.ts'
-import {
-    MAX_SCALE,
-    clamp,
-    clampToViewport,
-    fitScale,
-    fitToWidth,
-    pan,
-    panToContentPoint,
-    zoomAbout,
-    type Point,
-    type Size,
-    type Transform
-} from './viewportTransform.ts'
+import { createSvgSurface } from './svgSurface.ts'
+import type { RendererName, SurfaceRenderer } from './surfaceRenderer.ts'
 
 const STYLE_ELEMENT_ID = 'stm-surface-styles'
 
 export interface TubeMapSurfaceOptions {
+    /** Which surface draws the map. Defaults to `webgl`. */
+    renderer?: RendererName
     /**
-     * Enable `Shift`-held strand feeling. Off by default: on real maps the
-     * per-hover restyle of ~10,000 track elements tears and renders partially.
-     * See the note atop `interaction.ts`.
+     * Enable `Shift`-held strand feeling on the SVG surface. Off by default: on real maps
+     * the per-hover restyle of ~10,000 track elements tears and renders partially.
      */
     strandFeeler?: boolean
 }
 
 export interface TubeMapSurfaceHandle {
-    /** Fetch, parse, and display the tube map at `url`. Rejects only on programmer error; load failures are shown in place. */
+    /** Fetch and display the tube map at `url`. Rejects only on programmer error; load failures are shown in place. */
     open(url: string): Promise<void>
     /** Remove every listener and every node this mount created. */
     destroy(): void
@@ -53,135 +55,27 @@ export function mountTubeMapSurface(
 ): TubeMapSurfaceHandle {
 
     const doc = container.ownerDocument
-    const strandFeeler = true === options.strandFeeler
 
     installStyles(doc)
 
     const root = doc.createElement('div')
     root.className = 'stm-root'
 
-    const surface = doc.createElement('div')
-    surface.className = 'stm-surface'
-
-    const content = doc.createElement('div')
-    content.className = 'stm-content'
-
     const status = doc.createElement('div')
     status.className = 'stm-status'
     status.hidden = true
 
-    surface.append(content)
-    root.append(surface, status)
-
-    // The badge announces a mode that cannot be entered unless the feeler is on,
-    // so it is mounted only alongside it.
-    if (strandFeeler) {
-        const badge = doc.createElement('div')
-        badge.className = 'stm-mode-badge'
-        badge.textContent = 'feeler'
-        root.append(badge)
-    }
     container.append(root)
 
-    let contentSize: Size | null = null
-    let transform: Transform | null = null
-    /** True until the researcher moves the view — resize re-fits only while the framing is still ours. */
-    let untouched = true
+    const renderer: SurfaceRenderer = 'svg' === options.renderer
+        ? createSvgSurface(root, { strandFeeler: options.strandFeeler })
+        : createBandSurface(root)
+
+    // Appended after the renderer's own nodes so the spinner and the error state cover
+    // the picture rather than sitting under it.
+    root.append(status)
+
     let pending: AbortController | null = null
-    let frame = 0
-
-    const mapNavigator: NavigatorHandle = createNavigator(root, {
-        onNavigate(center: Point): void {
-            if (null === transform) {
-                return
-            }
-            commit(panToContentPoint(transform, center, viewportSize()))
-        }
-    })
-
-    const interactions: InteractionHandle = createInteractions({
-        root,
-        surface,
-        strandFeeler,
-
-        onPan(dx: number, dy: number): void {
-            if (null === transform) {
-                return
-            }
-            commit(pan(transform, dx, dy))
-        },
-
-        onZoom(cursor: Point, factor: number): void {
-            if (null === transform || null === contentSize) {
-                return
-            }
-            commit(zoomAbout(transform, cursor, factor, fitScale(contentSize, viewportSize()), MAX_SCALE))
-        }
-    })
-
-    function viewportSize(): Size {
-        const bounds = surface.getBoundingClientRect()
-        return { width: bounds.width, height: bounds.height }
-    }
-
-    function usable(viewport: Size): boolean {
-        return viewport.width > 0 && viewport.height > 0
-    }
-
-    /** The one place the view state changes: every move is clamped, stored, and drawn identically. */
-    function commit(next: Transform): void {
-        if (null === contentSize) {
-            return
-        }
-
-        const viewport = viewportSize()
-
-        if (false === usable(viewport)) {
-            return
-        }
-
-        const scale = clamp(next.scale, fitScale(contentSize, viewport), MAX_SCALE)
-
-        transform = clampToViewport({ ...next, scale }, contentSize, viewport)
-        untouched = false
-
-        scheduleRender()
-    }
-
-    function scheduleRender(): void {
-        if (0 !== frame) {
-            return
-        }
-
-        frame = requestAnimationFrame(() => {
-            frame = 0
-            render()
-        })
-    }
-
-    function render(): void {
-        if (null === transform) {
-            return
-        }
-
-        content.style.transform = `translate(${transform.x}px, ${transform.y}px) scale(${transform.scale})`
-        mapNavigator.update(transform, viewportSize())
-    }
-
-    function fit(): void {
-        if (null === contentSize) {
-            return
-        }
-
-        const viewport = viewportSize()
-
-        if (false === usable(viewport)) {
-            return
-        }
-
-        commit(fitToWidth(contentSize, viewport))
-        untouched = true
-    }
 
     function showStatus(message: string, isError: boolean): void {
         status.replaceChildren()
@@ -202,34 +96,9 @@ export function mountTubeMapSurface(
         status.replaceChildren()
     }
 
-    function clearMap(): void {
-        interactions.reset()
-        mapNavigator.clear()
-        content.replaceChildren()
-        content.style.removeProperty('transform')
-        contentSize = null
-        transform = null
-        untouched = true
-    }
+    const observer = new ResizeObserver(() => renderer.resize())
 
-    const observer = new ResizeObserver(() => {
-        if (null === contentSize) {
-            return
-        }
-
-        // Resizing reveals more or less of the map rather than re-framing it —
-        // unless the researcher has not yet invested in a position, in which case
-        // the opening framing should stay correct.
-        if (untouched || null === transform) {
-            fit()
-        } else {
-            // Re-clamp against the new viewport; `untouched` is already false here,
-            // so committing cannot change which branch a later resize takes.
-            commit(transform)
-        }
-    })
-
-    observer.observe(surface)
+    observer.observe(root)
 
     return {
 
@@ -238,39 +107,28 @@ export function mountTubeMapSurface(
             const controller = new AbortController()
             pending = controller
 
-            clearMap()
+            renderer.clear()
             showStatus('Loading tube map…', false)
 
             try {
-                const map = await loadTubeMap(url, controller.signal)
+                const text = await fetchDocument(url, controller.signal)
 
                 if (controller.signal.aborted) {
                     return
                 }
 
-                // The document is attached only once it is fully prepared, so the
-                // map appears all at once rather than half-drawn or reflowing.
-                content.style.width = `${map.content.width}px`
-                content.style.height = `${map.content.height}px`
-                content.append(map.svg)
-
-                contentSize = map.content
-                fit()
-                render()
+                renderer.show(text)
                 hideStatus()
-
-                void mapNavigator.setMap(map.source, map.content).then(() => {
-                    if (false === controller.signal.aborted) {
-                        render()
-                    }
-                })
             } catch (error) {
                 if (controller.signal.aborted) {
                     return
                 }
 
-                clearMap()
-                showStatus(describeFailure(error), true)
+                // A document that got as far as the renderer and was refused leaves
+                // whatever it managed to build behind it; clearing is what guarantees the
+                // error state is not read against half a map.
+                renderer.clear()
+                showStatus(describeFailure(url, error), true)
             } finally {
                 if (pending === controller) {
                     pending = null
@@ -282,27 +140,31 @@ export function mountTubeMapSurface(
             pending?.abort()
             pending = null
 
-            if (0 !== frame) {
-                cancelAnimationFrame(frame)
-                frame = 0
-            }
-
             observer.disconnect()
-            interactions.destroy()
-            mapNavigator.destroy()
+            renderer.destroy()
             root.remove()
         }
     }
 }
 
-function describeFailure(error: unknown): string {
+/**
+ * What the error state says. It names the URL and what went wrong with it, because the
+ * three ways this fails are indistinguishable from a blank surface: the node was never
+ * fetchable (13 of 30 are not), the response was not a tube map, or it was a tube map
+ * this renderer cannot draw.
+ */
+function describeFailure(url: string, error: unknown): string {
     if (error instanceof TubeMapLoadError) {
         return 'network' === error.kind
             ? `Could not load the tube map.\n${error.message}`
-            : `No tube map to show.\n${error.message}`
+            : `No tube map to show.\n${error.message}\n${url}`
     }
 
-    return `Could not load the tube map.\n${error instanceof Error ? error.message : String(error)}`
+    if (error instanceof NonConformingDocument) {
+        return `This document cannot be drawn.\n${error.message}\n${url}`
+    }
+
+    return `Could not load the tube map.\n${error instanceof Error ? error.message : String(error)}\n${url}`
 }
 
 function installStyles(doc: Document): void {

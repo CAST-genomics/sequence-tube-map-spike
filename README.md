@@ -69,9 +69,12 @@ verdict that settled this, with the measurements, is
 [`notes/2026-08-14-three-js-renderer-verdict.md`](./notes/2026-08-14-three-js-renderer-verdict.md);
 how a band is drawn is [`docs/RENDERING.md`](./docs/RENDERING.md).
 
-The open problem is telling one haplotype from another when the colors are genuinely
-near-identical — which is what the viewer is *for*, and what nothing here solves yet.
-The strategies and the constraints they have to survive are collected in
+The open problem is telling one haplotype from another. Track color is PCLAI's shipped
+encoding of a PCA coordinate, derived for the PCLAI chart — where position separates the
+points and color merely supports it. A tube map has no position channel to spare, and
+~460 haplotypes arrive encoded in 120–150 distinct colors, four in five of them sharing
+a color with another haplotype exactly. The strategies for adding back a channel the
+chart never needed are collected in
 [`docs/DISAMBIGUATING-TRACKS.md`](./docs/DISAMBIGUATING-TRACKS.md).
 
 **The SVG surface is not a fallback.** A document the band grammar rejects gets a named

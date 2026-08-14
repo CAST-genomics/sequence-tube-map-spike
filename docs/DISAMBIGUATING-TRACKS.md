@@ -1,4 +1,4 @@
-# Strategies for disambiguating tracks
+# Strategies for disambiguating sequence tube map tracks
 
 **Status: open. Nothing here is decided.** This is the toolkit, the constraints each tool
 has to survive, and what is known versus assumed about each. Started 2026-08-14, from
@@ -11,29 +11,31 @@ This document is the layer above the tickets that build pieces of an answer — 
 mode) — and it exists so those get built against a strategy rather than each inventing
 one.
 
+## What this panel is, so the scope is not overstated
+
+This is the **sequence tube map** panel: one visualization of one thing, reached by
+clicking a minigraph node in the PGB browser and asking to see inside it. It is not the
+application, and the problem below is not the application's problem. It is this
+visualization's central problem, and it has to be solved in this visualization's own terms.
+
 ## Why this is the problem, and not one feature among many
 
 `SPEC.md` story 28: *"separate one haplotype from its neighbours even when they are nearly
 the same color, so that genetic similarity does not prevent me from reading individual
 paths."*
 
-That is the whole viewer in one sentence. Everything else — pan, zoom, the navigator, the
-band renderer — exists to put the data on screen. This is the part that makes the data
-*readable*, and it is the part nobody has solved in a way we have seen. The reason it is
-hard is specific and worth restating whenever a strategy is proposed:
+Everything else in this panel — pan, zoom, the navigator, the band renderer — exists to
+put the data on screen. This is the part that makes it *readable*, and it is the part we
+have not seen solved anywhere. The reason it is hard is specific:
 
-- **The colors are near-identical on purpose.** Track color is a continuous PCLAI
-  coordinate; two ribbons look alike because those haplotypes are genetically close at
-  this locus. The similarity is the signal. Any strategy that disambiguates by *changing
-  the colors* is spending the map's primary channel, and `SPEC.md` story 31 says that
-  channel stays undistorted.
-- **And often they are not merely near-identical — they are equal.** Measured on `5520+`
-  (#32): 464 tracks carry **108 distinct colours**, 99 of them the same grey for tracks
-  with no PCLAI call. At least 356 tracks share a colour with another track *exactly*.
-  This is the fact that decides the shape of the answer: **no amount of magnification
-  separates them**, so this is not a resolution problem with a zoom-shaped fix, and any
-  strategy resting on "it resolves once a band is several pixels tall" is answering the
-  decimation problem instead of this one.
+- **The palette is inherited, and it was derived for a different picture.** See below;
+  this is the crux and it is not a property of the data so much as of the encoding.
+- **Tracks share colors outright, not merely nearly.** On the tube map's own `5520+`,
+  464 tracks carry 108 distinct colors and at least 356 share a color with another track
+  *exactly* (#32). **No amount of magnification separates them** — this is not a
+  resolution problem with a zoom-shaped fix, and any strategy resting on "it resolves
+  once a band is several pixels tall" is answering the decimation problem instead of
+  this one.
 - **The scale is against us.** 464 tracks on `5520+`, 40,442 bands. At fit, 464 tracks
   land on ~177 device rows — 2.6 tracks per pixel row (`RENDERING.md`). Below one pixel
   per band, *no* appearance strategy is legible, because there is no pixel to spend on it.
@@ -47,6 +49,66 @@ hard is specific and worth restating whenever a strategy is proposed:
 So the target is not "make the selected one visible". It is **make one path followable
 across the whole node, without lying about color, at zoom levels where the strand is
 thinner than a pixel.**
+
+## Where the palette comes from, and what it was built to do
+
+This panel does not choose its track colors and should not start. They arrive in the
+`RGB` field beside each PCLAI coordinate, computed upstream as a visual encoding of the
+haplotype's position in PCA space; PGB's 3D graph and its PCLAI chart read the same field.
+PGB's own note is explicit: *"The colors in PCLAI are not chosen — they ship with the
+data … the model's own visual encoding of each point's PCA location (so that two points
+close in PCA space are also close in color); the visualization reads them, it does not
+interpret."*
+
+**That encoding was designed for the PCLAI chart, and it is good there.** The chart is a
+2D scatter of PCA space against the reference-panel backdrop, where **position** does the
+separating: every point sits at its own coordinate, and color is a redundant, supporting
+cue that ties a dot to the same haplotype elsewhere. "Close in PCA → close in color" is a
+feature when position already tells the points apart.
+
+**The tube map inherits that encoding into a picture with no position channel to spare.**
+Vertical order here is layout — where the server routed a ribbon so the bundle reads —
+not identity, and it changes along the strip. Color is left carrying the entire
+discrimination burden, and it was never built to bear it. So the limitation the tube map
+runs into is the chart's color derivation, arriving in a context the derivation was not
+designed for.
+
+Measured in PGB's own datasets rather than downstream of them
+(`scripts/pclai_color_collisions.py`, run over `pgb/public/datasets/api-v3`), for the node
+carrying the most placed haplotypes in each:
+
+| Dataset | Placed haplotypes | Distinct colors | Share a color exactly | Distinct colors within 1/255 of another |
+|---|---|---|---|---|
+| `cici.json` | 460 | 117 | 398 | 95 |
+| `chr6-160531482-160664275.json` | 463 | 149 | 383 | 128 |
+| `egfr.json` | 455 | 145 | 372 | 115 |
+| `il7.json` | 461 | 137 | 388 | 109 |
+| `PCBD1-pca-chart-dot-issue.json` | 459 | 129 | 386 | 101 |
+| `small-graph-chr2-879500-880000.json` | 452 | 128 | 374 | 95 |
+
+Roughly **460 haplotypes are being encoded into 120–150 distinct colors**, four in five of
+them sharing a color exactly with another haplotype, and most of the distinct colors
+having a neighbour **one part in 255** away. This is systemic across every dataset, not a
+quirk of one locus.
+
+And the collapse is not confined to haplotypes that are genuinely alike. At `cici.json`'s
+busiest node, two haplotypes **8% of the PCA cloud's diameter apart** receive the *same*
+RGB. Closeness in color does carry meaning; **equality of color does not** — that is
+quantisation, not a claim that two haplotypes are the same.
+
+**Why this framing matters for what gets built.** If the colors were simply the honest
+signal of genetic similarity, the only answer would be resignation. They are not: they are
+one encoding of a coordinate, chosen for a chart where position did the separating. The
+tube map's job is therefore to **add back a channel the chart never needed** — which is a
+data visualization problem with data visualization answers, and it is what the strategies
+below are for.
+
+Two constraints survive from this, and they pull in opposite directions:
+
+- **Do not recolor arbitrarily.** The color is shared vocabulary with the chart and the
+  3D graph; a researcher crossing between panels reads them together (`SPEC.md` story 31).
+- **Do not treat the shipped encoding as sufficient.** It demonstrably is not, and
+  deferring to it is how this problem stays unsolved.
 
 ## What changed, and what did not
 

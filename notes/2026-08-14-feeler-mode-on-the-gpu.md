@@ -144,6 +144,16 @@ for being able to find it. That trade has not been discussed.
   was a real limitation while touches accumulated into a set; with the emphasis following the
   cursor, a track that was never emphasized is simply one the cursor was never on at the
   moment a frame ran.
+- **Where tracks overlap, the pick answers the front-most band, and that was left alone.**
+  Raised 2026-08-15: the map is see-through at every band boundary — a quarter of the background
+  shows through a seam, and a third of the rows are seams at 3 css px per band
+  (`notes/2026-08-15-how-much-shows-through.md`) — so a track behind another is plainly visible
+  and looks selectable. It is not: the pick pass has no blending and no depth buffer, so the last
+  fragment written wins, and instance order is paint order. Weighting the band by how much ink it
+  put in the pixel, and peeling down the paint stack on a gesture, were both weighed.
+  **Decided against, by the user: whatever is in front should win, because that is what the
+  cursor is pointing at.** Recorded here so it is not rediscovered as a defect. Reaching a
+  haplotype the cursor cannot single out is answered from the other direction, by name (#50).
 - **The navigator is not re-rendered on selection.** Its thumbnail is baked once per document,
   so the emphasized strand does not appear in it. `docs/DISAMBIGUATING-TRACKS.md` raises this
   under Strategy A question 4 — the whole strand, including the parts off screen — and it

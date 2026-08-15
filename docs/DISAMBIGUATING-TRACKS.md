@@ -253,6 +253,14 @@ Written once here so each proposal can be checked against them rather than re-ar
 3. **Legibility at fit is bounded by pixels, not by cleverness.** Below one pixel per
    band, the honest answers are low-frequency cues (shadow, envelope, position) or
    telling the researcher to zoom — not a subtler shade.
+
+   *Qualified 2026-08-15.* The pixel bound is real, but part of what makes fit unreadable is
+   not the bound — it is that abutting bands composite over the white ground and wash the map
+   out, measured at ~25% of the background showing through every seam and 100% of rows below
+   one pixel per band (`notes/2026-08-15-how-much-shows-through.md`). Normalising by total
+   coverage removes that term (#51). It does not repeal the pixel budget, and no strategy here
+   may assume it does — but the fit regime is dimmer than it has to be, and that is fixable
+   without touching what the map asserts.
 4. **No chrome inside the viewing surface** (`SPEC.md`, Solution). Legends and axes are
    out; the navigator is the standing exception and it sits over the map, not in it.
 5. **Judged by looking.** Every rendering decision in this repo has been settled by
@@ -281,6 +289,13 @@ started this document. None of these have been thought through:
 - **Indirect selection**, which the 2026-08-13 note already argues for: a strand list, a
   search on `sample#haplotype#contig`, a palette assigning colors to samples, or selection
   arriving from PGB, which already knows which sample the researcher came in caring about.
+  **Written up as #50, 2026-08-15** — a column of pills down the left of the panel, one per
+  haplotype, click to emphasize. Not a ticket yet, deliberately: where it lives, whether the
+  viewer or PGB owns selection, and how 464 rows are navigated all need deciding first. Two
+  things make it stronger than a convenience. It is the natural home for the comparison set
+  #39 gave up when the feeler stopped accumulating; and **it makes depth order a non-issue**,
+  because naming a haplotype reaches one the cursor cannot single out. It needs `trackName`,
+  which the band parser does not read.
 - **Motion.** A slow animated flow along one strand distinguishes it with no static ink at
   all, and motion is the one channel that survives at sub-pixel scale. It also risks being
   the strobing distraction story 25 rules out.

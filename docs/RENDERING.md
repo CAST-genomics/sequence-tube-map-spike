@@ -110,6 +110,30 @@ So the coverage question, which the original treats as the central design risk, 
 be confined to the zoom range where 464 tracks are decimated onto ~177 rows and no technique
 can render them legibly anyway.
 
+**Corrected 2026-08-15 — that last sentence conflates two things, and only one of them is
+confined.** The *MSAA-versus-analytic difference* is confined below one pixel per band, as
+measured above. The *conflation artifact* is not: it lives at every band boundary at every zoom,
+because a boundary pixel is always split between two abutting bands. Measured by rendering the
+same view over a white ground and a black ground and subtracting — the difference is the
+fraction of the background surviving, whatever colour the bands are:
+
+| band height | rows opaque | rows leaking > 5% | transmittance where it leaks |
+|---|---|---|---|
+| 0.6 css px | 0 % | 100 % | median 0.251 |
+| 1.5 css px | 33 % | 67 % | median 0.184 |
+| 3 css px | 67 % | 33 % | p90 0.251 |
+| 8 css px | 87 % | 12 % | p90 0.149 |
+| 30 css px | 99 % | 0.8 % | — |
+
+A band's interior is opaque — exactly zero transmittance. But a band three pixels tall has one
+interior row in three, and the other two leak a quarter of what is behind them, because
+`(1 − a)(1 − (1 − a))` peaks at exactly 0.25 when a boundary falls at a pixel centre. Tracks are
+stacked at a regular pitch, so every seam is in phase and they all leak at once: a coherent
+ghost of the track behind, visible by eye at ordinary working zooms.
+
+Full record, method and consequences:
+[`notes/2026-08-15-how-much-shows-through.md`](../notes/2026-08-15-how-much-shows-through.md).
+
 ## A third option, not built
 
 Because bands abut and are opaque, the *correct* result at sub-pixel scale is a
@@ -120,6 +144,13 @@ exact proportions: better than SVG rather than equal to it.
 Not built, because it costs order-independence — where two tracks genuinely overlap, the
 painter's-algorithm z-order that instance order currently carries would be lost — and
 because the regime it improves is one that cannot be read regardless.
+
+**The second half of that reason is withdrawn, 2026-08-15.** It improves a third of the rows at
+3 css px per band, which reads perfectly well — see the correction above. The first half stands
+and is now the whole of the objection, and it is a sharper objection than it was: front-most
+wins where tracks cross is a property that was deliberately kept when picking was reconsidered
+on the same day. Normalising averages the two instead. Filed as its own ticket rather than
+folded into a rendering tidy-up.
 
 ## The same shader at thumbnail scale
 

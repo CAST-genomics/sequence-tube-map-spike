@@ -22,15 +22,27 @@
  * vertically at a fixed x: without the rule above, some x values would silently
  * fail to highlight anything, reading as a random dead zone rather than a rule.
  *
- * Feeler mode is **off by default** (`strandFeeler`). Swapping the highlight rule
+ * Feeler mode is **off by default here** (`strandFeeler`). Swapping the highlight rule
  * is O(1) to author but not to honour: each swap invalidates style for every one of
  * the map's ~10,000 track children, each carrying an opacity transition, and a sweep
  * asks for that several times a second. Real maps tear and render partially. Nothing
  * here is tuned around that — the wall is the approach, not the constants — so the
- * mechanism stays whole behind the flag while strand selection is reconsidered as
- * something chosen indirectly (a list, or the host) rather than felt at pointer rate.
+ * mechanism stays whole behind the flag.
+ *
+ * **The WebGL surface reached the opposite conclusion, 2026-08-14, and both stand.** Its
+ * highlight is a texel in a 2 KB table rather than a style invalidation, so it feels strands
+ * at pointer rate and ships the mode on; see `trackAppearance.ts` and
+ * `notes/2026-08-14-feeler-mode-on-the-gpu.md`. Nothing about the 28 ms measured *here*
+ * changed, so this file's answer is unchanged with it. Two things differ beyond cost, both
+ * decided over there: that surface emphasizes only the track under the cursor, where this one
+ * accumulates a set as it sweeps, and it recedes the whole map on the key alone.
+ *
+ * What the two surfaces do share is `feelerKey.ts` — the key, the mode flag, the `is-feeling`
+ * class and the badge — so that when `Shift` is on is written once even though what it does is
+ * written twice.
  */
 
+import { watchFeelerKey, type FeelerKey } from './feelerKey.ts'
 import { createPointerDrag } from './pointerDrag.ts'
 import { wheelZoomFactor, type Point } from './viewportTransform.ts'
 
@@ -57,7 +69,6 @@ export function createInteractions(options: InteractionOptions): InteractionHand
 
     const { root, surface } = options
     const doc = root.ownerDocument
-    const view = doc.defaultView ?? window
     const strandFeeler = true === options.strandFeeler
 
     // Unmounted when the feeler is off: with no `Shift` listeners nothing can ever
@@ -74,7 +85,6 @@ export function createInteractions(options: InteractionOptions): InteractionHand
     surface.append(tooltip)
 
     const selected = new Set<string>()
-    let feeling = false
     let lastPointer: Point | null = null
     /** Where the dragging pointer was last seen, in client coordinates. */
     let dragFrom: Point | null = null
@@ -177,7 +187,7 @@ export function createInteractions(options: InteractionOptions): InteractionHand
 
         // Primary button only, and never while the map is being felt: a drag there
         // would slide the strand out from under the cursor mid-sweep.
-        accepts: (event: PointerEvent): boolean => false === feeling && 0 === event.button,
+        accepts: (event: PointerEvent): boolean => false === feeler.active() && 0 === event.button,
 
         onStart(event: PointerEvent): void {
             dragFrom = { x: event.clientX, y: event.clientY }
@@ -203,15 +213,8 @@ export function createInteractions(options: InteractionOptions): InteractionHand
     })
 
     function enterFeelerMode(): void {
-        if (feeling) {
-            return
-        }
-
         // Shift arbitrates: a drag in flight yields to the feeler immediately.
         drag.cancel()
-
-        feeling = true
-        root.classList.add('is-feeling')
         hideTooltip()
 
         // Probe immediately, so holding Shift over a strand acts without a nudge.
@@ -223,16 +226,21 @@ export function createInteractions(options: InteractionOptions): InteractionHand
     }
 
     function leaveFeelerMode(): void {
-        if (false === feeling) {
-            return
-        }
-
-        feeling = false
-        root.classList.remove('is-feeling')
         selected.clear()
         applyHighlight()
         hideTooltip()
     }
+
+    // The key, the mode flag, the `is-feeling` class and the badge are `feelerKey.ts`, shared
+    // with the WebGL surface so that what `Shift` *means* is written once. What it does on
+    // either side of the key is not shared, and the two differ: this probes with
+    // `elementFromPoint` and swaps a CSS rule, that runs a pick pass and writes a texel.
+    const feeler: FeelerKey = watchFeelerKey({
+        root,
+        armed: strandFeeler,
+        onEnter: enterFeelerMode,
+        onLeave: leaveFeelerMode
+    })
 
     function onPointerMove(event: PointerEvent): void {
         const at = localPoint(event)
@@ -244,7 +252,7 @@ export function createInteractions(options: InteractionOptions): InteractionHand
             return
         }
 
-        if (feeling) {
+        if (feeler.active()) {
             feel(event.target as Element | null, at)
         } else {
             inspect(event.target as Element | null, at)
@@ -260,7 +268,7 @@ export function createInteractions(options: InteractionOptions): InteractionHand
         // Always swallow the gesture: the surface is a map, never a scrollable page.
         event.preventDefault()
 
-        if (feeling) {
+        if (feeler.active()) {
             // The map holds still while it is being felt — the strand under the
             // cursor must not slide away mid-gesture.
             return
@@ -273,39 +281,14 @@ export function createInteractions(options: InteractionOptions): InteractionHand
         options.onZoom(localPoint(event), wheelZoomFactor(event.deltaY, event.deltaMode))
     }
 
-    function onKeyDown(event: KeyboardEvent): void {
-        if ('Shift' === event.key) {
-            enterFeelerMode()
-        }
-    }
-
-    function onKeyUp(event: KeyboardEvent): void {
-        if ('Shift' === event.key) {
-            leaveFeelerMode()
-        }
-    }
-
-    function onWindowBlur(): void {
-        leaveFeelerMode()
-    }
-
     surface.addEventListener('pointermove', onPointerMove)
     surface.addEventListener('pointerleave', onPointerLeave)
     surface.addEventListener('wheel', onWheel, { passive: false })
 
-    // The only door into feeler mode. Left shut, `feeling` stays false for the
-    // mount's whole life and every branch that reads it takes the inspect side —
-    // the mode is unreachable rather than merely unused.
-    if (strandFeeler) {
-        view.addEventListener('keydown', onKeyDown)
-        view.addEventListener('keyup', onKeyUp)
-        view.addEventListener('blur', onWindowBlur)
-    }
-
     return {
 
         reset(): void {
-            leaveFeelerMode()
+            feeler.release()
             drag.cancel()
             lastPointer = null
         },
@@ -315,9 +298,7 @@ export function createInteractions(options: InteractionOptions): InteractionHand
             surface.removeEventListener('pointermove', onPointerMove)
             surface.removeEventListener('pointerleave', onPointerLeave)
             surface.removeEventListener('wheel', onWheel)
-            view.removeEventListener('keydown', onKeyDown)
-            view.removeEventListener('keyup', onKeyUp)
-            view.removeEventListener('blur', onWindowBlur)
+            feeler.destroy()
             highlightStyle?.remove()
             tooltip.remove()
         }

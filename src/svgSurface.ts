@@ -56,16 +56,6 @@ export function createSvgSurface(host: HTMLElement, options: SvgSurfaceOptions =
     surface.append(content)
     host.append(surface)
 
-    // The badge announces a mode that cannot be entered unless the feeler is on, so it is
-    // mounted only alongside it.
-    const badge = strandFeeler ? doc.createElement('div') : null
-
-    if (null !== badge) {
-        badge.className = 'stm-mode-badge'
-        badge.textContent = 'feeler'
-        host.append(badge)
-    }
-
     let contentSize: Size | null = null
     let transform: Transform | null = null
     /** True until the researcher moves the view — a resize re-fits only while the framing is still ours. */
@@ -232,7 +222,6 @@ export function createSvgSurface(host: HTMLElement, options: SvgSurfaceOptions =
             interactions.destroy()
             mapNavigator.destroy()
             surface.remove()
-            badge?.remove()
         }
     }
 }

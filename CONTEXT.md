@@ -45,8 +45,8 @@ resolution, used consistently throughout these documents:
 | **span** | A minigraph node's GRCh38 base-pair extent (`end − start`), as recorded in `data/nodeTable.json`. *Avoid* "size", which conflates four separate quantities — see the note under Risks. Added 2026-08-13. |
 | **surface** | The pannable/zoomable area holding the tube-map SVG. |
 | **navigator** | Thumbnail of the whole tube map, bottom-left, with a rect showing the current viewport. |
-| **feeler mode** | `Shift` held. Cursor acts as a feeler: strands highlight on contact, segments inert, pan/zoom suppressed. **Disabled by default** — see the note under Interaction. |
-| **inspect mode** | `Shift` released, and the only mode the viewer ships in. Segments hoverable, strands inert, pan/zoom live. |
+| **feeler mode** | `Shift` held. Cursor acts as a feeler: the strand under it is drawn in full, the rest recede, segments inert, pan/zoom suppressed. **On by default on the WebGL surface** since 2026-08-14, where the emphasis *follows* the cursor; off by default on the SVG surface, and staying that way, where it accumulates — see the notes under Interaction. |
+| **inspect mode** | `Shift` released. Segments hoverable, strands inert, pan/zoom live. |
 
 *If `segment` is wrong — if the team already says "node" at both scales, or prefers
 another term — say so, because it propagates through every document and identifier
@@ -257,7 +257,9 @@ That note flags its metadata table as inferred-not-confirmed. Both inferences ar
     a maximum, shrinking to fit a narrow host. See
     [`notes/2026-08-14-navigator-thumbnail-aspect.md`](./notes/2026-08-14-navigator-thumbnail-aspect.md).
 
-    The segment boxes and highlighting remain SVG-surface-only.
+    The segment boxes remain SVG-surface-only. **Highlighting does not, as of
+    2026-08-14** — see the note under #15; the WebGL surface highlights from an appearance
+    table and the SVG surface no longer has the better story.
 12. **Load with `DOMParser`, not `innerHTML`** — strip all `<title>` elements before
     attaching. Spinner in the body until ready.
 
@@ -273,6 +275,22 @@ That note flags its metadata table as inferred-not-confirmed. Both inferences ar
     `Shift` held, strands touched by the cursor highlight and **accumulate**;
     releasing clears all. The cursor as a feeler, making near-identical ribbons feel
     palpable and tactile.
+
+    **Accumulation is reversed on the WebGL surface, 2026-08-14 — the user's decision, on
+    looking at it built.** There, exactly **one** strand is emphasized: the one under the
+    cursor now. Moving hands the emphasis on and the previous strand recedes with the rest.
+    Swept across the bundle, accumulation leaves a widening trail of lit strands behind the
+    cursor, and the strand being pointed at becomes one of dozens at full colour — the
+    opposite of telling it apart from its neighbours, which is what #32 asked for. Two
+    corollaries, same decision: the map recedes on the key **alone**, before the cursor has
+    touched anything, so the mode is legible immediately; and over empty space nothing is
+    emphasized while the map stays receded, because springing back to full colour in every
+    gap between bands would strobe.
+
+    A comparison set of several haplotypes is still wanted (`SPEC.md` story 29). It needs a
+    deliberate gesture rather than the side effect of a sweep, and the appearance table
+    already supports one — it holds a byte per track and has no opinion about how many are
+    lit. The SVG surface's accumulating feeler is unchanged behind `?feeler`.
 15. **De-emphasize the others**, don't brighten the one. At 369 overlapping ribbons,
     dimming reads instantly where brightening does not. One swapped CSS rule
     (`g.track > *:not(.trackN) { opacity: … }`) — O(1) per hover. Short transition to
@@ -296,6 +314,31 @@ That note flags its metadata table as inferred-not-confirmed. Both inferences ar
     selection driven by PGB, click rather than hover — a few swaps per minute instead
     of a few per second. See
     [`notes/2026-08-13-direct-strand-interaction-is-not-viable.md`](./notes/2026-08-13-direct-strand-interaction-is-not-viable.md).
+
+    **Reversed on the WebGL surface, 2026-08-14, by measurement.** The ~28 ms was a fact
+    about DOM style invalidation, not about this problem, and the prediction that indirect
+    invocation would be needed is withdrawn for that surface: feeler mode is wired to
+    pointer position there and **ships on**. Track appearance is a `DataTexture` of one
+    texel per track — RGB plus an emphasis byte — so lighting a strand writes one byte per
+    *track*, nothing per band and nothing per already-lit track, and the frame uploads 2 KB.
+    On `5520+` (464 tracks, 40,442 bands) a sweep that moves the emphasis 198 times across
+    198 tracks holds a **median write of 0.000 ms and a worst of 0.100 ms in every window of
+    the sweep** — flat, and under what the page timer resolves, so the honest reading is
+    *below 100 µs* rather than *zero*. The worst frame while sweeping (9.4 ms) equals the
+    worst frame over the identical moves with `Shift` released (9.4 ms): inside a 16.67 ms
+    frame, and a third of the ~28 ms a single DOM swap cost. Both surfaces keep their own
+    answer: the SVG surface's feeler stays off and stays behind `?feeler`, because nothing
+    about its 28 ms changed. Measured in
+    [`notes/2026-08-14-feeler-mode-on-the-gpu.md`](./notes/2026-08-14-feeler-mode-on-the-gpu.md).
+
+    **What did not reverse: legibility at fit.** The highlight reads unmistakably from about
+    one css pixel per band upward and locates nothing at fit-to-width, where a band on
+    `5520+` is 0.19 css pixels tall and 5.7 tracks share a device pixel row. That is
+    `docs/DISAMBIGUATING-TRACKS.md` constraint 3, and it is a pixel budget rather than a
+    performance one. A floor of ink for the emphasized band was tried against it and
+    **removed**: a band emitting more ink than the document gave it is brightening the one
+    rather than dimming the others, which decision #15 forbids, and it did not rescue the
+    fit case anyway.
 16. **Strand tooltip: raw `trackName`, unparsed.**
 17. **Segment tooltip (inspect mode): `id` + `sequence`, verbatim.** At ≤130 chars it
     always fits — no truncation, no detail panel. Content is provisional; the
@@ -344,6 +387,14 @@ That note flags its metadata table as inferred-not-confirmed. Both inferences ar
   [`docs/DISAMBIGUATING-TRACKS.md`](./docs/DISAMBIGUATING-TRACKS.md) with the
   constraints each has to survive. Nothing is decided; the document is where proposals
   get checked before they get built.
+
+  **First strategy built and measured, 2026-08-14: A, modifier-held emphasis with the rest
+  receding** (#39, over the picking in #38). It answers the interaction half — from about
+  one css pixel per band upward a single haplotype is traceable across the window against
+  463 ghosts — and it does not answer the fit-to-width half, where there is no pixel in
+  which emphasized and receded can differ. It also only ever says which track is *under the
+  cursor*, which the document itself flags as a smaller question than the one being asked.
+  So this stays deferred as a whole; one tool in it now exists.
 - **`trackName` decoding.** `NA21309#2#CM092097.1` is `sample#haplotype#contig`, a
   3-part assembly-walk-shaped key addressable in PGB's vocabulary. Displayed
   verbatim in v1.

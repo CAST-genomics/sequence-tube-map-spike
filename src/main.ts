@@ -31,18 +31,20 @@ const entries = catalogEntries(nodeTable)
 fillChooser()
 show(initialUrl)
 
-// `?feeler` re-arms `Shift`-held strand feeling, which ships off. It is kept
-// reachable so the interaction can be judged again — on smaller maps, or against a
-// cheaper highlight — without restoring deleted code first.
+// On the SVG surface, `?feeler` re-arms `Shift`-held strand feeling, which ships off
+// there and always will: the highlight costs a ~28 ms restyle of ~10,000 elements. The
+// WebGL surface highlights from a 2 KB table and ships the feeler on, so the flag says
+// nothing about it.
 const strandFeeler = parameters.has('feeler')
 
-if (strandFeeler) {
+if ('webgl' === renderer || strandFeeler) {
     hint.textContent += ' · hold shift to feel strands'
 }
 
-// `?pick` reads the pick pass out loud: the track under the cursor and what asking cost.
-// Nothing consumes picks yet, so this is the only thing that runs one — #38 is the
-// capability, #39 is the interaction over it.
+// `?pick` reads the pick pass out loud: the track under the cursor, what asking cost, how
+// many tracks the feeler has lit, and what the worst appearance-table write cost. Feeler
+// mode runs the same pass without it — this only says the numbers out loud, and is also
+// what makes a pick happen on a plain hover, which nothing else does.
 const pickReadout = parameters.has('pick')
 
 if (pickReadout) {

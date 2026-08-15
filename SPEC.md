@@ -48,11 +48,12 @@ Three capabilities make the strip usable:
 2. **A navigator.** A thumbnail of the whole tube map, bottom-left, with a rect
    showing where the current view sits. It answers "where am I inside this node" at
    a glance, and can be dragged or clicked to move.
-3. **A feeler** *(built, disabled by default — see Feeler mode below)*. Holding
-   `Shift` turns the cursor into a probe: strands it touches
-   light up and stay lit while the rest recede, accumulating a set as the researcher
-   sweeps. Releasing clears everything. This is the deliberate tool that the
-   continuous coloring makes necessary — it separates one haplotype from its
+3. **A feeler** *(built; on, on the WebGL surface — see Feeler mode below)*. Holding
+   `Shift` turns the cursor into a probe: the strand it is on is drawn in full while the
+   rest recede. On the WebGL surface the emphasis **follows the cursor** — one strand at a
+   time, decided 2026-08-14; on the SVG surface, where it is off by default, touched
+   strands accumulate into a set. Releasing clears everything. This is the deliberate tool
+   that the continuous coloring makes necessary — it separates one haplotype from its
    genetically-similar neighbours without distorting the color that carries the
    ancestry signal. Because it is opt-in, the view stays calm during plain reading.
 
@@ -143,6 +144,41 @@ and interaction layer over someone else's picture.
 > highlight already standing was measured to cost nothing to navigate under.
 > Observation and measurements:
 > [`notes/2026-08-13-direct-strand-interaction-is-not-viable.md`](./notes/2026-08-13-direct-strand-interaction-is-not-viable.md).
+>
+> **Re-enabled on the WebGL surface (2026-08-14, #39), and the general finding above is
+> withdrawn for it.** The ~28 ms was style invalidation in the DOM, not a property of this
+> problem. Track appearance is now a `DataTexture` of one texel per track, so moving the
+> emphasis writes one byte per *track* — nothing per band — and the frame uploads 2 KB: on
+> `5520+` a sweep that moves it 198 times across 198 tracks holds a median write of 0.000 ms
+> and a worst of 0.100 ms in every window of the sweep, and the worst frame while sweeping
+> (9.4 ms) equals the worst frame over the same moves with the key released.
+> **The direct route is what ships there.** The indirect routes above are still worth having
+> and are no longer the only option.
+>
+> **Story 29 is deliberately not met there, and that is a reversal rather than a gap.** The
+> user decided 2026-08-14, on looking at it built, that the emphasis must *follow* the cursor:
+> exactly one strand at full colour, the one under the feeler now. Accumulating a set leaves a
+> widening trail of lit strands behind a sweep, and the strand being pointed at becomes one of
+> dozens — the opposite of story 28. The set this story wants is still wanted; it needs a
+> deliberate gesture rather than the side effect of a sweep. The SVG surface still accumulates.
+>
+> Met there: 25, 26, 27 (crosshair and a badge), 28 — *from about one css pixel per band
+> upward* — 30, 31, 32, 34, 36 (one canvas and a pick pass, so the dead zones this story was
+> written against cannot arise) and 37. **Two more are not met and are not merely pending:**
+> **33**, a smooth rather than instant change, which needs per-track animation and a surface
+> that draws every frame rather than on demand; and **35**, seeing *which* strand is under the
+> cursor, which needs `trackName` — the band parser reads geometry, colour and `trackID` and
+> nothing else, so the harness's `?pick` readout can name a track only by number.
+>
+> At fit-to-width story 28 is not met at all: a band on `5520+` is 0.19 css pixels tall and
+> 5.7 tracks share a device pixel row, so there is no pixel in which an emphasized and a
+> receded track can differ. That is a pixel budget, and the candidates for it are weighed in
+> [`docs/DISAMBIGUATING-TRACKS.md`](./docs/DISAMBIGUATING-TRACKS.md). One of them — a floor of
+> ink for the emphasized band — was tried and removed, because a band emitting more ink than
+> the document gave it is brightening the one rather than dimming the others, which story 30
+> forbids. The SVG surface keeps the paragraphs above unchanged: its feeler stays off, behind
+> `?feeler`. Measurements:
+> [`notes/2026-08-14-feeler-mode-on-the-gpu.md`](./notes/2026-08-14-feeler-mode-on-the-gpu.md).
 
 25. As a researcher, I want strands to stay quiet when I'm merely moving the cursor
     around, so that reading the map is not a strobing distraction.

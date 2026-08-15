@@ -30,6 +30,7 @@
 import { createBandSurface } from './bandSurface.ts'
 import { fetchDocument, TubeMapLoadError } from './fetchDocument.ts'
 import { NonConformingDocument } from './parseBands.ts'
+import { shieldFromMap } from './surfacePointer.ts'
 import { SURFACE_STYLES } from './surfaceStyles.ts'
 import { createSvgSurface } from './svgSurface.ts'
 import type { RendererName, SurfaceRenderer } from './surfaceRenderer.ts'
@@ -73,6 +74,11 @@ export function mountTubeMapSurface(
     const status = doc.createElement('div')
     status.className = 'stm-status'
     status.hidden = true
+
+    // The spinner and the error state cover the root edge to edge, and the WebGL surface
+    // takes its gestures on the root. Without this, panning a map that is not there yet
+    // would move a camera the researcher cannot see.
+    shieldFromMap(status)
 
     container.append(root)
 

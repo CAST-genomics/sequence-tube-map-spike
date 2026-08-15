@@ -18,6 +18,12 @@ export const SURFACE_STYLES = `
     width: 100%;
     height: 100%;
     overflow: hidden;
+    /* The WebGL surface takes its gestures here rather than on the canvas, so the browser's
+       own scroll and pinch have to be refused here too — on the canvas alone they would
+       still fire for a touch that started on anything mounted over it. Redundant for the
+       SVG surface, which refuses them again on .stm-surface. */
+    touch-action: none;
+    overscroll-behavior: none;
     background: var(--stm-ground);
     font: 12px/1.45 ui-monospace, SFMono-Regular, Menlo, monospace;
     contain: layout paint;
@@ -46,7 +52,9 @@ export const SURFACE_STYLES = `
 
 /* The WebGL surface. The canvas is viewport-sized at every zoom level — the oversized
    composited layer that broke the SVG surface is structurally impossible here — so it is
-   simply stretched over the root and MapControls takes the pointer. */
+   simply stretched over the root. It is the root that takes the pointer, so that anything
+   layered over the canvas is not a hole in pan, zoom and the feeler; the cursor stays here
+   because the canvas is exactly the region the map is drawn in. */
 .stm-canvas {
     position: absolute;
     inset: 0;
@@ -187,13 +195,17 @@ export const SURFACE_STYLES = `
     height: 100%;
 }
 
+/* Hit-tested, unlike most things drawn over something else. It was pointer-events: none,
+   which made the rect a window through the navigator onto the map behind it: the element
+   under the cursor there was the canvas, so the surface picked the track the navigator
+   covers while the researcher was looking at the navigator. The drag is on the widget and
+   the press bubbles to it either way, so taking events costs the gesture nothing. */
 .stm-navigator-rect {
     position: absolute;
     box-sizing: border-box;
     border: 1px solid rgba(20, 22, 26, 0.9);
     background: rgba(40, 120, 255, 0.16);
     box-shadow: 0 0 0 9999px rgba(255, 255, 255, 0.45);
-    pointer-events: none;
 }
 
 .stm-status {

@@ -20,6 +20,16 @@
  * gestures come from `MapControls` configured exactly as PGB configures it. The SVG
  * surface reimplemented that library by hand because it had no three.js; this does not.
  *
+ * ## Where the pointer is taken
+ *
+ * On the **root**, not the canvas — controls and pick alike. A sibling element over the
+ * canvas does not bubble to the canvas, so anything mounted above it would be a hole in
+ * pan, zoom and the feeler; bound to the common ancestor, events bubble up through the
+ * overlay and the map keeps working underneath it. The root is larger than the canvas and
+ * hosts chrome of its own, so `surfacePointer.ts` decides per event which of those an event
+ * is over, and the canvas coordinates come from the canvas's bounds rather than from
+ * whatever the event happened to land on.
+ *
  * ## The ladder
  *
  * There is one mesh in the scene: a strip of `RUNGS` quads spanning the band's parameter
@@ -103,6 +113,7 @@ import { createBandPicker, type BandPicker } from './bandPicker.ts'
 import { watchFeelerKey, type FeelerKey } from './feelerKey.ts'
 import { createNavigator, type NavigatorHandle } from './navigator.ts'
 import { THICKNESS, parseBands, type ParsedMap } from './parseBands.ts'
+import { canvasPoint, overChrome } from './surfacePointer.ts'
 import { APPEARANCE_ROW, createTrackAppearance, type TrackAppearance } from './trackAppearance.ts'
 import type { SurfaceRenderer } from './surfaceRenderer.ts'
 import type { Point, Size } from './viewportTransform.ts'
@@ -434,7 +445,10 @@ export function createBandSurface(host: HTMLElement, options: BandSurfaceOptions
         camera.near = 0.1
         camera.far = 100
 
-        const controls = new MapControls(camera, canvas)
+        // On the host, not the canvas: see "Where the pointer is taken" above. `MapControls`
+        // binds its own `pointerdown` and `wheel` to what it is given, so chrome over the
+        // map keeps those to itself through `shieldFromMap`.
+        const controls = new MapControls(camera, host)
 
         // PGB's configuration, verbatim. A researcher crosses between the two viewers
         // constantly and must not have to change hands.
@@ -718,10 +732,24 @@ export function createBandSurface(host: HTMLElement, options: BandSurfaceOptions
     })
 
     function onPointerMove(event: PointerEvent): void {
-        // `offsetX`/`offsetY` are css pixels from the canvas's own padding box, which is
-        // what the pick camera wants — and reading them costs no layout, where a
-        // `getBoundingClientRect` on every move would.
-        cursor = { x: event.offsetX, y: event.offsetY }
+        // Chrome over the map is not the map, whatever it is drawn on top of: a sweep that
+        // wanders onto the navigator is a cursor that has left, not one hovering the track
+        // the navigator happens to cover.
+        //
+        // `offsetX`/`offsetY` are gone with the move to the root — they would be an offset
+        // into whatever element the cursor is over, which is the canvas only when nothing is
+        // mounted above it. `getBoundingClientRect` per move is what that costs; it reads
+        // clean layout on a surface whose moves write nothing to the DOM.
+        const point = overChrome(event.target)
+            ? null
+            : canvasPoint({ x: event.clientX, y: event.clientY }, canvas.getBoundingClientRect())
+
+        if (null === point) {
+            cursorLeft()
+            return
+        }
+
+        cursor = point
 
         // Hover alone does nothing (`CONTEXT.md` #14): with no key held and no readout
         // asking, there is nobody to answer, and a pick nobody reads is pure cost.
@@ -730,10 +758,18 @@ export function createBandSurface(host: HTMLElement, options: BandSurfaceOptions
         }
     }
 
-    function onPointerLeave(): void {
-        // The emphasis does not follow the cursor out of the map: the key is still held, so
-        // the mode is still on, and there is simply no track under a cursor that is
-        // somewhere else. Whatever was emphasized recedes with the rest.
+    /**
+     * The cursor is nowhere the map can answer for — off the root, or over chrome.
+     *
+     * The emphasis does not follow it out: the key is still held, so the mode is still on,
+     * and there is simply no track under a cursor that is somewhere else. Whatever was
+     * emphasized recedes with the rest.
+     */
+    function cursorLeft(): void {
+        if (null === cursor) {
+            return
+        }
+
         cursor = null
 
         if (feeler.active()) {
@@ -745,8 +781,11 @@ export function createBandSurface(host: HTMLElement, options: BandSurfaceOptions
         }
     }
 
-    canvas.addEventListener('pointermove', onPointerMove)
-    canvas.addEventListener('pointerleave', onPointerLeave)
+    // On the root: leaving the canvas for the navigator no longer leaves anything the
+    // canvas would hear about, so this catches only the pointer leaving the surface
+    // altogether and `onPointerMove` catches the rest.
+    host.addEventListener('pointermove', onPointerMove)
+    host.addEventListener('pointerleave', cursorLeft)
 
     /**
      * Render the whole map into an offscreen target at thumbnail size and read it back.
@@ -879,8 +918,8 @@ export function createBandSurface(host: HTMLElement, options: BandSurfaceOptions
                 pickFrame = 0
             }
 
-            canvas.removeEventListener('pointermove', onPointerMove)
-            canvas.removeEventListener('pointerleave', onPointerLeave)
+            host.removeEventListener('pointermove', onPointerMove)
+            host.removeEventListener('pointerleave', cursorLeft)
             feeler.destroy()
             readout?.remove()
 

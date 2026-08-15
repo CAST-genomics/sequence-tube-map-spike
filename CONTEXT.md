@@ -279,11 +279,14 @@ That note flags its metadata table as inferred-not-confirmed. Both inferences ar
     *additionally* emphasizes the strand under the cursor; releasing it drops the emphasis
     and leaves the segment's tooltip standing, since the tooltip never depended on the key.
 
-    Pan and zoom are **not** settled by this and are unchanged: the WebGL surface still
-    disables `MapControls` while feeling, because a drag would slide the strand out from
-    under the cursor mid-sweep — a reason of its own, not the hit-test cost that this
-    amendment retires. Whether the key should suppress them at all is now an open
-    question, and it is not #37's to answer.
+    **Pan and zoom stay suppressed, and that is settled, 2026-08-15.** The amendment above
+    is about segments and reaches no further. Holding `Shift` *is* the act of isolating a
+    track with the cursor, and a map that moved under a sweep would slide the strand out
+    from under the feeler mid-gesture — the mode exists to hold the picture still while the
+    cursor reads it. That reason is the mode's own purpose and has nothing to do with the
+    ~28 ms hit-test this amendment retires, which is why retiring the one leaves the other
+    standing. `bandSurface.ts` disables `MapControls` on the key down and re-enables it on
+    the key up.
 
     Mutual exclusion existed because both sets competed for one hit-test that cost ~28 ms
     (#15). It doesn't any more: the strand pick is a texel read and the segment hover is a

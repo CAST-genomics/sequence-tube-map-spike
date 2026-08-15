@@ -7,9 +7,10 @@
  * cursor is already doing — a segment hovered under `Shift` shows its tooltip exactly as it
  * does without the key, and releasing subtracts the emphasis and nothing else. The exclusion
  * existed to keep two interaction sets off one hit-test that cost ~28 ms, and that hit-test
- * is gone. Pan and zoom are a separate question: the WebGL surface still switches
- * `MapControls` off while feeling, for its own reason — a drag would slide the strand out
- * from under the cursor mid-sweep — and #37 does not change that.
+ * is gone. **Pan and zoom still yield, and that is settled**: holding the key *is* the act
+ * of isolating a track with the cursor, and a map that moved under a sweep would slide the
+ * strand out from under the feeler mid-gesture. The mode exists to hold the picture still
+ * while the cursor reads it, which is a reason of its own and not the hit-test cost.
  *
  * The two surfaces still answer the key *differently* below it: the SVG surface cancels a
  * drag and probes with `elementFromPoint` — it is unchanged, and the arbitrating description

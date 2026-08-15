@@ -34,7 +34,7 @@
  * and SVG paints them with the painter's algorithm — order *is* z-order.
  */
 
-import { NUMBER, NonConformingDocument, countOccurrences } from './documentGrammar.ts'
+import { NUMBER as N, NonConformingDocument, countOccurrences } from './documentGrammar.ts'
 import type { Point } from './viewportTransform.ts'
 
 /** Constant across all 127,101 surveyed track paths, and every `<rect>` height. */
@@ -61,7 +61,6 @@ export interface ParsedMap {
     centre: Point
 }
 
-const N = NUMBER
 const FILL = 'style="fill: rgb\\((\\d+), (\\d+), (\\d+)\\); fill-opacity: 1;" trackID="(\\d+)"'
 
 /** A degenerate band: flat, so its control abscissae carry no information. */

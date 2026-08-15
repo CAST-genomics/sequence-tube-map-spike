@@ -262,10 +262,19 @@ export const SURFACE_STYLES = `
    PGB positions the container itself; here it is anchored to the surface's top-left corner
    and moved with a \`transform\`, which does not invalidate layout — so a tooltip following
    the cursor cannot turn the surface's own per-move \`getBoundingClientRect\` into a forced
-   reflow. \`.graph-tooltip\` ships \`display: none\`, so being shown is a class. */
+   reflow. \`.graph-tooltip\` ships \`display: none\`, so being shown is a class.
+
+   PGB's \`z-index: 1000\` is overridden down to 3: it outranks the navigator, which the
+   tooltip may legitimately overlap, and yields to the status layer at 4, which must be able
+   to cover a refused document with nothing showing through it. The rest of the copied block
+   is left exactly as it stands there.
+
+   The font is overridden because \`.stm-root\` sets a monospace \`font\` shorthand for the
+   readouts, and PGB's tooltip is not monospace. */
 .graph-tooltip {
     top: 0;
     left: 0;
+    z-index: 3;
     font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
 }
 

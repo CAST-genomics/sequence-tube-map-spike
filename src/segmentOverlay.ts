@@ -54,7 +54,8 @@
  */
 
 import { overlayTranslation, type CameraView, type Viewport } from './bandCamera.ts'
-import { BOX_STROKE, type SegmentBox } from './parseSegmentBoxes.ts'
+import type { SegmentBox } from './parseSegmentBoxes.ts'
+import type { Point, Size } from './viewportTransform.ts'
 
 /**
  * How wide a box must be on screen, in css pixels, before it is drawn at all.
@@ -80,6 +81,16 @@ export interface SegmentOverlay {
     /** Empty the overlay, in the same call that empties the scene. */
     clear(): void
     destroy(): void
+}
+
+/** How wide the div drawn for `box` is, in world units.
+ *
+ *  Wider than the path, by half a stroke on each side. An SVG stroke straddles the path it
+ *  outlines and a CSS border sits inside the box, so the two cover the same units only when
+ *  the box is grown to the stroke's outer bounds. This is the number the element has, which
+ *  is why it is also the number the visibility threshold is measured against. */
+export function drawnWidth(box: SegmentBox): number {
+    return box.width + box.stroke
 }
 
 /**
@@ -135,6 +146,7 @@ export function createSegmentOverlay(root: HTMLElement): SegmentOverlay {
     /** One document's boxes, widest first, parallel to `elements` and `widths`. */
     let boxes: SegmentBox[] = []
     let elements: HTMLElement[] = []
+    /** `drawnWidth` of each, in the same order — what the visibility threshold gates on. */
     let widths: number[] = []
     /** How many of them are currently mounted visible — the prefix `visibleCount` returns. */
     let shown = 0
@@ -144,10 +156,11 @@ export function createSegmentOverlay(root: HTMLElement): SegmentOverlay {
     /** True from `pointerdown` to `pointerup`: a drag is a grip on the map, and a tooltip
      *  following the cursor through it is reading out boxes nobody asked about. */
     let dragging = false
-    /** The root's own bounds and the tooltip's size, both read on hover-enter. Kept so that
-     *  moving the tooltip never reads layout back out immediately after writing it. */
-    let bounds = { left: 0, top: 0, width: 0, height: 0 }
-    let size = { width: 0, height: 0 }
+    /** The surface's own corner and extent, and the tooltip's, all read on hover-enter. Kept
+     *  so that moving the tooltip never reads layout back out immediately after writing it. */
+    let corner: Point = { x: 0, y: 0 }
+    let surface: Size = { width: 0, height: 0 }
+    let size: Size = { width: 0, height: 0 }
 
     function segmentIndex(target: EventTarget | null): number {
         if (false === (target instanceof HTMLElement)) {
@@ -180,10 +193,11 @@ export function createSegmentOverlay(root: HTMLElement): SegmentOverlay {
         fill(boxes[hovered])
 
         // Both reads happen here, once per box entered, and never again while the cursor
-        // travels across it — see the comment on `bounds`.
+        // travels across it — see the comment on `corner`.
         const rect = root.getBoundingClientRect()
 
-        bounds = { left: rect.left, top: rect.top, width: rect.width, height: rect.height }
+        corner = { x: rect.left, y: rect.top }
+        surface = { width: rect.width, height: rect.height }
         size = { width: tooltip.offsetWidth, height: tooltip.offsetHeight }
 
         place(event)
@@ -257,16 +271,16 @@ export function createSegmentOverlay(root: HTMLElement): SegmentOverlay {
      * `getBoundingClientRect` per pointer move into a forced reflow.
      */
     function place(event: PointerEvent): void {
-        const x = event.clientX - bounds.left
-        const y = event.clientY - bounds.top
+        const x = event.clientX - corner.x
+        const y = event.clientY - corner.y
 
         // Flipped to the other side of the cursor rather than merely clamped: pinned against
         // the right edge it would sit under the pointer and hide the box being read.
-        const left = x + TOOLTIP_OFFSET.x + size.width > bounds.width
+        const left = x + TOOLTIP_OFFSET.x + size.width > surface.width
             ? Math.max(0, x - TOOLTIP_OFFSET.x - size.width)
             : x + TOOLTIP_OFFSET.x
 
-        const top = y + TOOLTIP_OFFSET.y + size.height > bounds.height
+        const top = y + TOOLTIP_OFFSET.y + size.height > surface.height
             ? Math.max(0, y - TOOLTIP_OFFSET.y - size.height)
             : y + TOOLTIP_OFFSET.y
 
@@ -312,8 +326,8 @@ export function createSegmentOverlay(root: HTMLElement): SegmentOverlay {
         show(mounted: SegmentBox[]): void {
             // Widest first, so the visibility threshold is a prefix rather than a scan.
             // Document order carries no z-order here: the boxes do not overlap.
-            boxes = [...mounted].sort((a, b) => b.width - a.width)
-            widths = boxes.map(box => box.width)
+            boxes = [...mounted].sort((a, b) => drawnWidth(b) - drawnWidth(a))
+            widths = boxes.map(drawnWidth)
             elements = []
             hovered = -1
             shown = 0
@@ -328,18 +342,17 @@ export function createSegmentOverlay(root: HTMLElement): SegmentOverlay {
                 element.dataset.stmSegment = String(at)
                 element.hidden = true
 
-                // Grown by half the stroke on every side, because an SVG stroke straddles
-                // the path and a CSS border sits inside the box. At these bounds the border
-                // covers exactly the units the stroke covered.
-                const inset = BOX_STROKE * 0.5
+                // Grown to the stroke's outer bounds — see `drawnWidth`. The radius grows
+                // with it, so the border's outer edge keeps the curve the path had.
+                const inset = box.stroke * 0.5
 
                 element.style.left = `${box.x - inset}px`
                 // The wrapper lays its contents out with y down; `box.y` is the top edge
                 // with y up. See `overlayTranslation`.
                 element.style.top = `${-box.y - inset}px`
-                element.style.width = `${box.width + BOX_STROKE}px`
-                element.style.height = `${box.height + BOX_STROKE}px`
-                element.style.borderWidth = `${BOX_STROKE}px`
+                element.style.width = `${drawnWidth(box)}px`
+                element.style.height = `${box.height + box.stroke}px`
+                element.style.borderWidth = `${box.stroke}px`
                 element.style.borderRadius = `${box.radius + inset}px`
 
                 elements.push(element)

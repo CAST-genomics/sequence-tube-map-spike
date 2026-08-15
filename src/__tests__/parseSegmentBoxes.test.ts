@@ -10,7 +10,7 @@ import { readFileSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
 import { NonConformingDocument } from '../documentGrammar.ts'
 import { parseBands } from '../parseBands.ts'
-import { BOX_STROKE, parseSegmentBoxes } from '../parseSegmentBoxes.ts'
+import { parseSegmentBoxes } from '../parseSegmentBoxes.ts'
 
 const FIXTURES = {
     small: {
@@ -139,11 +139,20 @@ describe('parseSegmentBoxes', () => {
         expect(() => parseSegmentBoxes(broken, { x: 0, y: 0 })).toThrow(NonConformingDocument)
     })
 
-    it('reads the corner radius off every box, and finds the surveyed one', () => {
+    it('reads the corner radius and the stroke width off every box', () => {
+        // Both are dimensions, and dimensions are read rather than assumed — the surveyed
+        // values are what this finds, not what it requires.
         const boxes = parseSegmentBoxes(read(FIXTURES['5514+'].path), { x: 0, y: 0 })
 
         expect(new Set(boxes.map(box => box.radius))).toEqual(new Set([9]))
-        expect(BOX_STROKE).toBe(2)
+        expect(new Set(boxes.map(box => box.stroke))).toEqual(new Set([2]))
+    })
+
+    it('refuses a document whose boxes carry no stroke width it can read', () => {
+        const text = read(FIXTURES.small.path)
+
+        expect(() => parseSegmentBoxes(text.replace('stroke-width: 2px', 'stroke-width: thin'), { x: 0, y: 0 }))
+            .toThrow(NonConformingDocument)
     })
 })
 

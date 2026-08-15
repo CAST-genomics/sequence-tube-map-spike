@@ -203,9 +203,9 @@ because the two answer those in different vocabularies.
 | `src/main.ts`, `src/frameMeter.ts` | harness only — PGB replaces both |
 
 The tested seams are the ones that can be silently wrong without looking wrong: the
-two lots of camera math, both parsers — where a mis-numbered regex group yields plausible
-geometry — and the segment overlay's visibility threshold, which is incremental across
-frames and so is a claim about something stateful. Everything else is verified by looking at it, for the reasons
+two lots of camera math, both parsers — where a mis-numbered regex group yields
+plausible geometry — and the segment overlay's visibility threshold, which is
+incremental across frames and so is a claim about something stateful. Everything else is verified by looking at it, for the reasons
 `SPEC.md` §Testing Decisions gives.
 
 Both week-one risks — CORS and the frame budget — are measured and closed;

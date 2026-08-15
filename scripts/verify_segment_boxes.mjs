@@ -30,7 +30,7 @@ const page = await browser.newPage({ viewport: { width: 1400, height: 900 } })
 const results = []
 const check = (name, passed, detail) => {
     results.push({ name, passed })
-    console.log(`${passed ? '  ok  ' : '  FAIL'}  ${name}${detail ? ` — ${detail}` : ''}`)
+    console.log(`${true === passed ? '  ok  ' : '  FAIL'}  ${name}${undefined === detail ? '' : ` — ${detail}`}`)
 }
 
 async function open(query = '') {
@@ -116,7 +116,7 @@ const nearestBox = () => page.evaluate(() => {
     let best = null
 
     for (const box of document.querySelectorAll('.stm-segment')) {
-        if (box.hidden) {
+        if (true === box.hidden) {
             continue
         }
 

@@ -9,13 +9,30 @@
  */
 
 import { describe, expect, it } from 'vitest'
-import { MIN_SEGMENT_WIDTH, SEQUENCE_PREVIEW, formatBases, previewSequence, visibleCount } from '../segmentOverlay.ts'
+import {
+    MIN_SEGMENT_WIDTH,
+    SEQUENCE_PREVIEW,
+    drawnWidth,
+    formatBases,
+    previewSequence,
+    visibleCount
+} from '../segmentOverlay.ts'
 
-/** The surveyed spread of `5514+`, widest first: 288 wide boxes and 479 at the 18-unit floor. */
+/**
+ * The surveyed spread of `5514+`, widest first: 288 wide boxes and 479 at the 18-unit floor,
+ * each grown to the width the div actually has. That is the number the threshold gates on —
+ * the drawn box is what a researcher can read and hover, so it is what "wide enough" is
+ * about, and measuring the gate against the path instead would be off by a stroke.
+ */
 const WIDTHS = [
-    ...Array.from({ length: 288 }, (_, at) => 91 - at * (91 - 19) / 287),
-    ...Array.from({ length: 479 }, () => 18)
+    ...Array.from({ length: 288 }, (_, at) => drawnWidth(box(91 - at * (91 - 19) / 287))),
+    ...Array.from({ length: 479 }, () => drawnWidth(box(18)))
 ]
+
+/** A box of the given path width, with the stroke every surveyed document carries. */
+function box(width: number) {
+    return { id: '1', sequence: 'A', x: 0, y: 0, width, height: 5613, radius: 9, stroke: 2 }
+}
 
 describe('visibleCount', () => {
 
@@ -63,6 +80,15 @@ describe('visibleCount', () => {
         expect(visibleCount(widths, MIN_SEGMENT_WIDTH / 20, 0)).toBe(2)
         expect(visibleCount(widths, MIN_SEGMENT_WIDTH / 100, 0)).toBe(1)
         expect(visibleCount(widths, MIN_SEGMENT_WIDTH / 101, 0)).toBe(0)
+    })
+
+    it('gates on the width the element has, not the width the path had', () => {
+        // The div is grown to the stroke's outer bounds, so a 18-unit box is drawn 20 units
+        // wide. Gating on 18 would withhold a box that is already over the threshold.
+        const drawn = drawnWidth(box(18))
+
+        expect(drawn).toBe(20)
+        expect(visibleCount([drawn], MIN_SEGMENT_WIDTH / drawn, 0)).toBe(1)
     })
 
     it('holds the threshold at 1.5 css pixels', () => {

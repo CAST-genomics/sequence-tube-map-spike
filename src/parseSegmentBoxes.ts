@@ -42,15 +42,8 @@
  * convention the bands' `y0`/`y1` follow, and nothing downstream knows the source was SVG.
  */
 
-import { NUMBER, NonConformingDocument, countOccurrences } from './documentGrammar.ts'
+import { NUMBER as N, NonConformingDocument, countOccurrences } from './documentGrammar.ts'
 import type { Point } from './viewportTransform.ts'
-
-/**
- * The `stroke-width` every box in every surveyed document carries. The grammar below
- * requires it, so a document that changed it is refused rather than mis-drawn — and the
- * overlay needs the number to place a CSS border over the same units the SVG stroke covers.
- */
-export const BOX_STROKE = 2
 
 /** One segment's outline, in world units: y up, centred on whatever centre was given. */
 export interface SegmentBox {
@@ -67,9 +60,11 @@ export interface SegmentBox {
     height: number
     /** Corner radius, in the same units. 9 in every surveyed document; read, not assumed. */
     radius: number
+    /** How wide the outline's stroke is, in the same units. 2 everywhere surveyed; read for
+     *  the same reason the radius is — the overlay has to lay a CSS border over exactly the
+     *  units the SVG stroke covered, and a number nobody read is a number that can be wrong. */
+    stroke: number
 }
-
-const N = NUMBER
 
 /**
  * The outline, as the numbers arrive. The two `(?:L …)?` runs are the horizontal edges,
@@ -78,10 +73,14 @@ const N = NUMBER
 const OUTLINE = `M ${N} ${N} Q ${N} ${N} ${N} ${N} (?:L ${N} ${N} )?Q ${N} ${N} ${N} ${N} `
     + `L ${N} ${N} Q ${N} ${N} ${N} ${N} (?:L ${N} ${N} )?Q ${N} ${N} ${N} ${N} L ${N} ${N}`
 
-/** Matched literally: an appearance this does not describe is a document to refuse, not to
- *  reproduce. The overlay's stylesheet reproduces exactly these four declarations. */
+/**
+ * The colours and the fill opacity are matched **literally**: an appearance this does not
+ * describe is a document to refuse rather than one to reproduce, and the overlay's stylesheet
+ * carries exactly these three declarations back. The stroke *width* is captured instead,
+ * because it is a dimension, and dimensions are read.
+ */
 const STYLE = 'fill: rgb\\(255, 255, 255\\); fill-opacity: 0\\.4; '
-    + `stroke: rgb\\(0, 0, 0\\); stroke-width: ${BOX_STROKE}px;`
+    + `stroke: rgb\\(0, 0, 0\\); stroke-width: ${N}px;`
 
 const BOX = new RegExp(`<path id="(\\d+)" d="${OUTLINE}" sequence="([^"]*)" style="${STYLE}"`, 'g')
 
@@ -93,18 +92,19 @@ const BOX = new RegExp(`<path id="(\\d+)" d="${OUTLINE}" sequence="([^"]*)" styl
 const MOVE = 0            // left, top + radius
 const CORNER_TOP_LEFT = 2 // left, top  →  left + radius, top
 const HORIZONTAL_TOP = 6  // right - radius, top
-const CORNER_TOP_RIGHT = 8// right, top  →  right, top + radius
+const CORNER_TOP_RIGHT = 8 // right, top  →  right, top + radius
 const VERTICAL_RIGHT = 12 // right, bottom - radius
 const CORNER_LOW_RIGHT = 14 // right, bottom  →  right - radius, bottom
 const HORIZONTAL_LOW = 18 // left + radius, bottom
-const CORNER_LOW_LEFT = 20// left, bottom  →  left, bottom - radius
+const CORNER_LOW_LEFT = 20 // left, bottom  →  left, bottom - radius
 const VERTICAL_LEFT = 24  // left, top + radius
 
 /** Where the numbers start in the match, after the `id` capture. */
 const FIRST_NUMBER = 2
 
-/** The capture holding the sequence, after the outline's 26 numbers. */
+/** The captures after the outline's 26 numbers: the sequence, then the stroke width. */
 const SEQUENCE = FIRST_NUMBER + 26
+const STROKE = SEQUENCE + 1
 
 /**
  * Every segment box in the document, in document order.
@@ -211,6 +211,12 @@ function readBox(match: RegExpExecArray, centre: Point): SegmentBox {
         )
     }
 
+    const stroke = +match[STROKE]
+
+    if (false === (stroke > 0)) {
+        throw new NonConformingDocument(`segment box ${match[1]} has stroke width ${stroke}; it must be positive.`)
+    }
+
     return {
         id: match[1],
         sequence: match[SEQUENCE],
@@ -218,6 +224,7 @@ function readBox(match: RegExpExecArray, centre: Point): SegmentBox {
         y: centre.y - top,
         width: right - left,
         height: bottom - top,
-        radius
+        radius,
+        stroke
     }
 }

@@ -298,6 +298,14 @@ That note flags its metadata table as inferred-not-confirmed. Both inferences ar
     are, and the surface distinguishes them by where each is displayed rather than by
     making the researcher choose.
 
+    **The cursor over a box is the canvas's own, 2026-08-15.** #37 asked for `default`,
+    "not `pointer`, because nothing is clickable yet" — and the second half is what was
+    being decided. `default` is a third answer: the canvas underneath says `grab`, so a
+    cursor crossing 767 walls ~364 css px apart would flicker between arrow and hand
+    continuously, and it would be lying, since a drag that starts on a box really does pan.
+    The boxes carry `grab`/`grabbing`, and `crosshair` while feeling — whatever the map
+    under them is offering. Nothing signals clickability, which was the point.
+
     **Segment boxes are not dead zones.** They take pointer events and own hover, but
     `MapControls` and the pick listeners are attached to the common ancestor, so pan,
     zoom and the feeler bubble through them. This matters at the scale the boxes actually

@@ -6,7 +6,12 @@ Reference for the shader in [`../src/bandSurface.ts`](../src/bandSurface.ts). Wr
 [`../notes/2026-08-13-six-floats-per-band.html`](../notes/2026-08-13-six-floats-per-band.html),
 which derives the geometry in full. **Only the technique comparison is carried here**; that
 document's architecture sections — a camera driven by an `{x, y, scale}` object, no controls
-library, segment boxes in a DOM SVG overlay — are superseded and deliberately left behind.
+library, segment boxes in a DOM **SVG** overlay — are superseded and deliberately left behind.
+
+**Corrected 2026-08-15 on the last of those.** What was superseded is the *SVG*, not the
+*DOM*: the boxes are HTML divs under a wrapper carrying the camera's transform. The band
+population is what may never go back to the DOM, and it is the population — 127,101 bands
+against 767 boxes — that carries the argument, not the medium. See `adr/0001`.
 
 Predictions in the original are replaced below by what was measured.
 
@@ -167,6 +172,37 @@ above: twenty independently-composited 0.05-coverage bands leave most of the bac
 showing. The thumbnail is pale, and it is pale in proportion to what is there, which is
 what a thumbnail is for. The unbuilt third option — normalising by total coverage instead
 of compositing over white — would help here more than anywhere.
+
+## What the renderer corrects, and what it leaves alone
+
+**A feature's size is corrected only where scale destroys information the feature carries.**
+Everything else is drawn at the scale the camera says, and the server's numbers survive
+the trip unmodified.
+
+Two corrections qualify, and they are the same correction at two ends of one problem:
+
+- **`uPad`** grows a band to cover a device pixel. A band thinner than a sample row falls
+  between rows and disappears, and its *colour* is the information — a band that isn't
+  drawn is a haplotype that isn't there. The correction is a floor, never a fixed size:
+  above one pixel `uPad` does nothing and thickness 15 scales freely, 0.19 css px at fit
+  to 38 at 200×.
+- **The segment-box visibility threshold** hides a box until it is ~1.5 css px wide. A box
+  narrower than that carries nothing — it is an outline with no readable interior and no
+  hoverable area — so the honest correction is to withhold it rather than to inflate it.
+
+**A stroke width is not one of them, decided 2026-08-15.** A segment box's 2-unit stroke
+was going to be pinned at 2 css px, on the reasoning that a border should stay crisp. The
+number behind that was wrong: `zoom` is css px per world unit and runs 0.0079 → 1.57, so a
+scaling stroke spans 0.016 px at fit to **3.1 px at 200×** — there was never anything to
+fix. And the consistency argument stands on its own: a 15-unit band scales across three
+orders of magnitude with nothing correcting it, so a 2-unit stroke may too. Pinning it
+would have cost a custom property rewritten every frame and a `calc()` on every box, to
+defend against a problem that does not occur.
+
+The same test retires the fade-in transition the threshold was going to need. A box
+arriving at 1.5 px already has a 0.17 px stroke the browser antialiases to a faint line,
+thickening on its own as the camera closes — the geometry fades by itself, so nothing
+animates it.
 
 ## What would break any of this
 

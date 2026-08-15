@@ -1,13 +1,22 @@
 /**
  * What `Shift` means, in one place: the key, the mode flag, the cursor, and the badge.
  *
- * `CONTEXT.md` #13 makes `Shift` the arbiter of pointer ownership — held, the cursor is a
- * feeler and pan, zoom and segment hit-testing all yield to it; released, the map is a map
- * again. Both surfaces answer that, and they answer it *differently* below the key: the SVG
- * surface cancels a drag and probes with `elementFromPoint`, the WebGL surface switches
- * `MapControls` off and runs a pick pass. What they must not differ about is when the mode is
- * on, what the researcher sees when it is, or the fact that a window losing focus while the
- * key is down never reports the key coming up.
+ * `CONTEXT.md` #13 once made `Shift` the arbiter of pointer ownership, with pan, zoom and
+ * segment hit-testing all yielding to it. **Amended 2026-08-15: it no longer arbitrates
+ * segments.** Held, the strand under the cursor is emphasized *in addition to* whatever the
+ * cursor is already doing — a segment hovered under `Shift` shows its tooltip exactly as it
+ * does without the key, and releasing subtracts the emphasis and nothing else. The exclusion
+ * existed to keep two interaction sets off one hit-test that cost ~28 ms, and that hit-test
+ * is gone. Pan and zoom are a separate question: the WebGL surface still switches
+ * `MapControls` off while feeling, for its own reason — a drag would slide the strand out
+ * from under the cursor mid-sweep — and #37 does not change that.
+ *
+ * The two surfaces still answer the key *differently* below it: the SVG surface cancels a
+ * drag and probes with `elementFromPoint` — it is unchanged, and the arbitrating description
+ * above still fits it — while the WebGL surface runs a pick pass and lets segment hover
+ * through. What they must not differ about is when the mode is on, what the researcher sees
+ * when it is, or the fact that a window losing focus while the key is down never reports the
+ * key coming up.
  *
  * So this module owns exactly that much and no more: the listeners, the flag, the
  * `is-feeling` class the stylesheet hangs the crosshair off, and the badge. Everything about

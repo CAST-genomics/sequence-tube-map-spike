@@ -45,8 +45,8 @@ resolution, used consistently throughout these documents:
 | **span** | A minigraph node's GRCh38 base-pair extent (`end − start`), as recorded in `data/nodeTable.json`. *Avoid* "size", which conflates four separate quantities — see the note under Risks. Added 2026-08-13. |
 | **surface** | The pannable/zoomable area holding the tube-map SVG. |
 | **navigator** | Thumbnail of the whole tube map, bottom-left, with a rect showing the current viewport. |
-| **feeler mode** | `Shift` held. Cursor acts as a feeler: the strand under it is drawn in full, the rest recede, segments inert, pan/zoom suppressed. **On by default on the WebGL surface** since 2026-08-14, where the emphasis *follows* the cursor; off by default on the SVG surface, and staying that way, where it accumulates — see the notes under Interaction. |
-| **inspect mode** | `Shift` released. Segments hoverable, strands inert, pan/zoom live. |
+| **feeler mode** | `Shift` held. Cursor acts as a feeler: the strand under it is drawn in full and the rest recede. ~~Segments inert, pan/zoom suppressed.~~ **Amended 2026-08-15:** the key *adds* emphasis and takes nothing away from *segments* — they stay hoverable under it. Pan and zoom are a separate question and are unchanged: the WebGL surface still suppresses them while feeling, for a reason of its own — see #13. **On by default on the WebGL surface** since 2026-08-14, where the emphasis *follows* the cursor; off by default on the SVG surface, and staying that way, where it accumulates — see the notes under Interaction. |
+| ~~**inspect mode**~~ | ~~`Shift` released. Segments hoverable, strands inert, pan/zoom live.~~ **Retired 2026-08-15.** Once segments are hoverable unconditionally, this named the absence of feeler mode and nothing else. A mode that is on whenever another isn't is not a mode; it is the map. Still current on the SVG surface, which is not being changed. |
 
 *If `segment` is wrong — if the team already says "node" at both scales, or prefers
 another term — say so, because it propagates through every document and identifier
@@ -265,12 +265,43 @@ That note flags its metadata table as inferred-not-confirmed. Both inferences ar
 
 ### Interaction
 
-13. **`Shift` arbitrates pointer ownership**, making the two interaction sets
+13. ~~**`Shift` arbitrates pointer ownership**~~, making the two interaction sets
     mutually exclusive by construction rather than by hit-test arbitration:
     - **held (feeler mode):** `g.node > * { pointer-events: none }`; strands own the
       cursor; no dead zones; pan/zoom suppressed; cursor `crosshair` so the mode is
       visible rather than remembered.
     - **released (inspect mode):** segments hoverable; strand highlights cleared.
+
+    **`Shift` no longer arbitrates segments on the WebGL surface, 2026-08-15 — over them
+    it only adds.** Segments are hoverable whenever they are visible, with no key held:
+    mousing over a thing and being told what it is is the plainest interaction there is,
+    and a modifier key to reach it is a toll on the common case. Holding `Shift`
+    *additionally* emphasizes the strand under the cursor; releasing it drops the emphasis
+    and leaves the segment's tooltip standing, since the tooltip never depended on the key.
+
+    **Pan and zoom stay suppressed, and that is settled, 2026-08-15.** The amendment above
+    is about segments and reaches no further. Holding `Shift` *is* the act of isolating a
+    track with the cursor, and a map that moved under a sweep would slide the strand out
+    from under the feeler mid-gesture — the mode exists to hold the picture still while the
+    cursor reads it. That reason is the mode's own purpose and has nothing to do with the
+    ~28 ms hit-test this amendment retires, which is why retiring the one leaves the other
+    standing. `bandSurface.ts` disables `MapControls` on the key down and re-enables it on
+    the key up.
+
+    Mutual exclusion existed because both sets competed for one hit-test that cost ~28 ms
+    (#15). It doesn't any more: the strand pick is a texel read and the segment hover is a
+    real DOM `pointerover` on one div. Two answers to two different questions — *which
+    haplotype is this* and *which segment is this* — can both be given at once, so they
+    are, and the surface distinguishes them by where each is displayed rather than by
+    making the researcher choose.
+
+    **Segment boxes are not dead zones.** They take pointer events and own hover, but
+    `MapControls` and the pick listeners are attached to the common ancestor, so pan,
+    zoom and the feeler bubble through them. This matters at the scale the boxes actually
+    have: a median box on `5514+` is **18 × 5613** in a map 6360 tall — a floor-to-ceiling
+    wall, ~28 CSS px wide at 200× and taller than any viewport, one of 767 spaced ~364
+    CSS px apart. Boxes that swallowed gestures would kill ~8% of every drag and silently
+    ignore a wheel-zoom aimed at exactly the feature the researcher wants to magnify.
 14. **Highlighting is deliberate, not incidental.** Hover alone does nothing. With
     `Shift` held, strands touched by the cursor highlight and **accumulate**;
     releasing clears all. The cursor as a feeler, making near-identical ribbons feel

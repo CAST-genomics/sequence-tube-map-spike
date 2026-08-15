@@ -13,7 +13,8 @@ measured: 2026-08-14
 >
 > **Several consequences below are wrong and are corrected in place**, each marked. In
 > summary: the camera is driven by `MapControls`, not by an `{x, y, scale}` object; the
-> segment boxes will be geometry, not a DOM overlay; the sub-pixel-ribbon framing is
+> segment boxes ~~will be geometry, not a DOM overlay~~ **are HTML divs, reversed again
+> 2026-08-15**; the sub-pixel-ribbon framing is
 > misleading because tracks abut; and the prediction about MSAA is wrong in its mechanism.
 > The *geometry* reasoning — the grammar, the smoothstep collapse, the lapped joins, six
 > floats per band — holds exactly and is what made the renderer a day's work.
@@ -131,11 +132,38 @@ Two further consequences, both measured:
     for now as a comparison arm and as the only surface with per-element hit-testing —
     both temporary, neither a fallback.
 
-    **Reversed 2026-08-14.** The segment boxes become three.js geometry, picked with a
+    ~~**Reversed 2026-08-14.** The segment boxes become three.js geometry, picked with a
     raycaster; **there is no DOM overlay.** "Free hit-testing" is the same reasoning
     that produced `CONTEXT.md` #6, whose premise has already collapsed, and an SVG layer
     CSS-transformed in lockstep with the camera is exactly the coupling this renderer
-    exists to escape. Not yet built — deferred out of the spike deliberately.
+    exists to escape.~~ Not yet built — deferred out of the spike deliberately.
+
+    **Reversed again 2026-08-15, and this is the settled answer: the segment boxes are
+    HTML `<div>`s.** The 2026-08-14 reversal generalised from "the DOM cannot draw this"
+    to "the DOM may draw none of this," and the two failures it rests on do not support
+    the second sentence. Both name a mechanism, and both mechanisms are population-sized:
+    style invalidation across **10,270** elements at ~28 ms a hover, and a **900-megapixel**
+    composited layer tiling a display list of **10,345** drawing commands. There are **767**
+    segment boxes in the largest document, they are `<g class="node">`'s only contents, and
+    they are hovered one at a time.
+
+    They are also, literally, round rects — `M 11 20 Q 11 11 20 11 L 67 11 …` is a
+    rectangle with quadratic corners of radius 9, `fill-opacity: 0.4`, `stroke-width: 2px`.
+    Drawn as a div that is `border-radius: 9px`, `background: rgba(255,255,255,.4)`,
+    `border: 2px solid #000`, sized in world units under one wrapper carrying the camera's
+    `transform`. Geometry would need a stroked translucent material, its own draw order, a
+    raycaster, and a DOM tooltip anyway.
+
+    **What survives of the rule**, stated as the mechanism rather than as the medium: *no
+    DOM layer whose rasterization the browser must redo at the camera's scale over a
+    display list the size of the band population.* The band population stays on the GPU
+    permanently. A wrapper holding 767 rounded rects and no `will-change` is not that
+    layer — but it is the same *class* of thing, so it is judged by looking at `5514+` at
+    200× before it is believed, with per-frame screen-space layout held in reserve.
+
+    Picking is no longer the argument in either direction. The boxes take real pointer
+    events and own hover; `MapControls` and the pick listeners move to the common
+    ancestor so pan, zoom and the strand feeler pass through them. See `CONTEXT.md` #13.
 - **Appearance becomes a table, not a stylesheet.** Each instance carries its
   `trackID`; a `DataTexture` holds one texel of appearance per track. Highlighting is
   a ~2 KB upload whose cost is independent of how many strands are lit — retiring the

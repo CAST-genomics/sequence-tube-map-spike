@@ -23,6 +23,7 @@
  */
 
 import { createPointerDrag } from './pointerDrag.ts'
+import { shieldFromMap } from './surfacePointer.ts'
 import { clamp, type Point, type Rect, type Size } from './viewportTransform.ts'
 
 /**
@@ -78,6 +79,11 @@ export function createNavigator(parent: HTMLElement, options: NavigatorOptions):
 
     element.append(canvas, rect)
     parent.append(element)
+
+    // Chrome, not map. The WebGL surface takes its gestures on the common ancestor of
+    // everything mounted here, so without this a drag of the rect would also pan the map
+    // under it, and a wheel over the thumbnail would zoom the map it is a picture of.
+    shieldFromMap(element)
 
     let content: Size | null = null
     /** The widget's size in CSS pixels — the thumbnail's aspect, at whatever width fits. */

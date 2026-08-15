@@ -131,6 +131,31 @@ export function worldFromViewportPoint(point: Point, viewport: Viewport, view: C
     }
 }
 
+/**
+ * Where a wrapper carrying `translate(…) scale(view.zoom)` must be translated so that its
+ * contents, laid out in world units, land exactly on the map the canvas draws.
+ *
+ * This is the projection written as a CSS transform, and it is what lets #37's segment
+ * boxes be positioned once, in the document's own numbers, and never touched again on a pan
+ * or a zoom. One string per frame replaces per-box work entirely.
+ *
+ * **Its contents are laid out with y down**, because CSS `top` grows downward and a wrapper
+ * scaled by a negative factor would mirror everything inside it, tooltips included. So an
+ * element at world `(x, y)` is placed at `left: x`, `top: -y`, and this returns the
+ * translation that carries that convention onto the screen:
+ *
+ *     screen.x = translate.x + world.x  · zoom
+ *     screen.y = translate.y + (-world.y) · zoom
+ *
+ * which is `worldFromViewportPoint` run forwards, and is asserted against it.
+ */
+export function overlayTranslation(view: CameraView, viewport: Viewport): Point {
+    return {
+        x: viewport.width * 0.5 - view.x * view.zoom,
+        y: viewport.height * 0.5 + view.y * view.zoom
+    }
+}
+
 /** The inverse for a point: where the camera goes to put `point` at the middle of the view. */
 export function worldFromContentPoint(point: Point, content: Size): Point {
     return {

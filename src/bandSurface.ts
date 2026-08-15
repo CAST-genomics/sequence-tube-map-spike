@@ -73,6 +73,14 @@
  * same, and why this ships on rather than behind a flag. Measured in
  * `scripts/verify_highlight.mjs`.
  *
+ * ## The segment boxes are not in the scene
+ *
+ * `g.node`'s 767 rounded rectangles are HTML divs over the canvas, in `segmentOverlay.ts`.
+ * They are the one thing this surface draws that the GPU does not, and the reasoning is in
+ * that file. What matters here is only the wiring: they are parsed alongside the bands and
+ * can refuse the same document, they are mounted and emptied in the same calls the scene is,
+ * and they are placed from the camera in the same `requestAnimationFrame` that renders it.
+ *
  * ## Drawing happens on demand
  *
  * The spike ran an unconditional animation loop because it was also reading a frame
@@ -113,6 +121,8 @@ import { createBandPicker, type BandPicker } from './bandPicker.ts'
 import { watchFeelerKey, type FeelerKey } from './feelerKey.ts'
 import { createNavigator, type NavigatorHandle } from './navigator.ts'
 import { THICKNESS, parseBands, type ParsedMap } from './parseBands.ts'
+import { parseSegmentBoxes } from './parseSegmentBoxes.ts'
+import { createSegmentOverlay, type SegmentOverlay } from './segmentOverlay.ts'
 import { canvasPoint, overChrome } from './surfacePointer.ts'
 import { APPEARANCE_ROW, createTrackAppearance, type TrackAppearance } from './trackAppearance.ts'
 import type { SurfaceRenderer } from './surfaceRenderer.ts'
@@ -364,6 +374,11 @@ export function createBandSurface(host: HTMLElement, options: BandSurfaceOptions
     canvas.className = 'stm-canvas'
     host.append(canvas)
 
+    // Mounted straight after the canvas, so it is over the map and under everything the
+    // mount layers on top — the navigator, the badge, and the status layer that has to be
+    // able to cover a refused document's error message with nothing showing through it.
+    const segments: SegmentOverlay = createSegmentOverlay(host)
+
     const readout = true === options.pickReadout ? doc.createElement('div') : null
 
     if (null !== readout) {
@@ -592,16 +607,19 @@ export function createBandSurface(host: HTMLElement, options: BandSurfaceOptions
 
         const { renderer, scene, camera, material } = context
 
+        const view = { x: camera.position.x, y: camera.position.y, zoom: camera.zoom }
+
         setCoverage(material, camera.zoom, renderer.getPixelRatio())
         renderer.render(scene, camera)
 
+        // The same frame that drew the canvas, so the boxes cannot lag the map they annotate
+        // by one pan step. One transform on the wrapper, plus whichever boxes crossed the
+        // visibility threshold since the last frame.
+        segments.update(view, framed)
+
         // Two style writes on an element that is already in the DOM. The thumbnail under
         // it is untouched — it was rendered once, at load.
-        mapNavigator.update(visibleContentRect(
-            { x: camera.position.x, y: camera.position.y, zoom: camera.zoom },
-            framed,
-            drawing.map.content
-        ))
+        mapNavigator.update(visibleContentRect(view, framed, drawing.map.content))
     }
 
     /**
@@ -835,7 +853,11 @@ export function createBandSurface(host: HTMLElement, options: BandSurfaceOptions
     return {
 
         show(text: string): void {
+            // Both readings of the document before anything is built, and both able to
+            // refuse it: a box the grammar cannot read is a variant nobody would notice was
+            // missing, so it refuses the whole map exactly as a non-conforming band does.
             const map = parseBands(text)
+            const boxes = parseSegmentBoxes(text, map.centre)
             const built = gpu()
 
             releaseDrawing()
@@ -867,6 +889,8 @@ export function createBandSurface(host: HTMLElement, options: BandSurfaceOptions
 
             drawing = { map, geometry, mesh, appearance }
 
+            segments.show(boxes)
+
             reframe()
             fit()
 
@@ -880,6 +904,10 @@ export function createBandSurface(host: HTMLElement, options: BandSurfaceOptions
             // leaving it held over an empty surface would leave both switched off.
             feeler.release()
             releaseDrawing()
+
+            // In the same call that empties the scene, so a refused document cannot leave
+            // the previous map's boxes floating over an error message.
+            segments.clear()
             mapNavigator.clear()
 
             if (null !== context) {
@@ -921,6 +949,7 @@ export function createBandSurface(host: HTMLElement, options: BandSurfaceOptions
             host.removeEventListener('pointermove', onPointerMove)
             host.removeEventListener('pointerleave', cursorLeft)
             feeler.destroy()
+            segments.destroy()
             readout?.remove()
 
             releaseDrawing()

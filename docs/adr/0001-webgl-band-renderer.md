@@ -161,6 +161,14 @@ Two further consequences, both measured:
     layer — but it is the same *class* of thing, so it is judged by looking at `5514+` at
     200× before it is believed, with per-frame screen-space layout held in reserve.
 
+    **Looked at 2026-08-15, and believed.** Built in `src/segmentOverlay.ts`; `5514+` at
+    the 200× clamp draws all 767 boxes with the wrapper's bounds near 280,000 × 10,000 css
+    px, and it neither tears nor drops tiles — including mid-drag, where the boxes and the
+    canvas move in lockstep because the wrapper's transform is written in the frame that
+    renders the canvas. `scripts/verify_segment_boxes.mjs` runs the whole of #37's
+    acceptance and leaves the screenshots behind. The reserve was not needed and is not
+    built.
+
     Picking is no longer the argument in either direction. The boxes take real pointer
     events and own hover; `MapControls` and the pick listeners move to the common
     ancestor so pan, zoom and the strand feeler pass through them. See `CONTEXT.md` #13.

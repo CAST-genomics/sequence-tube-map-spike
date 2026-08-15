@@ -13,6 +13,7 @@ import {
     MAX_ZOOM_FACTOR,
     devicePixel,
     fitZoom,
+    overlayTranslation,
     pixelFrustum,
     usable,
     visibleContentRect,
@@ -208,5 +209,46 @@ describe('worldFromViewportPoint', () => {
 
         expect(world.x).toBeCloseTo(visible.x - content.width * 0.5, 6)
         expect(world.y).toBeCloseTo(content.height * 0.5 - visible.y, 6)
+    })
+})
+
+describe('overlayTranslation', () => {
+
+    const view = { x: -4200, y: 315, zoom: 0.037 }
+    const viewport = { width: 1400, height: 900 }
+
+    /** Where the wrapper puts an element laid out at world `(x, y)`, in viewport pixels. */
+    function placed(world: { x: number, y: number }): { x: number, y: number } {
+        const translate = overlayTranslation(view, viewport)
+
+        return { x: translate.x + world.x * view.zoom, y: translate.y + -world.y * view.zoom }
+    }
+
+    it('is the projection the pick pass runs backwards', () => {
+        // Asserted against `worldFromViewportPoint` rather than against arithmetic written
+        // twice: the boxes have to land on the bands the shader draws, and that function is
+        // already what the surface believes about where a viewport pixel is in the world.
+        for (const point of [{ x: 0, y: 0 }, { x: 700, y: 450 }, { x: 1399, y: 899 }]) {
+            const world = worldFromViewportPoint(point, viewport, view)
+            const screen = placed(world)
+
+            expect(screen.x).toBeCloseTo(point.x, 6)
+            expect(screen.y).toBeCloseTo(point.y, 6)
+        }
+    })
+
+    it('puts the camera’s own position in the middle of the viewport', () => {
+        const middle = placed({ x: view.x, y: view.y })
+
+        expect(middle.x).toBeCloseTo(viewport.width * 0.5, 9)
+        expect(middle.y).toBeCloseTo(viewport.height * 0.5, 9)
+    })
+
+    it('lays its contents out with y down, so nothing inside them is mirrored', () => {
+        // A larger world y is further *up* the screen. If this ever inverted, the boxes
+        // would still land on the map — mirrored about the camera, which on a map centred
+        // on the origin at fit is nearly invisible and completely wrong.
+        expect(placed({ x: 0, y: 100 }).y).toBeLessThan(placed({ x: 0, y: 0 }).y)
+        expect(placed({ x: 100, y: 0 }).x).toBeGreaterThan(placed({ x: 0, y: 0 }).x)
     })
 })

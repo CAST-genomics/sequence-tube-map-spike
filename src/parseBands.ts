@@ -1,5 +1,8 @@
 /**
- * Band parser — the WebGL surface's whole reading of the server's document.
+ * Band parser — the WebGL surface's reading of `g.track`, which is every drawable in the
+ * document but the segment boxes. Those are `parseSegmentBoxes.ts`, and the two are read
+ * separately because they become different things: bands become one instanced mesh, boxes
+ * become HTML divs.
  *
  * Deliberately regex over raw response text, never `DOMParser`: building 40,442 DOM
  * nodes is exactly the cost this renderer exists to escape.
@@ -31,6 +34,9 @@
  * and SVG paints them with the painter's algorithm — order *is* z-order.
  */
 
+import { NUMBER, NonConformingDocument, countOccurrences } from './documentGrammar.ts'
+import type { Point } from './viewportTransform.ts'
+
 /** Constant across all 127,101 surveyed track paths, and every `<rect>` height. */
 export const THICKNESS = 15
 
@@ -49,17 +55,13 @@ export interface ParsedMap {
     trackCount: number
     /** Extent of the content, in world units. Centred on the origin. */
     content: { width: number, height: number }
+    /** The viewBox centre subtracted above, in the document's own units. Anything else
+     *  reading the same document has to apply it to land in the same frame — which is
+     *  what `parseSegmentBoxes` takes it for. */
+    centre: Point
 }
 
-export class NonConformingDocument extends Error {
-
-    constructor(message: string) {
-        super(message)
-        this.name = 'NonConformingDocument'
-    }
-}
-
-const N = '(-?[\\d.]+(?:[eE]-?\\d+)?)'
+const N = NUMBER
 const FILL = 'style="fill: rgb\\((\\d+), (\\d+), (\\d+)\\); fill-opacity: 1;" trackID="(\\d+)"'
 
 /** A degenerate band: flat, so its control abscissae carry no information. */
@@ -90,7 +92,7 @@ export function parseBands(text: string): ParsedMap {
     const trackEnd = text.indexOf('<g class="node"')
     const track = -1 === trackEnd ? text : text.slice(0, trackEnd)
 
-    const expected = count(track, '<rect') + count(track, '<path')
+    const expected = countOccurrences(track, '<rect') + countOccurrences(track, '<path')
 
     if (0 === expected) {
         throw new NonConformingDocument('No drawable elements found in g.track.')
@@ -222,7 +224,8 @@ export function parseBands(text: string): ParsedMap {
         bandCount: bands,
         trackColors,
         trackCount,
-        content: { width: viewBox.width, height: viewBox.height }
+        content: { width: viewBox.width, height: viewBox.height },
+        centre: { x: centreX, y: centreY }
     }
 }
 
@@ -276,16 +279,4 @@ function parseViewBox(text: string): { minX: number, minY: number, width: number
     }
 
     return { minX: parts[0], minY: parts[1], width: parts[2], height: parts[3] }
-}
-
-function count(text: string, needle: string): number {
-    let total = 0
-    let at = text.indexOf(needle)
-
-    while (-1 !== at) {
-        total += 1
-        at = text.indexOf(needle, at + needle.length)
-    }
-
-    return total
 }

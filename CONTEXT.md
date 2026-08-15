@@ -257,7 +257,10 @@ That note flags its metadata table as inferred-not-confirmed. Both inferences ar
     a maximum, shrinking to fit a narrow host. See
     [`notes/2026-08-14-navigator-thumbnail-aspect.md`](./notes/2026-08-14-navigator-thumbnail-aspect.md).
 
-    The segment boxes remain SVG-surface-only. **Highlighting does not, as of
+    ~~The segment boxes remain SVG-surface-only.~~ **They arrived on the WebGL surface
+    2026-08-15 (#37), as HTML `<div>`s** — one wrapper carrying the camera's transform,
+    boxes positioned inside it in world units, `border-radius: 9px` reproducing the
+    quadratic corners exactly. `segmentOverlay.ts`. **Highlighting does not, as of
     2026-08-14** — see the note under #15; the WebGL surface highlights from an appearance
     table and the SVG surface no longer has the better story.
 12. **Load with `DOMParser`, not `innerHTML`** — strip all `<title>` elements before
@@ -371,9 +374,28 @@ That note flags its metadata table as inferred-not-confirmed. Both inferences ar
     rather than dimming the others, which decision #15 forbids, and it did not rescue the
     fit case anyway.
 16. **Strand tooltip: raw `trackName`, unparsed.**
-17. **Segment tooltip (inspect mode): `id` + `sequence`, verbatim.** At ≤130 chars it
-    always fits — no truncation, no detail panel. Content is provisional; the
+17. ~~**Segment tooltip (inspect mode): `id` + `sequence`, verbatim.** At ≤130 chars it
+    always fits — no truncation, no detail panel.~~ Content is provisional; the
     *capability* is what's preserved.
+
+    **Revised 2026-08-15 with the WebGL surface's own tooltip (#37): PGB's node tooltip,
+    borrowed outright.** `.graph-tooltip` and `.look-tooltip` copied into
+    `surfaceStyles.ts` under the same class names as
+    `pgb/src/styles/_toolTipContainer.scss` and `_lookToolTip.scss`, so the two codebases
+    stay greppable for each other and a later divergence is a deliberate edit. A
+    researcher crosses between the two viewers constantly and a segment should not look
+    like a different kind of object depending on the panel.
+
+    Title plus two rows — `id`, `Length … bp`, `Sequence …`. **The sequence is truncated
+    at 32 characters**, which the original decision did not need: ≤130 was measured on the
+    600 bp fixture, and `5520+` carries a **1,764-character** segment. `.graph-tooltip`
+    says `white-space: nowrap` and `.look-tooltip` caps at 300 px, and untruncated those
+    two disagree by the width of the screen. The full sequence needs an affordance that
+    outlives the cursor, which is a separate ticket.
+
+    The `Length` row is not redundant with the truncation: it is the number the researcher
+    is after, and it survives the cut. A fourth row for how many haplotypes traverse the
+    segment is readable off the box's height and deliberately deferred.
 
 ### Testing
 

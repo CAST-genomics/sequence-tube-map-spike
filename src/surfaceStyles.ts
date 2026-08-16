@@ -80,7 +80,22 @@ export const SURFACE_STYLES = `
     cursor: grab;
 }
 
-.stm-canvas:active {
+/* A pan in progress on the WebGL surface, and the one rule that says so.
+
+   Written on the root and on everything the pointer can be over, rather than as \`:active\`
+   on each: \`MapControls\` takes pointer capture on the root when a drag begins, and a
+   captured pointer stops hit-testing for \`:hover\` and \`:active\` — the capture target takes
+   them instead. \`.stm-canvas:active\` therefore stopped matching the instant the drag it
+   was describing actually began, and the root, which had no cursor of its own, fell back to
+   the arrow: pressing showed the grabbing hand and moving took it away.
+
+   The root is listed first because it is the element the capture makes current; the others
+   because \`cursor\` inherits, and a plain rule on a descendant outranks an inherited value.
+   \`bandSurface.ts\` puts the class on, for the primary button only and never while
+   feeling. */
+.stm-root.is-panning,
+.stm-root.is-panning .stm-canvas,
+.stm-root.is-panning .stm-segment {
     cursor: grabbing;
 }
 
@@ -131,10 +146,6 @@ export const SURFACE_STYLES = `
 
 .stm-segment:hover {
     background: rgba(255, 255, 255, 0.6);
-}
-
-.stm-segment:active {
-    cursor: grabbing;
 }
 
 /* Below the threshold in segmentOverlay.ts, and while no document is mounted. Stated rather

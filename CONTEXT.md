@@ -298,13 +298,30 @@ That note flags its metadata table as inferred-not-confirmed. Both inferences ar
     are, and the surface distinguishes them by where each is displayed rather than by
     making the researcher choose.
 
-    **The cursor over a box is the canvas's own, 2026-08-15.** #37 asked for `default`,
-    "not `pointer`, because nothing is clickable yet" — and the second half is what was
-    being decided. `default` is a third answer: the canvas underneath says `grab`, so a
-    cursor crossing 767 walls ~364 css px apart would flicker between arrow and hand
-    continuously, and it would be lying, since a drag that starts on a box really does pan.
-    The boxes carry `grab`/`grabbing`, and `crosshair` while feeling — whatever the map
-    under them is offering. Nothing signals clickability, which was the point.
+    **The cursor names what the surface is doing, and nothing else — settled 2026-08-16.**
+    Three states, and a segment box is never one of them:
+
+    - **`grab`** — idle over the map, box or no box. #37 asked for `default` over a box,
+      "not `pointer`, because nothing is clickable yet"; the second half is what was being
+      decided, and `default` is a third answer. The canvas underneath says `grab`, so a
+      cursor crossing 767 walls ~364 css px apart would flicker between arrow and hand
+      continuously — and it would be lying, since a drag that starts on a box really does
+      pan. Nothing signals clickability either way, which was the point. That a hand does
+      not announce "this will show you a tooltip" is accepted: the tooltip arrives on hover
+      with no gesture to guess at, so there is nothing for the cursor to advertise.
+    - **`grabbing`** — while a pan is under way, for its whole duration.
+    - **`crosshair`** — while `Shift` is held, over anything. Feeling switches the controls
+      off, so a grip would promise a pan that cannot happen.
+
+    **This is a class on the root, not `:active`**, and the reason is worth keeping.
+    `MapControls` takes pointer capture on the root when a drag begins, and a captured
+    pointer stops hit-testing for `:hover` and `:active` — the capture target takes them
+    instead. `.stm-canvas:active` therefore stopped matching the instant the drag it
+    described actually began, and the root, which had no cursor of its own, fell back to the
+    arrow. Pressing showed the hand and moving took it away, which is exactly backwards.
+    `bandSurface.ts` sets `is-panning` from `pointerdown`, for the primary button only and
+    never while feeling; it is released from a listener on the *document*, because most
+    drags of a map end off it.
 
     **Segment boxes are not dead zones.** They take pointer events and own hover, but
     `MapControls` and the pick listeners are attached to the common ancestor, so pan,

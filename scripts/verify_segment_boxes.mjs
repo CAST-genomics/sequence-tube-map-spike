@@ -318,7 +318,81 @@ if (null === box) {
     check('a drag through the tooltip selects nothing', '' === selected, JSON.stringify(selected))
 }
 
-// ── 8. A refused document leaves no boxes behind ───────────────────────────────────────
+// ── 8. The cursor says what the surface is doing ───────────────────────────────────────
+//
+// `MapControls` takes pointer capture on the root, and a captured pointer stops hit-testing
+// for `:hover` and `:active` — so `.stm-canvas:active` stopped matching the moment the drag
+// it described began, and the arrow came back mid-pan. Read off `getComputedStyle` of the
+// root, which is the element the capture makes current and therefore the one that decides
+// what is drawn.
+const cursors = () => page.evaluate(() => {
+    const root = document.querySelector('.stm-root')
+    const segment = [...document.querySelectorAll('.stm-segment')].find(one => false === one.hidden)
+
+    return {
+        root: getComputedStyle(root).cursor,
+        canvas: getComputedStyle(document.querySelector('.stm-canvas')).cursor,
+        segment: undefined === segment ? null : getComputedStyle(segment).cursor
+    }
+})
+
+const idle = await cursors()
+
+check('the map offers a grip when idle', 'grab' === idle.canvas && 'grab' === idle.segment,
+    `canvas ${idle.canvas}, segment ${idle.segment}`)
+
+await page.mouse.move(700, 450)
+await page.mouse.down()
+
+const pressed = await cursors()
+
+await page.mouse.move(560, 450, { steps: 12 })
+
+const dragging = await cursors()
+
+await page.mouse.up()
+await page.waitForTimeout(100)
+
+const dropped = await cursors()
+
+check('pressing takes hold', 'grabbing' === pressed.root, pressed.root)
+check('and moving keeps hold of it', 'grabbing' === dragging.root && 'grabbing' === dragging.canvas,
+    `root ${dragging.root}, canvas ${dragging.canvas}`)
+check('letting go lets go', 'grab' === dropped.canvas, dropped.canvas)
+
+// Released off the surface, which is how most drags of a map end.
+await page.mouse.move(700, 450)
+await page.mouse.down()
+await page.mouse.move(700, 40, { steps: 8 })
+await page.mouse.up()
+await page.waitForTimeout(100)
+
+check('a drag released off the surface lets go too', 'grab' === (await cursors()).canvas)
+
+// A wheel is not a grip. The controls announce `start`/`end` around one, which is why this
+// is bound to the pointer instead.
+await page.mouse.move(700, 450)
+await page.mouse.wheel(0, -400)
+await page.waitForTimeout(100)
+
+check('a wheel notch does not flash the hand', 'grab' === (await cursors()).canvas)
+
+// Feeling switches the controls off, so a grabbing hand would promise a pan that cannot
+// happen.
+await page.keyboard.down('Shift')
+await page.mouse.move(700, 450)
+await page.mouse.down()
+
+const feelingPress = await cursors()
+
+await page.mouse.up()
+await page.keyboard.up('Shift')
+
+check('pressing while feeling promises no pan',
+    'crosshair' === feelingPress.canvas && 'crosshair' === feelingPress.segment,
+    `canvas ${feelingPress.canvas}, segment ${feelingPress.segment}`)
+
+// ── 9. A refused document leaves no boxes behind ───────────────────────────────────────
 //
 // The overlay mounts under the status layer, so the error state covers it — but covering is
 // not emptying, and a map's boxes standing over the next document's error message would be

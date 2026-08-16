@@ -799,11 +799,44 @@ export function createBandSurface(host: HTMLElement, options: BandSurfaceOptions
         }
     }
 
+    /**
+     * Say that a pan is under way, so the cursor can look like one for its whole duration.
+     *
+     * This is a class rather than `:active`, and that is the whole point. `MapControls`
+     * takes pointer capture on the root when the drag begins, and a captured pointer stops
+     * hit-testing for `:hover` and `:active` — the capture target takes them instead. So the
+     * canvas's own `cursor: grab` stopped applying the instant the drag actually started,
+     * and the root, which had no cursor of its own, fell back to the arrow. Pressing showed
+     * the grabbing hand and moving took it away, which is exactly backwards.
+     *
+     * Bound here rather than to the controls' own `start`/`end`, which also fire around a
+     * wheel notch and would flash the hand at someone who is zooming.
+     */
+    function onPointerDown(event: PointerEvent): void {
+        // Primary button only, and never while the map is being felt — the controls are
+        // switched off there, so a grabbing hand would promise a pan that cannot happen.
+        if (0 !== event.button || feeler.active() || overChrome(event.target)) {
+            return
+        }
+
+        host.classList.add('is-panning')
+    }
+
+    function onPointerUp(): void {
+        host.classList.remove('is-panning')
+    }
+
     // On the root: leaving the canvas for the navigator no longer leaves anything the
     // canvas would hear about, so this catches only the pointer leaving the surface
     // altogether and `onPointerMove` catches the rest.
     host.addEventListener('pointermove', onPointerMove)
     host.addEventListener('pointerleave', cursorLeft)
+    host.addEventListener('pointerdown', onPointerDown)
+
+    // On the document, because most drags of a map end somewhere off it: released outside
+    // the root, the class would stick and the surface would look permanently grabbed.
+    doc.addEventListener('pointerup', onPointerUp)
+    doc.addEventListener('pointercancel', onPointerUp)
 
     /**
      * Render the whole map into an offscreen target at thumbnail size and read it back.
@@ -948,6 +981,9 @@ export function createBandSurface(host: HTMLElement, options: BandSurfaceOptions
 
             host.removeEventListener('pointermove', onPointerMove)
             host.removeEventListener('pointerleave', cursorLeft)
+            host.removeEventListener('pointerdown', onPointerDown)
+            doc.removeEventListener('pointerup', onPointerUp)
+            doc.removeEventListener('pointercancel', onPointerUp)
             feeler.destroy()
             segments.destroy()
             readout?.remove()

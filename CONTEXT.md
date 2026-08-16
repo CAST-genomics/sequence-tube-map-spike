@@ -257,7 +257,10 @@ That note flags its metadata table as inferred-not-confirmed. Both inferences ar
     a maximum, shrinking to fit a narrow host. See
     [`notes/2026-08-14-navigator-thumbnail-aspect.md`](./notes/2026-08-14-navigator-thumbnail-aspect.md).
 
-    The segment boxes remain SVG-surface-only. **Highlighting does not, as of
+    ~~The segment boxes remain SVG-surface-only.~~ **They arrived on the WebGL surface
+    2026-08-15 (#37), as HTML `<div>`s** — one wrapper carrying the camera's transform,
+    boxes positioned inside it in world units, `border-radius: 9px` reproducing the
+    quadratic corners exactly. `segmentOverlay.ts`. **Highlighting does not, as of
     2026-08-14** — see the note under #15; the WebGL surface highlights from an appearance
     table and the SVG surface no longer has the better story.
 12. **Load with `DOMParser`, not `innerHTML`** — strip all `<title>` elements before
@@ -294,6 +297,43 @@ That note flags its metadata table as inferred-not-confirmed. Both inferences ar
     haplotype is this* and *which segment is this* — can both be given at once, so they
     are, and the surface distinguishes them by where each is displayed rather than by
     making the researcher choose.
+
+    **The cursor names what the surface is doing, and nothing else — settled 2026-08-16.**
+    Three states, and a segment box is never one of them:
+
+    - **`grab`** — idle over the map, box or no box. #37 asked for `default` over a box,
+      "not `pointer`, because nothing is clickable yet"; the second half is what was being
+      decided, and `default` is a third answer. The canvas underneath says `grab`, so a
+      cursor crossing 767 walls ~364 css px apart would flicker between arrow and hand
+      continuously — and it would be lying, since a drag that starts on a box really does
+      pan. Nothing signals clickability either way, which was the point. That a hand does
+      not announce "this will show you a tooltip" is accepted: the tooltip arrives on hover
+      with no gesture to guess at, so there is nothing for the cursor to advertise.
+    - **`grabbing`** — while a pan is under way, for its whole duration.
+    - **`pointer`, the pointing finger** — while `Shift` is held, over anything. Feeling
+      switches the controls off, so a grip would promise a pan that cannot happen.
+
+    All three are **one hand in three poses**: open to take hold, closed while holding, a
+    finger out while feeling. That is what settled it, 2026-08-16 — the `crosshair` it
+    replaced was an instrument reticle in a set of hands, and it promised two-axis precision
+    the interaction does not have, since a feeler is *swept* and only its vertical position
+    selects anything. Its stated job was to make the mode visible rather than remembered,
+    and the badge already does that.
+
+    `pointer` conventionally means clickable and nothing here is. The cost is accepted: the
+    finger matches what the mode is, and while the key is held there is nothing to click
+    anywhere, because the controls are off. Revisit when clicking a segment becomes real —
+    that is a different mode, with no key held.
+
+    **This is a class on the root, not `:active`**, and the reason is worth keeping.
+    `MapControls` takes pointer capture on the root when a drag begins, and a captured
+    pointer stops hit-testing for `:hover` and `:active` — the capture target takes them
+    instead. `.stm-canvas:active` therefore stopped matching the instant the drag it
+    described actually began, and the root, which had no cursor of its own, fell back to the
+    arrow. Pressing showed the hand and moving took it away, which is exactly backwards.
+    `bandSurface.ts` sets `is-panning` from `pointerdown`, for the primary button only and
+    never while feeling; it is released from a listener on the *document*, because most
+    drags of a map end off it.
 
     **Segment boxes are not dead zones.** They take pointer events and own hover, but
     `MapControls` and the pick listeners are attached to the common ancestor, so pan,
@@ -371,9 +411,28 @@ That note flags its metadata table as inferred-not-confirmed. Both inferences ar
     rather than dimming the others, which decision #15 forbids, and it did not rescue the
     fit case anyway.
 16. **Strand tooltip: raw `trackName`, unparsed.**
-17. **Segment tooltip (inspect mode): `id` + `sequence`, verbatim.** At ≤130 chars it
-    always fits — no truncation, no detail panel. Content is provisional; the
+17. ~~**Segment tooltip (inspect mode): `id` + `sequence`, verbatim.** At ≤130 chars it
+    always fits — no truncation, no detail panel.~~ Content is provisional; the
     *capability* is what's preserved.
+
+    **Revised 2026-08-15 with the WebGL surface's own tooltip (#37): PGB's node tooltip,
+    borrowed outright.** `.graph-tooltip` and `.look-tooltip` copied into
+    `surfaceStyles.ts` under the same class names as
+    `pgb/src/styles/_toolTipContainer.scss` and `_lookToolTip.scss`, so the two codebases
+    stay greppable for each other and a later divergence is a deliberate edit. A
+    researcher crosses between the two viewers constantly and a segment should not look
+    like a different kind of object depending on the panel.
+
+    Title plus two rows — `id`, `Length … bp`, `Sequence …`. **The sequence is truncated
+    at 32 characters**, which the original decision did not need: ≤130 was measured on the
+    600 bp fixture, and `5520+` carries a **1,764-character** segment. `.graph-tooltip`
+    says `white-space: nowrap` and `.look-tooltip` caps at 300 px, and untruncated those
+    two disagree by the width of the screen. The full sequence needs an affordance that
+    outlives the cursor, which is a separate ticket.
+
+    The `Length` row is not redundant with the truncation: it is the number the researcher
+    is after, and it survives the cut. A fourth row for how many haplotypes traverse the
+    segment is readable off the box's height and deliberately deferred.
 
 ### Testing
 

@@ -24,9 +24,22 @@ export const SURFACE_STYLES = `
        SVG surface, which refuses them again on .stm-surface. */
     touch-action: none;
     overscroll-behavior: none;
+    /* And the browser's text selection, for the same reason and one level higher up.
+       .stm-canvas and .stm-surface each refuse it, but a drag anchors a *range*, and a
+       range spans whatever lies between its ends — so a pan that crossed the segment
+       tooltip left it highlighted in blue, and left it that way, even though the tooltip
+       is pointer-events: none and was never the drag's target. The map is a picture and
+       the readouts over it are labels on that picture; none of it is a document. */
+    user-select: none;
     background: var(--stm-ground);
     font: 12px/1.45 ui-monospace, SFMono-Regular, Menlo, monospace;
     contain: layout paint;
+}
+
+/* The one exception: the error state names a URL and says what went wrong with it, which
+   is the one thing here worth copying out. */
+.stm-status {
+    user-select: text;
 }
 
 .stm-surface {
@@ -67,15 +80,91 @@ export const SURFACE_STYLES = `
     cursor: grab;
 }
 
-.stm-canvas:active {
+/* A pan in progress on the WebGL surface, and the one rule that says so.
+
+   Written on the root and on everything the pointer can be over, rather than as \`:active\`
+   on each: \`MapControls\` takes pointer capture on the root when a drag begins, and a
+   captured pointer stops hit-testing for \`:hover\` and \`:active\` — the capture target takes
+   them instead. \`.stm-canvas:active\` therefore stopped matching the instant the drag it
+   was describing actually began, and the root, which had no cursor of its own, fell back to
+   the arrow: pressing showed the grabbing hand and moving took it away.
+
+   The root is listed first because it is the element the capture makes current; the others
+   because \`cursor\` inherits, and a plain rule on a descendant outranks an inherited value.
+   \`bandSurface.ts\` puts the class on, for the primary button only and never while
+   feeling. */
+.stm-root.is-panning,
+.stm-root.is-panning .stm-canvas,
+.stm-root.is-panning .stm-segment {
     cursor: grabbing;
 }
 
-/* Feeler mode on the WebGL surface: the cursor is a feeler, not a grip. There is nothing
-   to make inert here — the canvas is one element and the pick pass answers with a track
-   id, so the dead zones the SVG surface had to rule out cannot arise. */
-.stm-root.is-feeling .stm-canvas {
-    cursor: crosshair;
+/* Feeler mode: the cursor is a feeler, not a grip — so it is a pointing finger.
+
+   All three states are one hand in three poses: open to take hold, closed while holding,
+   and a finger out while feeling. The crosshair this replaced (2026-08-16) was an
+   instrument reticle in a set of hands, and it promised two-axis precision the interaction
+   does not have — a feeler is swept, and only its vertical position selects anything.
+
+   \`pointer\` conventionally means clickable, and nothing here is. That is a real cost and
+   it is accepted: the finger matches what the mode *is* — CONTEXT.md #14 calls the cursor a
+   feeler, making near-identical ribbons palpable — and while the key is held there is
+   nothing to click anywhere, since the controls are off. Worth revisiting when clicking a
+   segment becomes real, which is a different mode with no key held.
+
+   There is nothing to make inert here — the canvas is one element and the pick pass answers
+   with a track id, so the dead zones the SVG surface had to rule out cannot arise. */
+.stm-root.is-feeling .stm-canvas,
+.stm-root.is-feeling .stm-segment {
+    cursor: pointer;
+}
+
+/* The segment boxes (#37). One wrapper carrying the camera's transform; the boxes inside it
+   are positioned in world units and never touched by a pan or a zoom.
+
+   **No \`will-change\`.** That property is what promoted \`.stm-content\` to the composited
+   layer that came apart on 2026-08-13, and the wrapper's bounds top out near 280,000 ×
+   10,000 css px. It holds at most 767 rounded rects rather than a display list the size of
+   the band population, which is why it is a different thing — but it is the same class of
+   thing, so it is judged by looking rather than by argument.
+
+   Inert itself, since it spans the whole map: only the boxes inside it take the cursor. */
+.stm-segments {
+    position: absolute;
+    top: 0;
+    left: 0;
+    transform-origin: 0 0;
+    pointer-events: none;
+}
+
+/* Reproducing \`fill: rgb(255,255,255); fill-opacity: 0.4; stroke: rgb(0,0,0);
+   stroke-width: 2px\` and quadratic corners of radius 9, which is all a segment box is.
+   Width, height, position, border width and radius are all written per box from the
+   document's own numbers — nothing about the size is decided here.
+
+   Nothing is pinned to a css size: the border scales with the camera like the 15-unit bands
+   do. See *What the renderer corrects, and what it leaves alone* in docs/RENDERING.md. */
+.stm-segment {
+    position: absolute;
+    box-sizing: border-box;
+    border-style: solid;
+    border-color: rgb(0, 0, 0);
+    background: rgba(255, 255, 255, 0.4);
+    pointer-events: auto;
+    /* The same grip the canvas underneath offers, because a drag starting on a box really
+       does pan the map. Never \`pointer\`: nothing here is clickable yet. */
+    cursor: grab;
+}
+
+.stm-segment:hover {
+    background: rgba(255, 255, 255, 0.6);
+}
+
+/* Below the threshold in segmentOverlay.ts, and while no document is mounted. Stated rather
+   than left to the UA sheet, because \`position: absolute\` is one cascade accident away from
+   outranking it. */
+.stm-segment[hidden] {
+    display: none;
 }
 
 /* A short transition keeps a sweep across many strands from strobing. */
@@ -104,9 +193,11 @@ export const SURFACE_STYLES = `
     pointer-events: none;
 }
 
-/* Feeler mode: strands own the cursor; segment boxes cannot shadow them. */
+/* Feeler mode: strands own the cursor; segment boxes cannot shadow them. The cursor follows
+   the WebGL surface's, because feelerKey.ts is explicit that the two surfaces may differ
+   about how they answer the key but not about what the researcher sees when it is held. */
 .stm-root.is-feeling .stm-surface {
-    cursor: crosshair;
+    cursor: pointer;
 }
 
 .stm-root.is-feeling .stm-content g.node > * {
@@ -133,6 +224,103 @@ export const SURFACE_STYLES = `
     opacity: 1;
 }
 
+/* ── PGB's node tooltip, borrowed outright ────────────────────────────────────────────────
+
+   Copied 2026-08-15 from pgb/src/styles/_toolTipContainer.scss and _lookToolTip.scss — the
+   styling behind Look.createNodeTooltipContent(). Kept under the same class names so the two
+   codebases stay greppable for each other and a later divergence is a deliberate edit rather
+   than a drift nobody noticed. \`$licorice\` and \`$magnesium\` resolve to #000000 and #B8B8B8;
+   the scss nesting is written out flat, and nothing else is changed.
+
+   A researcher crosses between the two viewers constantly, and a segment should not look
+   like a different kind of object depending on which panel it is in. */
+.graph-tooltip {
+    position: absolute;
+    background: rgba(255, 255, 255, 0.85);
+    color: #000000;
+    border-radius: 4px;
+    pointer-events: none;
+    z-index: 1000;
+    display: none;
+    white-space: nowrap;
+    border: 1px solid #B8B8B8;
+}
+
+.look-tooltip {
+    padding: 0.5rem;
+    font-size: 0.875rem;
+    line-height: 1.4;
+    color: #495057;
+    width: fit-content;
+    max-width: 300px;
+}
+
+.look-tooltip .node-section {
+    margin-bottom: 1rem;
+}
+
+.look-tooltip .node-section:last-child {
+    margin-bottom: 0;
+}
+
+.look-tooltip .node-section .node-title {
+    margin: 0 0 0.25rem 0;
+    font-size: 0.9rem;
+    color: #212529;
+    padding-bottom: 0.125rem;
+    font-weight: 600;
+}
+
+.look-tooltip .node-section .node-details-table {
+    min-width: fit-content;
+    border-collapse: collapse;
+    margin: 0;
+}
+
+.look-tooltip .node-detail-label {
+    padding: 0.125rem 0.5rem 0.125rem 0;
+    font-size: 0.8rem;
+    color: #212529;
+    font-weight: 500;
+    text-align: left;
+    vertical-align: top;
+    white-space: nowrap;
+}
+
+.look-tooltip .node-detail-value {
+    padding: 0.125rem 0.5rem 0.125rem 0;
+    font-size: 0.8rem;
+    color: #6c757d;
+    text-align: left;
+    vertical-align: top;
+}
+
+/* ── and what this codebase adds to it ────────────────────────────────────────────────────
+
+   PGB positions the container itself; here it is anchored to the surface's top-left corner
+   and moved with a \`transform\`, which does not invalidate layout — so a tooltip following
+   the cursor cannot turn the surface's own per-move \`getBoundingClientRect\` into a forced
+   reflow. \`.graph-tooltip\` ships \`display: none\`, so being shown is a class.
+
+   PGB's \`z-index: 1000\` is overridden down to 3: it outranks the navigator, which the
+   tooltip may legitimately overlap, and yields to the status layer at 4, which must be able
+   to cover a refused document with nothing showing through it. The rest of the copied block
+   is left exactly as it stands there.
+
+   The font is overridden because \`.stm-root\` sets a monospace \`font\` shorthand for the
+   readouts, and PGB's tooltip is not monospace. */
+.graph-tooltip {
+    top: 0;
+    left: 0;
+    z-index: 3;
+    font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+
+.graph-tooltip.is-shown {
+    display: block;
+}
+
+/* The SVG surface's own tooltip, which is a different thing under a different name. */
 .stm-tooltip {
     position: absolute;
     top: 0;

@@ -62,7 +62,7 @@ arrive.
 | Reads the document as | six floats per band, by regex | a live DOM tree |
 | Draws with | one instanced draw call | ~10,345 elements under a CSS transform |
 | Zoom range | fit – 200× | fit – 4× |
-| Has | analytic coverage, PGB's `MapControls`, feeler mode | segment tooltips |
+| Has | analytic coverage, PGB's `MapControls`, feeler mode | per-element hit-testing |
 | Refuses | a document off the band grammar, loudly | nothing |
 
 WebGL is the default because the SVG surface has a ceiling and reaches it on every
@@ -94,9 +94,22 @@ comparison arm reachable by hand at `?renderer=svg`.
 Drag with the primary button to pan; a Magic Mouse swipe, a mouse wheel, or a
 trackpad pinch zooms about the cursor. The navigator, bottom left, shows the whole
 map with a rect around what is on screen: drag the rect to travel, press anywhere
-else to centre that point. Both surfaces have it. On the SVG surface, hovering a
-segment box also shows its id and sequence — the segment boxes are still to come on the
-WebGL surface.
+else to centre that point. Both surfaces have it.
+
+Hovering a segment box shows the segment's id, its length in bases and its sequence, with
+no key held. The boxes are HTML divs over the canvas — translucent, black-stroked, rounded
+exactly as the document draws them — under one wrapper carrying the camera's transform, so
+a pan is one string rather than 767 style writes. They take pointer events and own hover,
+but pan, zoom and the strand feeler all reach the map through them: a drag that starts on a
+box pans, and a wheel aimed at one zooms into it. Holding `Shift` *adds* the strand
+emphasis without taking the tooltip away.
+
+A box is withheld until it is about 1.5 css pixels wide on screen, per box. At fit on
+`5514+` an 18-unit box is 0.14 px, and 767 of those are a picket fence over the map rather
+than a set of segments; closing the camera hands them back largest-first. Nothing else
+about them is corrected — the 2-unit stroke and the radius-9 corners scale with the camera
+like the bands do. `node scripts/verify_segment_boxes.mjs` runs the lot against `5514+` at
+200× and leaves the screenshots in `/tmp`.
 
 The navigator's thumbnail is drawn from the surface's own scene: on the WebGL
 surface, one render into a render target at thumbnail size, read back once per
@@ -175,7 +188,10 @@ because the two answer those in different vocabularies.
 | `src/tubeMapSurface.ts` | the entry point; the fetch, the load lifecycle, the renderer choice |
 | `src/surfaceRenderer.ts` | what a renderer is — `show(text)`, `clear`, `resize`, `destroy` |
 | `src/bandSurface.ts` | the WebGL surface: one instanced draw call, `MapControls`, the shaders |
-| `src/parseBands.ts` | the document as six floats per band; rejects anything off-grammar |
+| `src/parseBands.ts` | `g.track` as six floats per band; rejects anything off-grammar |
+| `src/parseSegmentBoxes.ts` | `g.node` as rounded rectangles; rejects anything off-grammar |
+| `src/segmentOverlay.ts` | the segment boxes as HTML divs, and the tooltip naming the one under the cursor |
+| `src/documentGrammar.ts` | what both parsers share about refusing a document |
 | `src/bandCamera.ts` | the WebGL camera's framing, and the navigator's content coordinates — pure, DOM-free, tested |
 | `src/svgSurface.ts` | the SVG surface: `{x, y, scale}`, the interactions, the SVG thumbnail bake |
 | `src/viewportTransform.ts` | the SVG surface's transform math, and the geometry vocabulary both surfaces speak — pure, DOM-free, tested |
@@ -187,8 +203,9 @@ because the two answer those in different vocabularies.
 | `src/main.ts`, `src/frameMeter.ts` | harness only — PGB replaces both |
 
 The tested seams are the ones that can be silently wrong without looking wrong: the
-two lots of camera math, and the band parser, where a mis-numbered regex group yields
-plausible geometry. Everything else is verified by looking at it, for the reasons
+two lots of camera math, both parsers — where a mis-numbered regex group yields
+plausible geometry — and the segment overlay's visibility threshold, which is
+incremental across frames and so is a claim about something stateful. Everything else is verified by looking at it, for the reasons
 `SPEC.md` §Testing Decisions gives.
 
 Both week-one risks — CORS and the frame budget — are measured and closed;

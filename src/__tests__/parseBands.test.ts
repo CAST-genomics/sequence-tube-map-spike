@@ -9,7 +9,8 @@
 
 import { readFileSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
-import { MAX_TRACK_ID, NonConformingDocument, THICKNESS, parseBands } from '../parseBands.ts'
+import { NonConformingDocument } from '../documentGrammar.ts'
+import { MAX_TRACK_ID, THICKNESS, parseBands } from '../parseBands.ts'
 
 const FIXTURES = {
     small: { path: 'public/stm-chr1-25331046-25331646.svg', bands: 10270, tracks: 369, width: 35562.42857142856 },

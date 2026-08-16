@@ -29,7 +29,7 @@
 
 import { createBandSurface } from './bandSurface.ts'
 import { fetchDocument, TubeMapLoadError } from './fetchDocument.ts'
-import { NonConformingDocument } from './parseBands.ts'
+import { NonConformingDocument } from './documentGrammar.ts'
 import { shieldFromMap } from './surfacePointer.ts'
 import { SURFACE_STYLES } from './surfaceStyles.ts'
 import { createSvgSurface } from './svgSurface.ts'

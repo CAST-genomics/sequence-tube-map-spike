@@ -2,6 +2,7 @@
 status: accepted
 date: 2026-08-13
 measured: 2026-08-14
+revised: 2026-08-16
 ---
 
 # The viewer interprets the server's geometry, and draws it with WebGL
@@ -18,6 +19,13 @@ measured: 2026-08-14
 > misleading because tracks abut; and the prediction about MSAA is wrong in its mechanism.
 > The *geometry* reasoning — the grammar, the smoothstep collapse, the lapped joins, six
 > floats per band — holds exactly and is what made the renderer a day's work.
+>
+> **Half the price is withdrawn, 2026-08-16 (#40).** This decision was paid for with a
+> validation gate *and the SVG surface as the gate's fallback*. The surface is deleted;
+> only the gate remains. See *The fallback half is rejected* and *The surface is deleted*
+> under the validation-gate consequence — a non-conforming document now ends in an error
+> state and nothing draws it, which is a real reduction in safety and is recorded there as
+> one rather than left to be inferred from a deletion.
 
 Two independent failures on 2026-08-12/13 — style invalidation at ~28 ms per hover,
 and unpainted bands from a 900-megapixel composited layer — proved that this data
@@ -111,7 +119,8 @@ Two further consequences, both measured:
     `t=0` and `x1` at `t=1` regardless of their control abscissae, so sampling both at
     even `t` inscribes a correct polygon with vertical ends. Rungs at even *x* — which
     is what forces an inversion of `x(t)` — were never necessary.
-- **A validation gate, and the SVG surface kept as its fallback.** Anything in
+- ~~**A validation gate, and the SVG surface kept as its fallback.**~~ **A validation
+  gate, and nothing behind it — 2026-08-16.** Anything in
   `g.track` that does not match the grammar rejects the **whole** document, loudly,
   and ~~falls back~~. Partial rendering is not offered: this API already returns
   200-with-plausible-nonsense for an unknown `minigraphnode`, and a half-drawn map is
@@ -128,9 +137,52 @@ Two further consequences, both measured:
     document that caused it. That is cheaper than a permanent second implementation
     insuring against it, and it is the only arm that produces a bug report.
 
-    This retires the last stated reason for the SVG surface's existence. It survives
+    This retires the last stated reason for the SVG surface's existence. ~~It survives
     for now as a comparison arm and as the only surface with per-element hit-testing —
-    both temporary, neither a fallback.
+    both temporary, neither a fallback.~~
+
+    **The surface is deleted, 2026-08-16 (#40), and this is what the ADR now costs.**
+    The trade at the top of this document was: give up the opaque, immutable SVG, and pay
+    for it with a validation gate *and* the SVG surface standing behind the gate. Both
+    halves of that payment are now withdrawn, and the second is a real reduction in safety
+    that must be read here rather than inferred from a deletion.
+
+    What we no longer have: if UCSD changes the drawing grammar, there is no surface that
+    can display the new document. Every researcher looking at an affected node sees an
+    error card until the parser is changed and shipped. Under the original decision they
+    would have seen the map, drawn slowly and correctly, while we caught up. That is what
+    is being given up, stated plainly, and nothing below softens it.
+
+    Three reasons it is still the right trade, in the order they carry weight:
+
+    1. **A fallback nobody exercises is a fallback that does not work.** It was never
+       reached automatically — that was settled 2026-08-14 above — so its only remaining
+       mode was a researcher typing `?renderer=svg`, having correctly guessed both that
+       the flag existed and that the error they were looking at was a grammar refusal.
+       Nobody was going to do that, and nothing tested that it still could.
+    2. **It carries both original failures.** The surface behind the gate was the surface
+       whose ~28 ms hover restyle and 900-megapixel composited layer are the reason this
+       ADR exists. On the documents that matter it does not render. Falling back to it is
+       falling back to the failure, so it was never insurance against a grammar change on
+       a large node — only on a small one.
+    3. **The cost was ongoing and paid in features.** Every capability landed after
+       2026-08-14 was owed to a second surface that existed for a case nobody has met:
+       #35's refusal states, #37's segment boxes, #38's picking, #39's feeler. It was
+       diverging in practice — `4×` against `200×`, feeler off against feeler on — so the
+       two surfaces were already answering differently, which is the property a fallback
+       cannot have.
+
+    What actually stands behind the gate now is the refusal itself: a named, loud error
+    state (#35) that says which document failed and why, on the evidence of the document
+    that caused it. That produces a bug report, which is the arm that gets the grammar
+    fixed. It does not produce a picture, and we accept that.
+
+    Retired with it, because none of it had another reason to exist: the CSS-transform
+    viewport, `viewportTransform.ts`'s pan/zoom arithmetic and its `{x, y, scale}` object
+    (see the correction further down, where that reimplementation is this ADR's largest
+    error), the `<title>`-stripping `DOMParser` loader, the SVG surface's
+    `elementFromPoint` feeler and its rasterized navigator thumbnail. `Point`, `Size`,
+    `Rect` and `clamp` are all that survive, in `src/geometry.ts`.
 
     ~~**Reversed 2026-08-14.** The segment boxes become three.js geometry, picked with a
     raycaster; **there is no DOM overlay.** "Free hit-testing" is the same reasoning

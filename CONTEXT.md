@@ -2,7 +2,9 @@
 
 **Status:** design settled 2026-08-11 by grilling interview; domain language
 corrected 2026-08-12. Built 2026-08-12 — every settled decision below is
-implemented; see [`README.md`](./README.md) for how to run it.
+implemented **or annotated in place with the date it was reversed**; several are, and
+where they are, the annotation is the current state rather than the sentence above it.
+See [`README.md`](./README.md) for how to run it.
 **Parent app:** PGB (`~/PanGenomeProject/pgb`). This directory is a standalone
 harness; the code here is intended to survive integration into PGB.
 
@@ -43,10 +45,10 @@ resolution, used consistently throughout these documents:
 | **track** / **strand** | One haplotype's path through the subgraph, drawn as a colored ribbon left→right. Named `sample#haplotype#contig`, e.g. `NA21309#2#CM092097.1`. |
 | **band** | The atomic drawable: **one track crossing one x-interval** — a single `<path>` or `<rect>` in `g.track`. A track is made of many bands. *Avoid* "ribbon" for this; a ribbon reads as the whole strand. Added 2026-08-13. |
 | **span** | A minigraph node's GRCh38 base-pair extent (`end − start`), as recorded in `data/nodeTable.json`. *Avoid* "size", which conflates four separate quantities — see the note under Risks. Added 2026-08-13. |
-| **surface** | The pannable/zoomable area holding the tube-map SVG. |
+| **surface** | The pannable/zoomable area the map is drawn in. ~~Holding the tube-map SVG~~ — **amended 2026-08-16 (#40):** it holds a WebGL canvas, and the document is never attached to the page at all. There is exactly one surface. |
 | **navigator** | Thumbnail of the whole tube map, bottom-left, with a rect showing the current viewport. |
-| **feeler mode** | `Shift` held. Cursor acts as a feeler: the strand under it is drawn in full and the rest recede. ~~Segments inert, pan/zoom suppressed.~~ **Amended 2026-08-15:** the key *adds* emphasis and takes nothing away from *segments* — they stay hoverable under it. Pan and zoom are a separate question and are unchanged: the WebGL surface still suppresses them while feeling, for a reason of its own — see #13. **On by default on the WebGL surface** since 2026-08-14, where the emphasis *follows* the cursor; off by default on the SVG surface, and staying that way, where it accumulates — see the notes under Interaction. |
-| ~~**inspect mode**~~ | ~~`Shift` released. Segments hoverable, strands inert, pan/zoom live.~~ **Retired 2026-08-15.** Once segments are hoverable unconditionally, this named the absence of feeler mode and nothing else. A mode that is on whenever another isn't is not a mode; it is the map. Still current on the SVG surface, which is not being changed. |
+| **feeler mode** | `Shift` held. Cursor acts as a feeler: the strand under it is drawn in full and the rest recede. ~~Segments inert, pan/zoom suppressed.~~ **Amended 2026-08-15:** the key *adds* emphasis and takes nothing away from *segments* — they stay hoverable under it. Pan and zoom are a separate question and are unchanged: the WebGL surface still suppresses them while feeling, for a reason of its own — see #13. ~~**On by default on the WebGL surface** since 2026-08-14, where the emphasis *follows* the cursor; off by default on the SVG surface, and staying that way, where it accumulates~~ — **2026-08-16 (#40): always on, and the emphasis follows the cursor.** There is no flag and no accumulating variant; the surface that could not afford the highlight is deleted. See the notes under Interaction. |
+| ~~**inspect mode**~~ | ~~`Shift` released. Segments hoverable, strands inert, pan/zoom live.~~ **Retired 2026-08-15.** Once segments are hoverable unconditionally, this named the absence of feeler mode and nothing else. A mode that is on whenever another isn't is not a mode; it is the map. ~~Still current on the SVG surface, which is not being changed.~~ **2026-08-16 (#40): retired outright** — the surface it was still current on is gone. |
 
 *If `segment` is wrong — if the team already says "node" at both scales, or prefers
 another term — say so, because it propagates through every document and identifier
@@ -164,6 +166,14 @@ That note flags its metadata table as inferred-not-confirmed. Both inferences ar
     unknown node, so refusing loudly is what stands between that and a map that looks
     correct and is of different data. See ADR
     [`0001`](./docs/adr/0001-webgl-band-renderer.md).
+
+    **The SVG surface is deleted, 2026-08-16 (#40).** The paragraph above retired the
+    fallback as a *behaviour*; this retires the thing it would have fallen back to. There
+    is one surface, no `?renderer=`, and no way to look at a refused document at all. What
+    that costs — a grammar change on UCSD's side now shows every affected researcher an
+    error card rather than a slow map — is recorded in ADR
+    [`0001`](./docs/adr/0001-webgl-band-renderer.md) in its own voice, because it is a real
+    reduction in safety and not a tidy-up.
 2. **`open(url: string)` is the entire input surface.** PGB constructs the URL from
    the clicked minigraph node's ID and GRCh38 coordinates; the viewer never builds
    one, never checks eligibility, and never knows whether it is local or remote. A
@@ -174,14 +184,24 @@ That note flags its metadata table as inferred-not-confirmed. Both inferences ar
    container and knows nothing about panel chrome. The harness passes the full
    viewport (pure data, no chrome); PGB later passes a card body.
 
-    **Extended 2026-08-14.** The signature is now
+    ~~**Extended 2026-08-14.** The signature is now
     `mountTubeMapSurface(container, { renderer })`, where `renderer` is `webgl` (the
-    band renderer, the default) or `svg` (the original surface). The mount kept the
+    band renderer, the default) or `svg` (the original surface).~~ The mount kept the
     fetch, the spinner and the error state; everything about the *view* — fit, zoom,
     what a resize does — moved into the renderer, because the two answer it in
-    different vocabularies. The harness picks from `?renderer=`, so both surfaces are
-    comparable on one document without a rebuild. `open(url)` is unchanged and is
+    different vocabularies. ~~The harness picks from `?renderer=`, so both surfaces are
+    comparable on one document without a rebuild.~~ `open(url)` is unchanged and is
     still the entire input surface.
+
+    **Withdrawn 2026-08-16 (#40): the signature is `mountTubeMapSurface(container)`
+    again.** There is no `renderer` option and no `?renderer=`; the choice is gone rather
+    than defaulted, which is the point — a default would leave the second surface
+    reachable. The *split* survives the choice and is worth keeping straight from it: the
+    mount still owns only the container, the fetch, the spinner and the error state, and
+    everything about the view is still behind four calls, now named `BandSurface` in
+    `bandSurface.ts` rather than `SurfaceRenderer` in a file of its own. One
+    implementation, one seam — because what the seam is really for is keeping the fetch
+    and the camera from growing into each other.
 5. **Pure HTML / CSS / SVG / TypeScript. No Three.js.** Zero dependency overlap with
    PGB's 3D stack.
 
@@ -203,12 +223,21 @@ That note flags its metadata table as inferred-not-confirmed. Both inferences ar
     hover; see #15). The composited layer that made panning cheap is also what broke
     rendering — 900 megapixels at dpr 2, 14.4 gigapixels at `MAX_SCALE`. Per-element
     hit-testing returns via GPU colour picking. `viewportTransform` and the single
-    `{x, y, scale}` state object (#7) survive unchanged and now drive an
-    `OrthographicCamera`; the canvas is **viewport-sized**, so the oversized-layer
+    `{x, y, scale}` state object (#7) ~~survive unchanged and now drive an
+    `OrthographicCamera`~~; the canvas is **viewport-sized**, so the oversized-layer
     failure is structurally impossible rather than fixed. See
     [`notes/2026-08-13-svg-rendering-hits-its-ceiling.md`](./notes/2026-08-13-svg-rendering-hits-its-ceiling.md).
-7. **Single `{x, y, scale}` state object** drives both surface and navigator, so the
-   two cannot disagree.
+
+    **Deleted 2026-08-16 (#40).** The CSS transform, the wrapping div, and
+    `viewportTransform.ts` with them. They did not survive: `MapControls` replaced the
+    arithmetic on 2026-08-14 (see #7 and the ADR's largest correction) and the surface they
+    transformed is gone. `Point`, `Size`, `Rect` and `clamp` are what was left, and they
+    are `src/geometry.ts` now — a name that describes what remains rather than what it used
+    to drive.
+7. ~~**Single `{x, y, scale}` state object** drives both surface and navigator, so the
+   two cannot disagree.~~ **There is no such object, 2026-08-16 (#40)** — the last one
+   went with the SVG surface. The property it existed for is what the generalization
+   below preserves, and that is the part to carry forward.
 
     **Generalized 2026-08-14.** The WebGL surface has no `{x, y, scale}` — it steers
     `camera.position` and `camera.zoom` — so what the navigator is handed is the
@@ -226,11 +255,22 @@ That note flags its metadata table as inferred-not-confirmed. Both inferences ar
     **Ceiling raised 2026-08-14, on the WebGL surface only.** `[fit, 200×]`. `4×` was
     calibrated against the 600 bp fixture and resolves nothing on the documents that
     matter — 0.77 css px per band on `5520+`, 0.47 on `5514+`, at maximum zoom. 200×
-    is ~38 px per band on `5520+`; float32 starts to show around 1000×. The SVG
-    surface keeps `4×`, which is a defect of that surface and filed separately.
-10. **Resize preserves `{x, y, scale}`** and reveals more/less. Exception: re-fit if
-    the view is still untouched at initial fit.
-11. **Navigator is a baked bitmap** — serialize once on load, draw to canvas. Its
+    is ~38 px per band on `5520+`; float32 starts to show around 1000×. ~~The SVG
+    surface keeps `4×`, which is a defect of that surface and filed separately.~~
+
+    **`[fit, 200×]` is the viewer's clamp outright, 2026-08-16 (#40)** — "on the WebGL
+    surface only" no longer qualifies anything, and the `4×` defect was deleted rather
+    than fixed.
+10. **Resize preserves ~~`{x, y, scale}`~~ the view** and reveals more/less. Exception:
+    re-fit if the view is still untouched at initial fit.
+
+    **Restated 2026-08-16 (#40), unchanged in behaviour.** The rule was always about what
+    the researcher sees; it named the state object because there was one. What is
+    preserved is now `camera.position` and `camera.zoom`, and `untouched` is still the
+    flag that decides. `bandSurface.ts` reads it *before* reframing, because raising the
+    zoom floor under a view already at fit moves the camera and the change that announces
+    is indistinguishable from the researcher having moved it.
+11. **Navigator is a baked bitmap** — ~~serialize once on load~~, draw to canvas. Its
     affordances (drag rect, click to center) are chrome *over* the thumbnail, not
     interactions *with* strands, so live vectors buy nothing at ~90× reduction. Rect
     resizes with zoom.
@@ -263,8 +303,21 @@ That note flags its metadata table as inferred-not-confirmed. Both inferences ar
     quadratic corners exactly. `segmentOverlay.ts`. **Highlighting does not, as of
     2026-08-14** — see the note under #15; the WebGL surface highlights from an appearance
     table and the SVG surface no longer has the better story.
-12. **Load with `DOMParser`, not `innerHTML`** — strip all `<title>` elements before
-    attaching. Spinner in the body until ready.
+
+    **"Serialize once on load" is deleted, 2026-08-16 (#40)**, along with the surface that
+    did it. The one remaining bake is the render-target read above, so the objection the
+    original decision was guarding against — a second, independently rasterized copy of
+    the document that can drift from the picture — is not merely answered but structurally
+    absent. `THUMBNAIL_WIDTH` and the two gestures are unchanged.
+12. ~~**Load with `DOMParser`, not `innerHTML`** — strip all `<title>` elements before
+    attaching.~~ Spinner in the body until ready.
+
+    **Retired 2026-08-16 (#40).** Both halves were about attaching the server's document
+    to the page, which nothing does now: the response text goes to a regex parser and
+    comes out as six floats per band, so there is no tree to build safely and no
+    `<title>` to strip out of the browser's way. What stands is the spinner, and the error
+    card beside it (#35). The safety this bought is not lost — it moved and grew teeth: an
+    unparseable document is refused whole rather than attached and hoped for.
 
 ### Interaction
 
@@ -274,6 +327,12 @@ That note flags its metadata table as inferred-not-confirmed. Both inferences ar
       cursor; no dead zones; pan/zoom suppressed; cursor `crosshair` so the mode is
       visible rather than remembered.
     - **released (inspect mode):** segments hoverable; strand highlights cleared.
+
+    *(The two bullets are the SVG surface's implementation and describe nothing that
+    exists after #40, 2026-08-16 — there is no `g.node` in the page and no CSS rule
+    switched by the key. They are left standing because the amendments below are written
+    against them. What `Shift` **means** is `feelerKey.ts`, and it lost its `armed`
+    option with the surface that passed it false.)*
 
     **`Shift` no longer arbitrates segments on the WebGL surface, 2026-08-15 — over them
     it only adds.** Segments are hoverable whenever they are visible, with no key held:
@@ -361,7 +420,12 @@ That note flags its metadata table as inferred-not-confirmed. Both inferences ar
     A comparison set of several haplotypes is still wanted (`SPEC.md` story 29). It needs a
     deliberate gesture rather than the side effect of a sweep, and the appearance table
     already supports one — it holds a byte per track and has no opinion about how many are
-    lit. The SVG surface's accumulating feeler is unchanged behind `?feeler`.
+    lit. ~~The SVG surface's accumulating feeler is unchanged behind `?feeler`.~~
+
+    **Deleted with the surface, 2026-08-16 (#40)**, and so is `?feeler`. Accumulation is
+    now only a shape a future deliberate gesture might take, not a behaviour that still
+    runs somewhere behind a flag — which is the honest state of it, since the flag was the
+    last thing keeping a rejected interaction alive.
 15. **De-emphasize the others**, don't brighten the one. At 369 overlapping ribbons,
     dimming reads instantly where brightening does not. One swapped CSS rule
     (`g.track > *:not(.trackN) { opacity: … }`) — O(1) per hover. Short transition to
@@ -375,8 +439,11 @@ That note flags its metadata table as inferred-not-confirmed. Both inferences ar
     **changing the appearance of the strand set in real time from pointer position
     will not perform.** De-emphasis, highlighting, and anything else that restyles
     the ribbons live all buy the same ~28 ms; the wall is the coupling to pointer
-    rate. Feeler mode is therefore **off by default** (`strandFeeler`, `?feeler` in
-    the harness), kept whole rather than deleted.
+    rate. ~~Feeler mode is therefore **off by default** (`strandFeeler`, `?feeler` in
+    the harness), kept whole rather than deleted.~~ **Deleted 2026-08-16 (#40)** —
+    `strandFeeler`, `?feeler` and the CSS-rule highlight behind them. The ~28 ms is a
+    true fact about DOM style invalidation and stays recorded above; what was kept whole
+    behind the flag does not, because the surface it restyled is gone.
 
     **The appearance vocabulary is not abandoned — its invocation is.** A highlight
     already standing costs **nothing** to pan and zoom under (8.3 ms median, 2
@@ -397,9 +464,10 @@ That note flags its metadata table as inferred-not-confirmed. Both inferences ar
     the sweep** — flat, and under what the page timer resolves, so the honest reading is
     *below 100 µs* rather than *zero*. The worst frame while sweeping (9.4 ms) equals the
     worst frame over the identical moves with `Shift` released (9.4 ms): inside a 16.67 ms
-    frame, and a third of the ~28 ms a single DOM swap cost. Both surfaces keep their own
+    frame, and a third of the ~28 ms a single DOM swap cost. ~~Both surfaces keep their own
     answer: the SVG surface's feeler stays off and stays behind `?feeler`, because nothing
-    about its 28 ms changed. Measured in
+    about its 28 ms changed.~~ **One surface, one answer, 2026-08-16 (#40): the feeler is
+    on.** Measured in
     [`notes/2026-08-14-feeler-mode-on-the-gpu.md`](./notes/2026-08-14-feeler-mode-on-the-gpu.md).
 
     **What did not reverse: legibility at fit.** The highlight reads unmistakably from about
@@ -436,10 +504,13 @@ That note flags its metadata table as inferred-not-confirmed. Both inferences ar
 
 ### Testing
 
-18. **Unit-test the viewport transform module only** — pure `{x, y, scale}` math, no
+18. ~~**Unit-test the viewport transform module only** — pure `{x, y, scale}` math, no
     DOM. Everything else is verified by looking at it. The three silently-wrong-able
     things are fit-to-width, zoom-about-cursor drift, and navigator-rect ↔ viewport
-    scale.
+    scale.~~ **The rule stands; the module and its tests are deleted, 2026-08-16 (#40).**
+    Fit-to-width and zoom-about-cursor are `MapControls`' arithmetic now and testing them
+    here would be testing three.js; the third — navigator-rect ↔ viewport — is the fourth
+    seam below, and it is tested. The restatement is what to read.
 
     **Restated 2026-08-14, same rule, more seams.** The rule was never "one file"; it
     was *test what can be silently wrong without looking wrong, look at everything
@@ -450,6 +521,12 @@ That note flags its metadata table as inferred-not-confirmed. Both inferences ar
     map that is merely upside down somewhere else. Both are pure and DOM-free, as this
     decision requires. `spikeIsGone.test.ts` is not a unit test but a rule nobody would
     otherwise check.
+
+    **And one fewer, 2026-08-16 (#40).** `viewportTransform.test.ts` went with the module
+    it tested — the ADR already recorded that its unit tests do not transfer, since PGB's
+    controls are the original and that module was the copy. `rejectionReasons.test.ts`,
+    `parseSegmentBoxes.test.ts` and the rest are untouched. The seams that remain are the
+    four named here, and every one of them is still pure and DOM-free.
 
     **A fourth, 2026-08-14:** the navigator's content-coordinate translation
     (`visibleContentRect` / `worldFromContentPoint`). The map is centred on the origin

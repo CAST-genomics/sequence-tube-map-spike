@@ -48,11 +48,10 @@ Three capabilities make the strip usable:
 2. **A navigator.** A thumbnail of the whole tube map, bottom-left, with a rect
    showing where the current view sits. It answers "where am I inside this node" at
    a glance, and can be dragged or clicked to move.
-3. **A feeler** *(built; on, on the WebGL surface — see Feeler mode below)*. Holding
+3. **A feeler** *(built; always on — see Feeler mode below)*. Holding
    `Shift` turns the cursor into a probe: the strand it is on is drawn in full while the
-   rest recede. On the WebGL surface the emphasis **follows the cursor** — one strand at a
-   time, decided 2026-08-14; on the SVG surface, where it is off by default, touched
-   strands accumulate into a set. Releasing clears everything. This is the deliberate tool
+   rest recede. The emphasis **follows the cursor** — one strand at a time, decided
+   2026-08-14. Releasing clears everything. This is the deliberate tool
    that the continuous coloring makes necessary — it separates one haplotype from its
    genetically-similar neighbours without distorting the color that carries the
    ancestry signal. Because it is opt-in, the view stays calm during plain reading.
@@ -126,7 +125,8 @@ and interaction layer over someone else's picture.
 > on the fixture, but on real maps the highlight tears and renders partially:
 > restyling ~10,000 track elements costs ~28 ms, and a sweep asks for that several
 > times a second. Feeler mode is off by default (`strandFeeler`; `?feeler` re-arms
-> the harness).
+> the harness). *(Both the flag and the surface it guarded were deleted 2026-08-16, #40;
+> the finding below is what outlives them.)*
 >
 > **The general finding, which outlives this section:** *altering the appearance of
 > the strand set in real time, driven directly by pointer position, will not
@@ -160,7 +160,8 @@ and interaction layer over someone else's picture.
 > exactly one strand at full colour, the one under the feeler now. Accumulating a set leaves a
 > widening trail of lit strands behind a sweep, and the strand being pointed at becomes one of
 > dozens — the opposite of story 28. The set this story wants is still wanted; it needs a
-> deliberate gesture rather than the side effect of a sweep. The SVG surface still accumulates.
+> deliberate gesture rather than the side effect of a sweep. ~~The SVG surface still
+> accumulates.~~ *(Deleted 2026-08-16, #40 — nothing accumulates anywhere now.)*
 >
 > Met there: 25, 26, 27 (crosshair and a badge), 28 — *from about one css pixel per band
 > upward* — 30, 31, 32, 34, 36 (one canvas and a pick pass, so the dead zones this story was
@@ -176,8 +177,9 @@ and interaction layer over someone else's picture.
 > [`docs/DISAMBIGUATING-TRACKS.md`](./docs/DISAMBIGUATING-TRACKS.md). One of them — a floor of
 > ink for the emphasized band — was tried and removed, because a band emitting more ink than
 > the document gave it is brightening the one rather than dimming the others, which story 30
-> forbids. The SVG surface keeps the paragraphs above unchanged: its feeler stays off, behind
-> `?feeler`. Measurements:
+> forbids. ~~The SVG surface keeps the paragraphs above unchanged: its feeler stays off, behind
+> `?feeler`.~~ *(#40, 2026-08-16: there is one surface, its feeler is on, and "there" above
+> now means the viewer.)* Measurements:
 > [`notes/2026-08-14-feeler-mode-on-the-gpu.md`](./notes/2026-08-14-feeler-mode-on-the-gpu.md).
 
 25. As a researcher, I want strands to stay quiet when I'm merely moving the cursor
@@ -256,24 +258,46 @@ coordinates, and decides eligibility; the viewer never builds a URL and never
 inspects one. A local development file is just another URL, so no local-vs-remote
 branch exists anywhere in the code.
 
-**Viewport transform module** — pure, DOM-free, owns `{ x, y, scale }` and every
+~~**Viewport transform module** — pure, DOM-free, owns `{ x, y, scale }` and every
 conversion touching it: `fitToWidth`, `pan`, `zoomAbout`, `screenToContent`,
 `contentToScreen`, `viewportRectInContent`, `panToNavigatorPoint`. One state object
-drives both surface and navigator, so the two cannot disagree.
+drives both surface and navigator, so the two cannot disagree.~~
 
-**Navigator module** — bakes a bitmap thumbnail once on load, renders the viewport
-rect, handles drag and click-to-center by delegating to the transform module.
+**Navigator module** — ~~bakes a bitmap thumbnail once on load~~ **renders the map into a
+render target once per document and reads it back**, renders the viewport rect, handles
+drag and click-to-center ~~by delegating to the transform module~~ **by asking the surface
+for a content point**.
 
-**Interaction module** — pointer and keyboard handling, mode switching, highlight
-rule management, tooltips.
+~~**Interaction module** — pointer and keyboard handling, mode switching, highlight
+rule management, tooltips.~~
+
+> **Amended 2026-08-16 (#40), and this is where the module list stands.** The viewport
+> transform module and the interaction module are **deleted**, with the SVG surface they
+> served. Pan and zoom are three.js `MapControls` — the transform module was a hand-written
+> copy of `pgb/src/mapControlsFactory.js`, written only because the SVG viewer had no
+> three.js, and ADR `0001` records that as its largest error. What survives of it is
+> `src/geometry.ts`: `Point`, `Size`, `Rect`, `clamp`, and nothing else.
+>
+> In their place: **`bandSurface.ts`** — the scene, the shaders, the controls, the feeler —
+> behind the four calls of `BandSurface` (`show(text)`, `clear`, `resize`, `destroy`), which
+> is the whole of what the mount knows about it. Beside it, **`parseBands.ts`** and
+> **`parseSegmentBoxes.ts`** read the response, **`bandCamera.ts`** owns the framing
+> arithmetic, **`bandPicker.ts`** answers which track is under the cursor,
+> **`trackAppearance.ts`** holds how each one looks, **`feelerKey.ts`** owns what `Shift`
+> means, and **`segmentOverlay.ts`** draws `g.node` as divs. `README.md` §"Shape of the
+> code" is the current table.
 
 ### Rendering and navigation
 
-- **Pan/zoom via CSS `transform`** on a wrapping div (`transform-origin: 0 0`,
+- ~~**Pan/zoom via CSS `transform`** on a wrapping div (`transform-origin: 0 0`,
   `will-change: transform`), *not* `viewBox` mutation, which invalidates and
   re-rasterizes all ~10,345 elements every frame. Canvas rasterization was rejected
   outright — it forfeits per-element hit-testing, which the entire interaction model
-  depends on.
+  depends on.~~ **Reversed on both counts and deleted 2026-08-16 (#40).** `will-change`
+  is exactly what promoted the composited layer that came apart at 900 megapixels
+  (2026-08-13), and the canvas this ruled out is what the viewer is: pan is
+  `camera.position`, zoom is `camera.zoom`, and per-element hit-testing came back as a GPU
+  pick pass that agrees with the picture by construction. ADR `0001`, `CONTEXT.md` #6.
 - **Gestures match PGB**, which configures three.js `MapControls` with
   `zoomToCursor`, `zoomSpeed: 1.2`, rotation off. Primary-button drag pans one-for-one
   in screen pixels; every `wheel` — Magic Mouse swipe, conventional wheel, and the
@@ -282,17 +306,26 @@ rule management, tooltips.
   One deliberate deviation: line- and page-mode `deltaMode` values are converted to
   pixels first. three.js reads `deltaY` raw, which on a line-reporting browser makes a
   notch zoom by ~0.06% — PGB never meets that because it ships in Chrome.
-- **Initial view is fit-to-width.** Zoom clamped to `[fit, 4×]`, about the cursor.
-- **Resize preserves `{x, y, scale}`**, except when the view is untouched at initial
-  fit, in which case it re-fits.
+- **Initial view is fit-to-width.** Zoom clamped to ~~`[fit, 4×]`~~ **`[fit, 200×]`
+  (2026-08-14)**, about the cursor. `4×` was calibrated on the 600 bp fixture and resolves
+  nothing on the documents that matter.
+- **Resize preserves ~~`{x, y, scale}`~~ the view** — `camera.position` and `camera.zoom`
+  since #40 — except when the view is untouched at initial fit, in which case it re-fits.
 
 ### Loading
 
-- Parse with `DOMParser`, **not** `innerHTML`, so the document can be cleaned before
-  it is ever attached — one reflow instead of two, no half-rendered flash.
-- **Strip all `<title>` elements on load.** The response carries 10,345 empty ones;
-  they are dead weight and they fight custom tooltips.
+- ~~Parse with `DOMParser`, **not** `innerHTML`, so the document can be cleaned before
+  it is ever attached — one reflow instead of two, no half-rendered flash.~~
+- ~~**Strip all `<title>` elements on load.** The response carries 10,345 empty ones;
+  they are dead weight and they fight custom tooltips.~~
 - Spinner in the body until the parsed document is attached.
+
+> **Both parse bullets retired 2026-08-16 (#40).** The document is never attached to the
+> page at all: the response text goes to a regex parser and comes out as six floats per
+> band, so there is no tree to build safely and no `<title>` in the browser's way. The
+> spinner stands, and beside it the error card — a document the band grammar refuses is
+> refused whole and named, which is a stronger form of the safety the `DOMParser` bullet
+> was reaching for. `CONTEXT.md` #12.
 
 ### Navigator
 
@@ -303,6 +336,16 @@ rule management, tooltips.
 - Rect scales with zoom; drag pans; click centers.
 
 ### Interaction model
+
+> **The table below is the SVG surface's model and that surface was deleted 2026-08-16
+> (#40).** Two rows no longer describe anything: segment boxes are hoverable with no key
+> held and take real pointer events (amended 2026-08-15, `CONTEXT.md` #13), and the cursor
+> is a pointing finger rather than a `crosshair` (2026-08-16). Two rows are still exactly
+> right and are settled: strands answer only under `Shift`, and pan and zoom are suppressed
+> while it is held — not for the hit-test cost the paragraphs below give, which is gone, but
+> because the mode exists to hold the picture still while the cursor reads it. The
+> dead-zone argument below is also retired on its own terms: there is one canvas and a pick
+> pass answering with a track id, so the class of bug it guards against cannot arise.
 
 **`Shift` arbitrates pointer ownership**, making the two interaction sets mutually
 exclusive by construction rather than by hit-test arbitration:
@@ -377,7 +420,16 @@ and a test asserting elements exist is strictly worse than looking. Tests are ai
 narrowly at what can be *silently* wrong — arithmetic producing a plausible-looking
 but incorrect picture.
 
-**One seam: the viewport transform module.** Pure functions over `{ x, y, scale }`,
+~~**One seam: the viewport transform module.**~~ **Four seams, 2026-08-16 (#40) — the
+rule is unchanged and the module is deleted.** The rule was never "one file"; it was
+*test what can be silently wrong without looking wrong, and look at everything else*.
+The seams that carry that now are `bandCamera.ts` (framing arithmetic, including risk 3
+below), `parseBands.ts` and `parseSegmentBoxes.ts` (a mis-numbered regex group yields
+plausible geometry), and `segmentOverlay.ts`'s incremental visibility threshold. All four
+are pure and DOM-free, as this decision requires. Risks 1 and 2 below are `MapControls`'
+arithmetic now, and testing them here would be testing three.js. `CONTEXT.md` #18.
+
+Pure functions over `{ x, y, scale }`,
 no DOM, no fixtures, no test infrastructure. All three silently-wrong-able risks live
 inside it:
 
@@ -398,8 +450,13 @@ returns zeros and the transform math — the only part worth testing — becomes
 untestable at exactly the seam that appears highest. What remains testable there is
 element existence, which the eye verifies faster and better.
 
-**Everything else is verified visually:** SVG injection, `<title>` stripping,
-highlight CSS, mode switching, tooltips, navigator appearance, and pan/zoom feel.
+**Everything else is verified visually:** ~~SVG injection, `<title>` stripping,
+highlight CSS, mode switching~~ **the drawn map, the feeler, the segment boxes**,
+tooltips, navigator appearance, and pan/zoom feel. Several of those now have a
+playwright driver that does the looking and leaves the screenshots behind —
+`scripts/verify_{pick,highlight,segment_boxes,refusal,pointer_binding}.mjs`. They are
+not unit tests and are not run by `npm test`; they are a way of looking that can be
+repeated.
 
 **Prior art.** PGB's tests live in `src/__tests__`. This repo has no suite yet; the
 transform module's tests establish it.
@@ -431,10 +488,13 @@ transform module's tests establish it.
 
 **Establish two things early — both cheap now, expensive at integration.**
 
-1. **Frame budget.** Smooth panning of 10,345 live elements under CSS transform is
+1. ~~**Frame budget.** Smooth panning of 10,345 live elements under CSS transform is
    expected but unmeasured. Measure in week one. If it fails, the fallback ladder is:
    reduce transition work, then `content-visibility`, then reconsider — but *not*
-   canvas, which forfeits hit-testing.
+   canvas, which forfeits hit-testing.~~ **Measured 2026-08-13, and it failed.** The
+   ladder was not climbed: the layer itself was the problem at 900 megapixels, and the
+   answer was the canvas this bullet ruled out — hit-testing came back as a GPU pick pass.
+   The CSS-transform surface was deleted 2026-08-16 (#40). ADR `0001`.
 2. **CORS.** The endpoint is `https://pangenome-api.ucsd.edu:8000/seqtubemap` — a
    non-standard port, browser-origin CORS behavior unknown. If headers are absent,
    that's a request to Cici Bu or a proxy route, far better known now than during

@@ -11,24 +11,23 @@ means two different things at two scales). Requirements: [`SPEC.md`](./SPEC.md).
 ```
 npm install
 npm run dev        # http://localhost:5173
-npm test           # viewport transform math
+npm test           # parsers, camera math, refusal reasons
 npm run typecheck
 ```
 
 ## Harness
 
-`index.html` is a bare full-viewport container plus a picker: a renderer selector, a
-node selector, a URL field, and Open. Three query parameters:
+`index.html` is a bare full-viewport container plus a picker: a node selector, a URL
+field, and Open. Three query parameters:
 
-- `?renderer=webgl|svg` — which surface draws the map. Defaults to `webgl`. The
-  selector sets it by reloading, so the two surfaces can be compared on the same
-  document in the same session, and which one is running is readable off the address
-  bar rather than off the page's memory.
 - `?url=…` — open a different tube map. Defaults to the committed fixture.
 - `?fps=1` — frame meter, top left. Click it to reset the worst-frame figure.
-- `?pick` — on the WebGL surface, read the pick pass and the feeler out loud: the track
-  under the cursor, what the pick cost, which track is emphasized, and what the last and
-  worst appearance-table writes cost. Instrumentation; feeler mode runs without it.
+- `?pick` — read the pick pass and the feeler out loud: the track under the cursor, what
+  the pick cost, which track is emphasized, and what the last and worst appearance-table
+  writes cost. Instrumentation; feeler mode runs without it.
+
+`?renderer=` and `?feeler` are gone as of 2026-08-16 (#40): there is one surface, and its
+feeler is always on.
 
 The selector lists the committed fixture and every minigraph node of a PGB dataset
 that GRCh38 places — 30 of `cici.json`'s 45 — in chromosome order. Picking one fills
@@ -50,25 +49,19 @@ Every URL is also reachable by hand — the live endpoint works directly:
 http://localhost:5173/?url=https%3A%2F%2Fpangenome-api.ucsd.edu%3A8000%2Fseqtubemap%3Fchrom%3Dchr1%26start%3D25331046%26end%3D25331646%26version%3Dv2%26pathnumoption%3Dnormal%26nodewidthoption%3Dcompressed%26minigraphnode%3D5519
 ```
 
-## Two surfaces
+## One surface
 
-The map is drawn either by the **WebGL band renderer** or by the original **SVG
-surface**. They are the same viewer — same entry point, same `open(url)`, same
-loading and error states — differing only in what happens to the bytes after they
-arrive.
+The map is drawn by the **WebGL band renderer**, and there is nothing else to select. It
+reads the response as six floats per band by regex, draws the lot in one instanced call
+with analytic coverage, steers with PGB's `MapControls` from fit to 200×, and refuses a
+document off the band grammar loudly rather than drawing part of it.
 
-| | WebGL (default) | SVG |
-|---|---|---|
-| Reads the document as | six floats per band, by regex | a live DOM tree |
-| Draws with | one instanced draw call | ~10,345 elements under a CSS transform |
-| Zoom range | fit – 200× | fit – 4× |
-| Has | analytic coverage, PGB's `MapControls`, feeler mode | per-element hit-testing |
-| Refuses | a document off the band grammar, loudly | nothing |
-
-WebGL is the default because the SVG surface has a ceiling and reaches it on every
-document larger than the 600 bp fixture: its composited layer is 900 megapixels at
-dpr 2, and its 4× zoom cap leaves a haplotype 0.77 css px tall on `5520+`. The
-verdict that settled this, with the measurements, is
+It was one of two until 2026-08-16 (#40). The original **SVG surface** attached the
+server's document live and panned it with a CSS transform, and it has a ceiling it reaches
+on every document larger than the 600 bp fixture: its composited layer is 900 megapixels
+at dpr 2, its hover restyle costs ~28 ms across ~10,000 elements, and its 4× zoom cap
+leaves a haplotype 0.77 css px tall on `5520+`. The verdict that settled this, with the
+measurements, is
 [`notes/2026-08-14-three-js-renderer-verdict.md`](./notes/2026-08-14-three-js-renderer-verdict.md);
 how a band is drawn is [`docs/RENDERING.md`](./docs/RENDERING.md).
 
@@ -79,22 +72,26 @@ and a tube map has no position channel to spare. The strategies for adding back 
 the chart did not need are collected in
 [`docs/DISAMBIGUATING-TRACKS.md`](./docs/DISAMBIGUATING-TRACKS.md).
 
-**The SVG surface is not a fallback.** A document the band grammar rejects gets a named
-error state and stops there; nothing is silently swapped in behind it, because a
-researcher who cannot tell which renderer drew what they are looking at is worse off
-than one who gets told the document could not be drawn. A refusal is something to deal
-with when it occurs, from the document that caused it. Decided 2026-08-14 — `CONTEXT.md`
-decision #1 and ADR `0001` carry the reasoning.
+**Nothing falls back.** A document the band grammar rejects gets a named error state and
+stops there. That was already the behaviour before the surface was deleted — nothing was
+ever silently swapped in, because a researcher who cannot tell which renderer drew what
+they are looking at is worse off than one who gets told the document could not be drawn.
+A refusal is something to deal with when it occurs, from the document that caused it.
 
-What the SVG surface is, for now: the only surface with per-element hit-testing, and a
-comparison arm reachable by hand at `?renderer=svg`.
+Deleting the surface makes that irreversible, and it costs something: if UCSD's drawing
+grammar changes, there is now no way to look at an affected document at all. ADR
+[`0001`](./docs/adr/0001-webgl-band-renderer.md) records that plainly as a reduction in
+safety, along with the three reasons it is still the right trade — chiefly that a fallback
+reachable only by guessing a query parameter is not one, and that the surface behind it
+carries both of the failures that produced this renderer. `CONTEXT.md` decision #1 has the
+short version.
 
 ## Using it
 
 Drag with the primary button to pan; a Magic Mouse swipe, a mouse wheel, or a
 trackpad pinch zooms about the cursor. The navigator, bottom left, shows the whole
 map with a rect around what is on screen: drag the rect to travel, press anywhere
-else to centre that point. Both surfaces have it.
+else to centre that point.
 
 Hovering a segment box shows the segment's id, its length in bases and its sequence, with
 no key held. The boxes are HTML divs over the canvas — translucent, black-stroked, rounded
@@ -111,16 +108,17 @@ about them is corrected — the 2-unit stroke and the radius-9 corners scale wit
 like the bands do. `node scripts/verify_segment_boxes.mjs` runs the lot against `5514+` at
 200× and leaves the screenshots in `/tmp`.
 
-The navigator's thumbnail is drawn from the surface's own scene: on the WebGL
-surface, one render into a render target at thumbnail size, read back once per
-document, so the picture in the corner cannot disagree with the picture on screen.
+The navigator's thumbnail is drawn from the surface's own scene — one render into a
+render target at thumbnail size, read back once per document, so the picture in the
+corner cannot disagree with the picture on screen.
 It is 720 px wide at most, which is 51 px tall on `5520+` and 26 px on `5514+`;
 360 px was tried first and leaves `5514+` a 13 px hairline
 ([`notes/2026-08-14-navigator-thumbnail-aspect.md`](./notes/2026-08-14-navigator-thumbnail-aspect.md)).
 
-Pan and zoom are PGB's, gesture for gesture. The WebGL surface *is* three.js
-`MapControls` with PGB's configuration verbatim; the SVG surface matches it by hand
-at PGB's `zoomSpeed`, so a notch travels the same distance in all three.
+Pan and zoom are PGB's, gesture for gesture — the surface *is* three.js `MapControls`
+with PGB's configuration verbatim, so a notch travels the same distance in both viewers.
+The hand-written copy of PGB's controls factory that the SVG surface needed is gone with
+it (#40).
 
 ### Feeler mode
 
@@ -135,21 +133,16 @@ looking at the alternative: touches that pile up leave a widening trail of lit s
 behind a sweep, and the strand being pointed at ends up as one of dozens at full colour,
 which is the opposite of telling it apart. A comparison set of several haplotypes is still
 wanted and needs a deliberate gesture instead; the appearance table already supports one.
-The SVG surface's feeler, which is off, still accumulates.
 
-It is **on, on the WebGL surface, and off on the SVG surface** — the same interaction with
-two different costs behind it. On the SVG surface each swap invalidates style across
-~10,000 elements at ~28 ms, real maps tear, and that is not fixable by tuning; it stays
-behind `?feeler` there
-([`notes/2026-08-13-direct-strand-interaction-is-not-viable.md`](./notes/2026-08-13-direct-strand-interaction-is-not-viable.md)):
+It is **always on**, with no flag. The same interaction was built on the SVG surface and
+shipped switched off, because there each swap invalidated style across ~10,000 elements at
+~28 ms, real maps tore, and no tuning reached it
+([`notes/2026-08-13-direct-strand-interaction-is-not-viable.md`](./notes/2026-08-13-direct-strand-interaction-is-not-viable.md));
+that surface and its `?feeler` flag were deleted 2026-08-16 (#40).
 
-```
-http://localhost:5173/?renderer=svg&feeler
-```
-
-On the WebGL surface, track appearance is a `DataTexture` of one texel per track — RGB
-plus an emphasis byte — so moving the emphasis writes one byte per *track*, nothing per
-band, and the frame uploads 2 KB. On `5520+`, 464 tracks and 40,442 bands, a sweep that
+Here track appearance is a `DataTexture` of one texel per track — RGB plus an emphasis
+byte — so moving the emphasis writes one byte per *track*, nothing per band, and the frame
+uploads 2 KB. On `5520+`, 464 tracks and 40,442 bands, a sweep that
 moves it 198 times across 198 tracks holds a median write of 0.000 ms and a worst of
 0.100 ms in every window of the sweep — flat, and under what the page timer resolves, so
 read it as *below 100 µs*. The worst frame while sweeping is 9.4 ms, the same as the worst
@@ -174,36 +167,35 @@ node scripts/verify_highlight.mjs '<url>'
 ## Shape of the code
 
 `mountTubeMapSurface(container, options?)` is the only public entry point. It
-returns `{ open(url), destroy() }` — `open` is the entire input surface, and the
-options are `renderer` and `strandFeeler`. The host builds the
+returns `{ open(url), destroy() }` — `open` is the entire input surface, and the only
+option left is `pickReadout`, which is harness instrumentation. The host builds the
 URL and decides eligibility; the viewer never builds one, never inspects one, and
 never learns whether it is local or remote.
 
 The mount owns the fetch, the spinner and the error state. It owns nothing about the
-view: fitting, zooming and what a resize does to the framing belong to the renderer,
-because the two answer those in different vocabularies.
+view: fitting, zooming and what a resize does to the framing are behind the four calls of
+`BandSurface`. That seam was where two surfaces met; it survives one, because what it
+really keeps apart is the fetch and the camera.
 
 | File | Holds |
 |---|---|
-| `src/tubeMapSurface.ts` | the entry point; the fetch, the load lifecycle, the renderer choice |
-| `src/surfaceRenderer.ts` | what a renderer is — `show(text)`, `clear`, `resize`, `destroy` |
-| `src/bandSurface.ts` | the WebGL surface: one instanced draw call, `MapControls`, the shaders |
+| `src/tubeMapSurface.ts` | the entry point; the fetch, the load lifecycle, the error state |
+| `src/bandSurface.ts` | the surface: one instanced draw call, `MapControls`, the shaders, and `BandSurface` — `show(text)`, `clear`, `resize`, `destroy` |
 | `src/parseBands.ts` | `g.track` as six floats per band; rejects anything off-grammar |
 | `src/parseSegmentBoxes.ts` | `g.node` as rounded rectangles; rejects anything off-grammar |
 | `src/segmentOverlay.ts` | the segment boxes as HTML divs, and the tooltip naming the one under the cursor |
 | `src/documentGrammar.ts` | what both parsers share about refusing a document |
-| `src/bandCamera.ts` | the WebGL camera's framing, and the navigator's content coordinates — pure, DOM-free, tested |
-| `src/svgSurface.ts` | the SVG surface: `{x, y, scale}`, the interactions, the SVG thumbnail bake |
-| `src/viewportTransform.ts` | the SVG surface's transform math, and the geometry vocabulary both surfaces speak — pure, DOM-free, tested |
-| `src/navigator.ts` | the navigator's chrome: viewport rect, drag and press-to-jump. Each surface paints its own thumbnail |
-| `src/interaction.ts` | modes, highlight rule, tooltips, drag-pan and wheel-zoom |
+| `src/bandCamera.ts` | the camera's framing, and the navigator's content coordinates — pure, DOM-free, tested |
+| `src/geometry.ts` | `Point`, `Size`, `Rect`, `clamp` — the vocabulary the rest of it measures in |
+| `src/navigator.ts` | the navigator's chrome: viewport rect, drag and press-to-jump. The surface paints the thumbnail |
+| `src/bandPicker.ts`, `src/trackAppearance.ts`, `src/feelerKey.ts` | which track is under the cursor, how each one looks, and what `Shift` means |
 | `src/fetchDocument.ts` | the fetch, and the failures worth naming |
-| `src/svgDocument.ts` | parse, strip `<title>`, measure the viewBox |
+| `src/loadFailure.ts` | which of the four failures happened, in words a researcher can act on |
 | `src/surfaceStyles.ts` | the viewer's stylesheet, as a string so the host imports no CSS |
 | `src/main.ts`, `src/frameMeter.ts` | harness only — PGB replaces both |
 
 The tested seams are the ones that can be silently wrong without looking wrong: the
-two lots of camera math, both parsers — where a mis-numbered regex group yields
+camera math, both parsers — where a mis-numbered regex group yields
 plausible geometry — and the segment overlay's visibility threshold, which is
 incremental across frames and so is a claim about something stateful. Everything else is verified by looking at it, for the reasons
 `SPEC.md` §Testing Decisions gives.

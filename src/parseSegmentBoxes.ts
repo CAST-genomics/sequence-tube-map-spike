@@ -1,5 +1,5 @@
 /**
- * Segment-box parser — the second and last thing the WebGL surface reads out of the
+ * Segment-box parser — the second and last thing the surface reads out of the
  * server's document.
  *
  * `parseBands.ts` slices the document at `<g class="node">` and reads what comes before it.
@@ -43,7 +43,7 @@
  */
 
 import { NUMBER as N, NonConformingDocument, countOccurrences } from './documentGrammar.ts'
-import type { Point } from './viewportTransform.ts'
+import type { Point } from './geometry.ts'
 
 /** One segment's outline, in world units: y up, centred on whatever centre was given. */
 export interface SegmentBox {

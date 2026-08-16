@@ -1,5 +1,5 @@
 /**
- * Band parser — the WebGL surface's reading of `g.track`, which is every drawable in the
+ * Band parser — the surface's reading of `g.track`, which is every drawable in the
  * document but the segment boxes. Those are `parseSegmentBoxes.ts`, and the two are read
  * separately because they become different things: bands become one instanced mesh, boxes
  * become HTML divs.
@@ -35,7 +35,7 @@
  */
 
 import { NUMBER as N, NonConformingDocument, countOccurrences } from './documentGrammar.ts'
-import type { Point } from './viewportTransform.ts'
+import type { Point } from './geometry.ts'
 
 /** Constant across all 127,101 surveyed track paths, and every `<rect>` height. */
 export const THICKNESS = 15

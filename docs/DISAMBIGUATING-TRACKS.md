@@ -105,8 +105,10 @@ runs per fragment regardless.
 **Measured 2026-08-14, and the constraint lifted** (#39): moving the emphasis is a 2 KB table
 upload, under 100 µs of CPU, and a sweep's worst frame is indistinguishable from the same
 pointer moves with no key held. Strategies below may now assume that *changing appearance per
-pointer move is affordable on this surface* — but nothing more than that, and nothing at all
-about the SVG surface, where the 28 ms stands.
+pointer move is affordable on this surface* — but nothing more than that. (The SVG surface
+the 28 ms was measured on was deleted 2026-08-16, #40. The number is still what any
+DOM-restyle proposal here has to answer to; there is simply no longer a surface it
+describes.)
 
 What has *not* changed is the part of that note that was never about performance: a
 highlight wired to pointer position is also a **design** choice, and the note deliberately

@@ -415,8 +415,67 @@ export const SURFACE_STYLES = `
     display: none;
 }
 
+/* Drawn as a card with a mark on it, not as red text on the ground.
+   Every failure here — unreachable, absent, undrawable, viewer fault — arrives looking
+   exactly like a tube map with nothing in it, and the gate is only worth having if a
+   refusal cannot be taken for one (loadFailure.ts). So the error state is given an
+   edge, a fill that is not the map's ground, and a mark, and reads as something placed
+   over the surface rather than as the surface itself. */
 .stm-status.is-error {
-    color: rgb(150, 40, 40);
+    --stm-alarm: rgb(168, 44, 44);
+
+    color: rgb(58, 62, 70);
+    background: rgba(244, 244, 246, 0.94);
+}
+
+.stm-status-card {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    padding: 22px 28px 20px;
+    border: 1px solid rgba(168, 44, 44, 0.35);
+    border-radius: 6px;
+    background: rgb(255, 255, 255);
+    box-shadow: 0 1px 3px rgba(20, 22, 26, 0.10);
+}
+
+.stm-status-mark {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 26px;
+    height: 26px;
+    border-radius: 50%;
+    border: 2px solid var(--stm-alarm);
+    color: var(--stm-alarm);
+    font-weight: 700;
+    font-size: 15px;
+    line-height: 1;
+}
+
+.stm-status-heading {
+    font-weight: 600;
+}
+
+/* Only when it is an error. The loading state shares the element and keeps the status's
+   own colour — a spinner over an alarm-coloured line would announce a problem there
+   isn't one yet. */
+.stm-status.is-error .stm-status-heading {
+    color: var(--stm-alarm);
+}
+
+/* Capped so a parser's reason — which names coordinates and counts — wraps into a
+   readable measure rather than running the width of a strip-shaped surface. */
+.stm-status-reason,
+.stm-status-url {
+    max-width: 56ch;
+    overflow-wrap: anywhere;
+}
+
+/* Quietest of the three: it is here to be copied into a bug report, not read first. */
+.stm-status-url {
+    color: rgb(120, 124, 132);
 }
 
 .stm-spinner {

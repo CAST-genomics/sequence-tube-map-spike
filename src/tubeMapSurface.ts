@@ -13,7 +13,9 @@
  * ## What this file owns, and what it does not
  *
  * It owns the mounted root, the fetch and its abort, the spinner, and the error state —
- * the things that are the same whichever surface draws. It owns nothing about the view:
+ * the things that are the same whichever surface draws. What the error state *says* is
+ * `loadFailure.ts`, which classifies the four ways this fails; the mount only draws it.
+ * It owns nothing about the view:
  * fitting, zooming and what a resize does to the framing all belong to the renderer, and
  * the two renderers answer those in different vocabularies. See `surfaceRenderer.ts`.
  *
@@ -28,8 +30,8 @@
  */
 
 import { createBandSurface } from './bandSurface.ts'
-import { fetchDocument, TubeMapLoadError } from './fetchDocument.ts'
-import { NonConformingDocument } from './documentGrammar.ts'
+import { fetchDocument } from './fetchDocument.ts'
+import { describeFailure, type LoadFailure } from './loadFailure.ts'
 import { shieldFromMap } from './surfacePointer.ts'
 import { SURFACE_STYLES } from './surfaceStyles.ts'
 import { createSvgSurface } from './svgSurface.ts'
@@ -82,6 +84,13 @@ export function mountTubeMapSurface(
 
     container.append(root)
 
+    // The gate belongs to the band parser, so it is the WebGL surface that has one. The
+    // SVG surface attaches whatever the server sent and draws it, which is the whole
+    // reason it is still here — a document the band grammar refuses can be looked at
+    // there. So "a non-conforming document is refused" is true of the surface that ships
+    // and not of the one behind `?renderer=svg`, and it becomes true of the viewer
+    // outright when #40 deletes that surface. Recorded rather than left to be inferred:
+    // it is the last place the withdrawn fallback still half-exists.
     const renderer: SurfaceRenderer = 'svg' === options.renderer
         ? createSvgSurface(root, { strandFeeler: options.strandFeeler })
         : createBandSurface(root, { pickReadout: options.pickReadout })
@@ -92,17 +101,44 @@ export function mountTubeMapSurface(
 
     let pending: AbortController | null = null
 
-    function showStatus(message: string, isError: boolean): void {
-        status.replaceChildren()
-        status.classList.toggle('is-error', isError)
+    function line(className: string, text: string): HTMLElement {
+        const element = doc.createElement('div')
+        element.className = className
+        element.textContent = text
+        return element
+    }
 
+    function showLoading(): void {
         const spinner = doc.createElement('div')
         spinner.className = 'stm-spinner'
 
-        const text = doc.createElement('div')
-        text.textContent = message
+        status.replaceChildren(spinner, line('stm-status-heading', 'Loading tube map…'))
+        status.classList.remove('is-error')
+        status.hidden = false
+    }
 
-        status.append(spinner, text)
+    /**
+     * The error state, drawn as three elements rather than one string of newlines: the
+     * status is laid out by CSS, which collapses them, so a pasted-together paragraph
+     * arrives as a single run-on line with the heading buried in the middle of it.
+     *
+     * The mark is what stops this being read as a map that happens to be empty. A blank
+     * surface is the one thing every failure here looks like, and the whole point of the
+     * gate is that a refusal is unmistakable.
+     */
+    function showFailure(failure: LoadFailure): void {
+        const card = doc.createElement('div')
+        card.className = 'stm-status-card'
+
+        card.append(
+            line('stm-status-mark', '!'),
+            line('stm-status-heading', failure.heading),
+            line('stm-status-reason', failure.reason),
+            line('stm-status-url', failure.url)
+        )
+
+        status.replaceChildren(card)
+        status.classList.add('is-error')
         status.hidden = false
     }
 
@@ -123,7 +159,7 @@ export function mountTubeMapSurface(
             pending = controller
 
             renderer.clear()
-            showStatus('Loading tube map…', false)
+            showLoading()
 
             try {
                 const text = await fetchDocument(url, controller.signal)
@@ -143,7 +179,7 @@ export function mountTubeMapSurface(
                 // whatever it managed to build behind it; clearing is what guarantees the
                 // error state is not read against half a map.
                 renderer.clear()
-                showStatus(describeFailure(url, error), true)
+                showFailure(describeFailure(url, error))
             } finally {
                 if (pending === controller) {
                     pending = null
@@ -160,26 +196,6 @@ export function mountTubeMapSurface(
             root.remove()
         }
     }
-}
-
-/**
- * What the error state says. It names the URL and what went wrong with it, because the
- * three ways this fails are indistinguishable from a blank surface: the node was never
- * fetchable (13 of 30 are not), the response was not a tube map, or it was a tube map
- * this renderer cannot draw.
- */
-function describeFailure(url: string, error: unknown): string {
-    if (error instanceof TubeMapLoadError) {
-        return 'network' === error.kind
-            ? `Could not load the tube map.\n${error.message}`
-            : `No tube map to show.\n${error.message}\n${url}`
-    }
-
-    if (error instanceof NonConformingDocument) {
-        return `This document cannot be drawn.\n${error.message}\n${url}`
-    }
-
-    return `Could not load the tube map.\n${error instanceof Error ? error.message : String(error)}\n${url}`
 }
 
 function installStyles(doc: Document): void {

@@ -24,9 +24,22 @@ export const SURFACE_STYLES = `
        SVG surface, which refuses them again on .stm-surface. */
     touch-action: none;
     overscroll-behavior: none;
+    /* And the browser's text selection, for the same reason and one level higher up.
+       .stm-canvas and .stm-surface each refuse it, but a drag anchors a *range*, and a
+       range spans whatever lies between its ends — so a pan that crossed the segment
+       tooltip left it highlighted in blue, and left it that way, even though the tooltip
+       is pointer-events: none and was never the drag's target. The map is a picture and
+       the readouts over it are labels on that picture; none of it is a document. */
+    user-select: none;
     background: var(--stm-ground);
     font: 12px/1.45 ui-monospace, SFMono-Regular, Menlo, monospace;
     contain: layout paint;
+}
+
+/* The one exception: the error state names a URL and says what went wrong with it, which
+   is the one thing here worth copying out. */
+.stm-status {
+    user-select: text;
 }
 
 .stm-surface {

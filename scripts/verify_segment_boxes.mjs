@@ -294,9 +294,31 @@ if (null === box) {
     check('a drag starting on a box pans the map', afterPan.left !== beforePan.left,
         `rect.left ${beforePan.left} → ${afterPan.left}`)
     check('the tooltip hides for the duration of a drag', false === midDrag.shown)
+
+    // ── 7. A drag through the tooltip does not select its text ─────────────────────────
+    //
+    // A drag anchors a selection *range*, and a range spans whatever lies between its ends
+    // — so a pan that crossed the tooltip highlighted it in blue and left it that way, even
+    // though the tooltip is `pointer-events: none` and was never the drag's target. Found
+    // by looking, 2026-08-16; the map is a picture, and nothing over it is a document.
+    const shown = await nearestBox()
+
+    await hover(shown)
+
+    const tip = await page.locator('.graph-tooltip').boundingBox()
+
+    await page.mouse.move(tip.x - 40, tip.y + tip.height / 2)
+    await page.mouse.down()
+    await page.mouse.move(tip.x + tip.width + 60, tip.y + tip.height / 2, { steps: 25 })
+    await page.mouse.up()
+    await page.waitForTimeout(200)
+
+    const selected = await page.evaluate(() => String(getSelection()))
+
+    check('a drag through the tooltip selects nothing', '' === selected, JSON.stringify(selected))
 }
 
-// ── 7. A refused document leaves no boxes behind ───────────────────────────────────────
+// ── 8. A refused document leaves no boxes behind ───────────────────────────────────────
 //
 // The overlay mounts under the status layer, so the error state covers it — but covering is
 // not emptying, and a map's boxes standing over the next document's error message would be

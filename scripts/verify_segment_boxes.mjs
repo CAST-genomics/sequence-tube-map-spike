@@ -389,7 +389,7 @@ await page.mouse.up()
 await page.keyboard.up('Shift')
 
 check('pressing while feeling promises no pan',
-    'crosshair' === feelingPress.canvas && 'crosshair' === feelingPress.segment,
+    'pointer' === feelingPress.canvas && 'pointer' === feelingPress.segment,
     `canvas ${feelingPress.canvas}, segment ${feelingPress.segment}`)
 
 // ── 9. A refused document leaves no boxes behind ───────────────────────────────────────

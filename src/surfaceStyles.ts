@@ -99,12 +99,24 @@ export const SURFACE_STYLES = `
     cursor: grabbing;
 }
 
-/* Feeler mode on the WebGL surface: the cursor is a feeler, not a grip. There is nothing
-   to make inert here — the canvas is one element and the pick pass answers with a track
-   id, so the dead zones the SVG surface had to rule out cannot arise. */
+/* Feeler mode: the cursor is a feeler, not a grip — so it is a pointing finger.
+
+   All three states are one hand in three poses: open to take hold, closed while holding,
+   and a finger out while feeling. The crosshair this replaced (2026-08-16) was an
+   instrument reticle in a set of hands, and it promised two-axis precision the interaction
+   does not have — a feeler is swept, and only its vertical position selects anything.
+
+   \`pointer\` conventionally means clickable, and nothing here is. That is a real cost and
+   it is accepted: the finger matches what the mode *is* — CONTEXT.md #14 calls the cursor a
+   feeler, making near-identical ribbons palpable — and while the key is held there is
+   nothing to click anywhere, since the controls are off. Worth revisiting when clicking a
+   segment becomes real, which is a different mode with no key held.
+
+   There is nothing to make inert here — the canvas is one element and the pick pass answers
+   with a track id, so the dead zones the SVG surface had to rule out cannot arise. */
 .stm-root.is-feeling .stm-canvas,
 .stm-root.is-feeling .stm-segment {
-    cursor: crosshair;
+    cursor: pointer;
 }
 
 /* The segment boxes (#37). One wrapper carrying the camera's transform; the boxes inside it
@@ -181,9 +193,11 @@ export const SURFACE_STYLES = `
     pointer-events: none;
 }
 
-/* Feeler mode: strands own the cursor; segment boxes cannot shadow them. */
+/* Feeler mode: strands own the cursor; segment boxes cannot shadow them. The cursor follows
+   the WebGL surface's, because feelerKey.ts is explicit that the two surfaces may differ
+   about how they answer the key but not about what the researcher sees when it is held. */
 .stm-root.is-feeling .stm-surface {
-    cursor: crosshair;
+    cursor: pointer;
 }
 
 .stm-root.is-feeling .stm-content g.node > * {

@@ -310,8 +310,20 @@ That note flags its metadata table as inferred-not-confirmed. Both inferences ar
       not announce "this will show you a tooltip" is accepted: the tooltip arrives on hover
       with no gesture to guess at, so there is nothing for the cursor to advertise.
     - **`grabbing`** — while a pan is under way, for its whole duration.
-    - **`crosshair`** — while `Shift` is held, over anything. Feeling switches the controls
-      off, so a grip would promise a pan that cannot happen.
+    - **`pointer`, the pointing finger** — while `Shift` is held, over anything. Feeling
+      switches the controls off, so a grip would promise a pan that cannot happen.
+
+    All three are **one hand in three poses**: open to take hold, closed while holding, a
+    finger out while feeling. That is what settled it, 2026-08-16 — the `crosshair` it
+    replaced was an instrument reticle in a set of hands, and it promised two-axis precision
+    the interaction does not have, since a feeler is *swept* and only its vertical position
+    selects anything. Its stated job was to make the mode visible rather than remembered,
+    and the badge already does that.
+
+    `pointer` conventionally means clickable and nothing here is. The cost is accepted: the
+    finger matches what the mode is, and while the key is held there is nothing to click
+    anywhere, because the controls are off. Revisit when clicking a segment becomes real —
+    that is a different mode, with no key held.
 
     **This is a class on the root, not `:active`**, and the reason is worth keeping.
     `MapControls` takes pointer capture on the root when a drag begins, and a captured

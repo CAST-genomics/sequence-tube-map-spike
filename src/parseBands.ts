@@ -94,7 +94,7 @@ export function parseBands(text: string): ParsedMap {
     const expected = countOccurrences(track, '<rect') + countOccurrences(track, '<path')
 
     if (0 === expected) {
-        throw new NonConformingDocument('No drawable elements found in g.track.')
+        throw new NonConformingDocument('The document draws no bands at all; its g.track group is empty.')
     }
 
     const geometry = new Float32Array(expected * 6)
@@ -128,11 +128,15 @@ export function parseBands(text: string): ParsedMap {
             y1 = y0
 
             if (THICKNESS !== +match[4]) {
-                throw new NonConformingDocument(`rect height ${match[4]}, expected ${THICKNESS}.`)
+                throw new NonConformingDocument(
+                    `A band in g.track is ${match[4]} units tall; every band in a tube map is ${THICKNESS}.`
+                )
             }
 
             if (0 >= +match[3]) {
-                throw new NonConformingDocument(`rect width ${match[3]}; width must be positive.`)
+                throw new NonConformingDocument(
+                    `A band in g.track is ${match[3]} units wide; a band must have a positive width.`
+                )
             }
 
             // Flat: both edges are horizontal, so any control abscissa reproduces it.
@@ -163,7 +167,9 @@ export function parseBands(text: string): ParsedMap {
         // plausible map of the wrong haplotypes, which is the failure this parser
         // exists to refuse.
         if (id > MAX_TRACK_ID) {
-            throw new NonConformingDocument(`trackID ${id} exceeds the supported maximum of ${MAX_TRACK_ID}.`)
+            throw new NonConformingDocument(
+                `A band carries trackID ${id}, above the ${MAX_TRACK_ID} this renderer can hold.`
+            )
         }
 
         // Normalize the control abscissae in double before the cast to float. `5514+` is
@@ -198,7 +204,7 @@ export function parseBands(text: string): ParsedMap {
     // and a half-drawn map looks like a correct map of different data.
     if (bands !== expected) {
         throw new NonConformingDocument(
-            `${expected - bands} of ${expected} elements in g.track do not match the band grammar.`
+            `Of the ${expected} drawables in g.track, ${expected - bands} are not bands this renderer recognises.`
         )
     }
 
@@ -213,7 +219,8 @@ export function parseBands(text: string): ParsedMap {
 
     if (colors.size !== trackCount) {
         throw new NonConformingDocument(
-            `track ids are not dense: ${colors.size} distinct ids but a maximum of ${maxTrackId}.`
+            `The document draws ${colors.size} tracks but numbers them up to ${maxTrackId}; `
+            + 'track ids must run from 0 upward with no gaps.'
         )
     }
 
@@ -245,7 +252,9 @@ function assertGrammar(
 ): void {
     const expect = (actual: number, wanted: number, what: string): void => {
         if (actual !== wanted) {
-            throw new NonConformingDocument(`band ${what}: ${actual}, expected ${wanted}.`)
+            throw new NonConformingDocument(
+                `A band's ${what} is ${actual} where the band grammar requires ${wanted}.`
+            )
         }
     }
 
@@ -260,7 +269,7 @@ function assertGrammar(
     expect(+match[23], y0 + THICKNESS, 'return endpoint ordinate')
 
     if (false === (x1 > x0)) {
-        throw new NonConformingDocument(`band spans ${x0} to ${x1}; x must increase.`)
+        throw new NonConformingDocument(`A band spans ${x0} to ${x1}; every band must run left to right.`)
     }
 }
 
@@ -274,7 +283,9 @@ function parseViewBox(text: string): { minX: number, minY: number, width: number
     const parts = match[1].trim().split(/[\s,]+/).map(Number)
 
     if (4 !== parts.length || false === parts.every(Number.isFinite)) {
-        throw new NonConformingDocument(`Unusable viewBox "${match[1]}".`)
+        throw new NonConformingDocument(
+            `The document's viewBox reads "${match[1]}", which is not four numbers.`
+        )
     }
 
     return { minX: parts[0], minY: parts[1], width: parts[2], height: parts[3] }

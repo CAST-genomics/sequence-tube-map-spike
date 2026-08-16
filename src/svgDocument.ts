@@ -11,7 +11,7 @@
  * with `parseBands.ts` and never builds a node.
  */
 
-import { TubeMapLoadError } from './fetchDocument.ts'
+import { NonConformingDocument } from './documentGrammar.ts'
 import type { Size } from './viewportTransform.ts'
 
 export interface TubeMap {
@@ -27,13 +27,13 @@ export function prepareTubeMap(text: string): TubeMap {
     const parsed = new DOMParser().parseFromString(text, 'image/svg+xml')
 
     if (null !== parsed.querySelector('parsererror')) {
-        throw new TubeMapLoadError('The response was not valid SVG.', 'content')
+        throw new NonConformingDocument('The response is not valid SVG.')
     }
 
     const svg = parsed.documentElement as unknown as SVGSVGElement
 
     if ('svg' !== svg.nodeName.toLowerCase()) {
-        throw new TubeMapLoadError('The response was not an SVG document.', 'content')
+        throw new NonConformingDocument('The response is not an SVG document.')
     }
 
     for (const title of Array.from(parsed.getElementsByTagName('title'))) {
@@ -65,5 +65,5 @@ function contentSize(svg: SVGSVGElement): Size {
         return { width, height }
     }
 
-    throw new TubeMapLoadError('The SVG declares no usable viewBox or size.', 'content')
+    throw new NonConformingDocument('The document declares no usable viewBox or size.')
 }

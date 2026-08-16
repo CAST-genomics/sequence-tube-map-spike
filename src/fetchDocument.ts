@@ -13,6 +13,10 @@
  * Note from the CORS survey (`notes/2026-08-12-api-reachability-and-cors.md`): the API's
  * error responses carry no CORS headers, so a 500 reaches the browser as an opaque
  * network failure rather than a status. Both paths below are therefore live.
+ *
+ * The failures below say what went wrong and not *what it went wrong with*: the error
+ * state shows the URL on a line of its own (`loadFailure.ts`), and a message that names it
+ * again puts it on the screen twice.
  */
 
 export class TubeMapLoadError extends Error {
@@ -32,11 +36,11 @@ export async function fetchDocument(url: string, signal?: AbortSignal): Promise<
         if (signal?.aborted) {
             throw error
         }
-        throw new TubeMapLoadError(`Could not reach ${url} — ${describe(error)}`, 'network')
+        throw new TubeMapLoadError(`The request did not complete — ${describe(error)}`, 'network')
     }
 
     if (false === response.ok) {
-        throw new TubeMapLoadError(`Server returned ${response.status} ${response.statusText} for ${url}`, 'network')
+        throw new TubeMapLoadError(`The server answered ${response.status} ${response.statusText}`, 'network')
     }
 
     const text = await response.text()

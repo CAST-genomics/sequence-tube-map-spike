@@ -44,6 +44,16 @@ export interface TubeMapSurfaceOptions {
      * instrumentation for #38.
      */
     pickReadout?: boolean
+    /**
+     * How long to wait for the server before calling it a server-side problem, in
+     * milliseconds. Defaults to `PATIENCE_MS` (90 s).
+     *
+     * Exposed because the right limit is a property of where the viewer is embedded rather
+     * than of the viewer: a host that already shows its own progress, or one fronting a
+     * cache, wants a different number. Also what makes the guardrail observable in under a
+     * minute — `scripts/verify_slow_server.mjs`.
+     */
+    patienceMs?: number
 }
 
 export interface TubeMapSurfaceHandle {
@@ -119,9 +129,16 @@ export function mountTubeMapSurface(
         card.append(
             line('stm-status-mark', '!'),
             line('stm-status-heading', failure.heading),
-            line('stm-status-reason', failure.reason),
-            line('stm-status-url', failure.url)
+            line('stm-status-reason', failure.reason)
         )
+
+        // Only some failures carry one, so it is appended rather than always drawn — an
+        // empty element still takes its margin and leaves the card looking truncated.
+        if (undefined !== failure.note) {
+            card.append(line('stm-status-note', failure.note))
+        }
+
+        card.append(line('stm-status-url', failure.url))
 
         status.replaceChildren(card)
         status.classList.add('is-error')
@@ -148,7 +165,7 @@ export function mountTubeMapSurface(
             showLoading()
 
             try {
-                const text = await fetchDocument(url, controller.signal)
+                const text = await fetchDocument(url, controller.signal, options.patienceMs)
 
                 if (controller.signal.aborted) {
                     return

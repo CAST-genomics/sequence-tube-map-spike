@@ -640,6 +640,23 @@ Both risks flagged for week one are answered, and both are good news.
   [`notes/2026-08-13-api-fetch-ceiling.md`](./notes/2026-08-13-api-fetch-ceiling.md).
   Deliberately fenced off from the renderer spike.
 
+  **Closed out 2026-08-17 with a guardrail, not a diagnosis.** Experiment D bisected the
+  window on two nodes and the byte-ceiling framing above does **not** survive it: `5511+`
+  succeeds at **14.7 MB / 65.6 s** while `5508+` fails at roughly half that, its largest
+  success being **8.4 MB / 20.5 s**. No single threshold in bytes *or* in seconds separates
+  success from failure across both nodes, so "responses above ~14 MB crash" is wrong as
+  stated. (Ignore `smallestFailurePredictedBytes` in `data/failureProbe.json` — it
+  extrapolates from the densest small window and overstates by ~2×. A 500 returns no body,
+  so a failure's size is not knowable from the client at all.)
+
+  **This is not being pursued further, and that is the decision.** It is a defect in
+  UCSD's service; bracketing it more precisely from outside changes nothing the viewer
+  does, and the viewer's actual defect was its own — a spinner that ran for 100 s and then
+  said nothing useful. So the fetch gives up at `PATIENCE_MS` (90 s, above the slowest
+  measured success) and shows a `slow` failure card naming the server as the fault. Issue
+  #23 stays open as UCSD's to fix, with the measurements attached. Do not reopen this as an
+  investigation without a reason the viewer needs one.
+
 - **Retired 2026-08-13: the band grammar is not a one-document artifact.**
   **127,101 of 127,101** track paths across all 17 retrieved documents conform to the
   canonical form, with thickness always 15, the control point always within the middle

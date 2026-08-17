@@ -9,12 +9,18 @@
  *
  * ## The classification is the message
  *
- * A blank surface looks identical whichever of these happened, and the four have nothing
+ * A blank surface looks identical whichever of these happened, and the five have nothing
  * in common in what the reader should do next:
  *
  * - **unreachable** — the bytes never arrived. Look at the network, the URL, the server.
  *   The API's error responses carry no CORS headers, so a 500 reaches us as an opaque
  *   failure (`notes/2026-08-12-api-reachability-and-cors.md`); that is still this.
+ * - **slow** — the server accepted the request and did not finish it inside
+ *   `PATIENCE_MS`. Kept apart from `unreachable` for the reader's sake: nothing is wrong
+ *   with the network, the URL or the browser, and every one of those is where
+ *   "could not be fetched" sends someone to look. This is the known server-side defect
+ *   (#23) surfacing, and the only useful next move is a smaller node or a word to UCSD —
+ *   so the message says so instead of implying there is something here to fix.
  * - **absent** — bytes arrived and are not a tube map. 13 of 30 catalogued minigraph
  *   nodes answer this way. Nothing is broken; there is no map for what was asked for.
  * - **undrawable** — a tube map arrived that this renderer will not draw. This is the
@@ -35,8 +41,8 @@
 import { NonConformingDocument } from './documentGrammar.ts'
 import { TubeMapLoadError } from './fetchDocument.ts'
 
-/** Which of the four things went wrong. The reader's next move differs for each. */
-export type FailureKind = 'unreachable' | 'absent' | 'undrawable' | 'internal'
+/** Which of the five things went wrong. The reader's next move differs for each. */
+export type FailureKind = 'unreachable' | 'slow' | 'absent' | 'undrawable' | 'internal'
 
 export interface LoadFailure {
     kind: FailureKind
@@ -46,23 +52,42 @@ export interface LoadFailure {
     reason: string
     /** What was asked for, shown verbatim so a bug report can quote it. */
     url: string
+    /** Where the fault actually lies, when that is not obvious from the reason. */
+    note?: string
 }
 
 const HEADINGS: Record<FailureKind, string> = {
     unreachable: 'The tube map could not be fetched.',
+    slow: 'The server is taking too long to answer.',
     absent: 'There is no tube map here.',
     undrawable: 'This tube map cannot be drawn.',
     internal: 'The viewer failed while opening this tube map.'
 }
 
+/**
+ * A second sentence, and only where one earns its place.
+ *
+ * `slow` is the one failure here the researcher can neither fix nor learn anything from by
+ * retrying, so it is the one that has to say where the fault is. Left with a bare reason it
+ * reads as an accusation against their connection, and the next twenty minutes go into the
+ * wrong thing.
+ */
+const NOTES: Partial<Record<FailureKind, string>> = {
+    slow: 'This is a known problem at the server, not with this viewer or your connection. Larger minigraph nodes fail this way; a smaller one will usually load.'
+}
+
 export function describeFailure(url: string, error: unknown): LoadFailure {
     const kind = classify(error)
 
-    return { kind, heading: HEADINGS[kind], reason: asSentence(reasonFor(error)), url }
+    return { kind, heading: HEADINGS[kind], reason: asSentence(reasonFor(error)), url, note: NOTES[kind] }
 }
 
 function classify(error: unknown): FailureKind {
     if (error instanceof TubeMapLoadError) {
+        if ('slow' === error.kind) {
+            return 'slow'
+        }
+
         return 'network' === error.kind ? 'unreachable' : 'absent'
     }
 

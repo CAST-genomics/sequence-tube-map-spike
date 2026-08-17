@@ -393,12 +393,24 @@ export const SURFACE_STYLES = `
 /* Capped so a parser's reason — which names coordinates and counts — wraps into a
    readable measure rather than running the width of a strip-shaped surface. */
 .stm-status-reason,
+.stm-status-note,
 .stm-status-url {
     max-width: 56ch;
     overflow-wrap: anywhere;
 }
 
-/* Quietest of the three: it is here to be copied into a bug report, not read first. */
+/* Set apart from the reason above it, because it says something different in kind: the
+   reason is what happened, the note is where the fault lies. Same size, so it is not
+   mistaken for fine print — it is the part that stops a researcher debugging their own
+   network for twenty minutes. */
+.stm-status-note {
+    color: rgb(96, 100, 108);
+    border-left: 2px solid rgb(210, 213, 219);
+    padding-left: 10px;
+    line-height: 1.45;
+}
+
+/* Quietest of the four: it is here to be copied into a bug report, not read first. */
 .stm-status-url {
     color: rgb(120, 124, 132);
 }

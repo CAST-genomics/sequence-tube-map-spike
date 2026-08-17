@@ -31,6 +31,32 @@ describe('describeFailure', () => {
         expect(missing.heading).not.toBe(describeFailure(REQUESTED_URL, new TubeMapLoadError('x', 'network')).heading)
     })
 
+    it('separates a server that is too slow from one that could not be reached', () => {
+        const slow = describeFailure(REQUESTED_URL, new TubeMapLoadError('The server did not answer within 90 seconds', 'slow'))
+        const unreachable = describeFailure(REQUESTED_URL, new TubeMapLoadError('offline', 'network'))
+
+        expect(slow.kind).toBe('slow')
+        expect(slow.heading).not.toBe(unreachable.heading)
+    })
+
+    it('tells the reader a slow server is not theirs to fix, and says so only there', () => {
+        const slow = describeFailure(REQUESTED_URL, new TubeMapLoadError('The server did not answer within 90 seconds', 'slow'))
+
+        // The whole point of the note: without it, "could not be fetched" sends someone to
+        // look at a network that is working.
+        expect(slow.note).toMatch(/server/i)
+        expect(slow.note).not.toBeUndefined()
+
+        for (const other of [
+            new TubeMapLoadError('offline', 'network'),
+            new TubeMapLoadError('empty', 'content'),
+            new NonConformingDocument('a band is 20 tall'),
+            new TypeError('boom')
+        ]) {
+            expect(describeFailure(REQUESTED_URL, other).note).toBeUndefined()
+        }
+    })
+
     it('names a document off the grammar as one that cannot be drawn', () => {
         const failure = describeFailure(REQUESTED_URL, new NonConformingDocument('A band is drawn 20 units tall; every band is 15.'))
 

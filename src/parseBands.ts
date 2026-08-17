@@ -62,10 +62,10 @@ export interface ParsedMap {
 }
 
 /**
- * `trackID` is UCSD's spelling, not ours. This renderer calls the thing a **strand** — the
- * word collides with PGB's annotation track otherwise — but the attribute in the document
- * is named by whoever writes the document, so every pattern matching the source text keeps
- * the upstream name and only what we build out of it is renamed.
+ * `trackID` is UCSD's spelling, not ours. This renderer calls the thing a **strand**, because
+ * the upstream word collides with PGB's annotation feature of that name — but the attribute
+ * in the document is named by whoever writes the document, so every pattern matching the
+ * source text keeps the upstream name and only what we build out of it is renamed.
  */
 const FILL = 'style="fill: rgb\\((\\d+), (\\d+), (\\d+)\\); fill-opacity: 1;" trackID="(\\d+)"'
 
@@ -227,7 +227,7 @@ export function parseBands(text: string): ParsedMap {
     if (colors.size !== strandCount) {
         throw new NonConformingDocument(
             `The document draws ${colors.size} strands but numbers them up to ${maxStrandId}; `
-            + 'strand ids must run from 0 upward with no gaps.'
+            + 'trackID must run from 0 upward with no gaps.'
         )
     }
 

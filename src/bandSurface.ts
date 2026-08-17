@@ -66,10 +66,11 @@
  *
  * ## Feeler mode
  *
- * Holding `Shift` turns the cursor into a feeler: the strands it touches light, they
- * accumulate, everything else recedes, and releasing clears. Hover alone does nothing, and
- * the controls are switched off for the duration — `Shift` arbitrates pointer ownership
- * (`CONTEXT.md` #13, #14).
+ * Holding `Shift` turns the cursor into a feeler: the strand it touches is drawn in full,
+ * everything else recedes, and releasing brings the whole map back. The emphasis *follows*
+ * the cursor rather than accumulating — that reversal is the user's, and `strandAppearance.ts`
+ * carries the reasoning. Hover alone does nothing, and the controls are switched off for the
+ * duration — `Shift` arbitrates pointer ownership (`CONTEXT.md` #13, #14).
  *
  * The same interaction was built on the SVG surface and shipped switched off, because
  * invoking it invalidated style across ~10,000 elements at ~28 ms a swap. Here the
@@ -154,9 +155,9 @@ uniform float uPad;
 uniform sampler2D uAppearance;
 uniform float uAppearanceRow;
 
-in vec2 aParam;    // x: curve parameter 0..1, y: 0 = upper edge, 1 = lower edge
-in vec4 iSpan;     // x0, y0, width, y1  — y0/y1 are the upper edge, world space
-in vec2 iControl;  // control abscissa of the upper and lower edge, as a fraction
+in vec2 aParam;     // x: curve parameter 0..1, y: 0 = upper edge, 1 = lower edge
+in vec4 iSpan;      // x0, y0, width, y1  — y0/y1 are the upper edge, world space
+in vec2 iControl;   // control abscissa of the upper and lower edge, as a fraction
 in float iStrandId; // the haplotype this band belongs to: its appearance, and the pick answer
 
 flat out vec3 vColor;
@@ -707,10 +708,10 @@ export function createBandSurface(host: HTMLElement, options: BandSurfaceOptions
             return
         }
 
-        const strand = null === result.strandId ? '—' : String(result.strandId)
+        const picked = null === result.strandId ? '—' : String(result.strandId)
         const shown = drawing.appearance.focused()
 
-        readout.textContent = `strand ${strand} · ${result.milliseconds.toFixed(2)} ms`
+        readout.textContent = `strand ${picked} · ${result.milliseconds.toFixed(2)} ms`
             + ` · worst ${worstPick.toFixed(2)} ms`
             + ` · focus ${null === shown ? '—' : shown}`
             + ` · table ${lastWrite.toFixed(3)} ms, worst ${worstWrite.toFixed(3)} ms`

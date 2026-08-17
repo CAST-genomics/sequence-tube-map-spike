@@ -21,7 +21,7 @@ input. Nothing is estimated.
 | Browser | Google Chrome 151.0.7922.138, driven by Playwright with `channel: 'chrome'` |
 | Viewport | 1400 × 900 at dpr 2 |
 | three.js | 0.176.0, pinned to PGB's version |
-| Document | `5520+` — 14.2 MB, 40,442 bands, 464 tracks, 108,983 units wide |
+| Document | `5520+` — 14.2 MB, 40,442 bands, 464 strands, 108,983 units wide |
 
 **Headless Chromium would not have produced these numbers.** Playwright's bundled browser
 falls back to SwiftShader in headless mode on this machine (`MAX_TEXTURE_SIZE` 8192);
@@ -67,9 +67,9 @@ the renderer's, and is filed separately.
 
 ### i · Mush at fit scale — **cleared, with the finding restated**
 
-At fit, 464 tracks land on **177 device rows**: 2.6 haplotypes per pixel row. The banding
+At fit, 464 strands land on **177 device rows**: 2.6 haplotypes per pixel row. The banding
 does not dissolve into noise — the large-scale colour structure survives and is perfectly
-usable for navigation — but individual tracks are not separable, and cannot be.
+usable for navigation — but individual strands are not separable, and cannot be.
 
 **This is a property of the data, not of the renderer, and it was confirmed independently.**
 The user loaded the raw `5520+` SVG straight into Chrome and observed the same thing: *"one
@@ -126,10 +126,10 @@ only the unreadable regime.
   cache, no build step, no offline format. The concern that motivated one was unfounded.
 - **The band grammar holds in practice, not just in survey.** The parser re-verifies the
   grammar per document and would reject on any deviation; all three fixtures parse clean.
-- **Tracks abut with zero gap** — pitch 15 against thickness 15. The map is a solid field of
+- **Strands abut with zero gap** — pitch 15 against thickness 15. The map is a solid field of
   colour, not thin ribbons on white, which makes the "0.6 px sub-pixel ribbon" framing in
   ADR `0001` misleading.
-- **21.3% of tracks in `5520+` have no PCLAI call** (99 of 464, flat grey). The grey wash at
+- **21.3% of strands in `5520+` have no PCLAI call** (99 of 464, flat grey). The grey wash at
   fit is data.
 - **No root-finding is needed anywhere in the geometry.** Both edges of a band reach `x0` at
   `t=0` and `x1` at `t=1` regardless of their control abscissae, so sampling both at even

@@ -92,7 +92,7 @@ Two caveats worth carrying forward, neither blocking:
 `public/stm-chr1-25331046-25331646.svg` was re-fetched today and is **byte-identical**
 to the committed fixture (sha256
 `ab77c617e93dd78c086680d1e77949338a229d27259fe934b64afa30928f61a6`): same
-`viewBox="0 -80 35562.42857142856 6325"`, 369 track names, 5742 `<path>` + 4603
+`viewBox="0 -80 35562.42857142856 6325"`, 369 strand names, 5742 `<path>` + 4603
 `<rect>` = 10,345 live elements. The fixture remains a faithful stand-in and the
 documented parameter set still produces exactly what `CONTEXT.md` describes.
 
@@ -101,7 +101,7 @@ of it matters when someone constructs a URL that is slightly different:
 
 | Variation | Result |
 |---|---|
-| documented set (baseline) | 200, 3,533,705 B, 369 tracks |
+| documented set (baseline) | 200, 3,533,705 B, 369 strands |
 | `version` omitted | identical to baseline — **v2 is the default** |
 | `version=v1` | **500 Internal Server Error** (and no CORS headers) |
 | `nodewidthoption` omitted | identical to baseline — **compressed is the default** |
@@ -109,13 +109,13 @@ of it matters when someone constructs a URL that is slightly different:
 | `nodewidthoption=bogus` | **500** |
 | `pathnumoption=all` | identical to baseline |
 | `pathnumoption=bogus` | identical to baseline — **value ignored** |
-| `pathnumoption` omitted | 200, but only **46 tracks**, `viewBox` height 855 |
+| `pathnumoption` omitted | 200, but only **46 strands**, `viewBox` height 855 |
 
 So of the three "fixed" parameters, only two are load-bearing and neither behaves
 the way its name suggests:
 
 1. **`pathnumoption` is the parameter that matters, and only its presence matters.**
-   Present with *any* value → all 369 haplotype tracks. Absent → 46 tracks, a
+   Present with *any* value → all 369 haplotype strands. Absent → 46 strands, a
    different map entirely. Keep sending `pathnumoption=normal`; do not "clean up" a
    URL by dropping it.
 2. **`nodewidthoption` is honoured** (`compressed` vs `fixed` change the layout) but
@@ -136,7 +136,7 @@ empty response. But the SVG is a different thing:
 
 | | `minigraphnode=5519` | nonexistent / omitted |
 |---|---|---|
-| distinct track colors | 108 continuous RGB | **8** (`#08306b`, `#08519c`, `#6baed6`, `#c6dbef`, …) |
+| distinct strand colors | 108 continuous RGB | **8** (`#08306b`, `#08519c`, `#6baed6`, `#c6dbef`, …) |
 | grey elements — `color="rgb(211, 211, 211)"`, spaces included | 217 (124 `<path>` + 93 `<rect>`) | 0 |
 
 With a valid node, colors are the continuous PCLAI signal `CONTEXT.md` describes,

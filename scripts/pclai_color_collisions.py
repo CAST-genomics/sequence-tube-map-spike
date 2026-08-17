@@ -2,7 +2,7 @@
 """
 How much can PCLAI's shipped colors actually discriminate?
 
-The tube map does not choose its track colors. They arrive in the `RGB` field beside each
+The tube map does not choose its strand colors. They arrive in the `RGB` field beside each
 PCLAI coordinate, computed upstream as a visual encoding of the haplotype's position in
 PCA space, and PGB's 3D graph and PCLAI chart read the same field. This script measures
 what that encoding can and cannot separate, straight out of PGB's own datasets — the

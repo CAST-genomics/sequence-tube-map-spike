@@ -42,8 +42,8 @@ resolution, used consistently throughout these documents:
 |---|---|
 | **minigraph node** | A node in PGB's 3D pangenome graph — the thing the user clicks. Its ID goes to the API as `minigraphnode`. The container. |
 | **segment** | One of the ~75 sequence boxes *inside* the tube map, drawn in `<g class="node">` with ids like `79337767`. The contents. Called "node" by the SVG and by upstream sequence-tube-map; renamed here to keep the two scales distinct. |
-| **track** / **strand** | One haplotype's path through the subgraph, drawn as a colored ribbon left→right. Named `sample#haplotype#contig`, e.g. `NA21309#2#CM092097.1`. |
-| **band** | The atomic drawable: **one track crossing one x-interval** — a single `<path>` or `<rect>` in `g.track`. A track is made of many bands. *Avoid* "ribbon" for this; a ribbon reads as the whole strand. Added 2026-08-13. |
+| **strand** | One haplotype's path through the subgraph, drawn as a colored ribbon left→right. Named `sample#haplotype#contig`, e.g. `NA21309#2#CM092097.1`. Called "track" by the SVG (`g.track`, `trackID`, `class="track<N>"`) and by upstream sequence-tube-map; renamed here because PGB's **annotation track** is an unrelated thing and the collision is not survivable in one codebase. Code that quotes the document keeps the upstream spelling; everything we build is a strand. Three places keep the old word for reasons of their own: `notes/` is a dated record of what was known on a day and only its dead file paths were repaired, `scripts/spike/` is the frozen fidelity-gate artifact (`spikeIsGone.test.ts`), and `scripts/survey_nodes.py` writes the keys of the committed `data/nodeSurvey.json`, which cannot be regenerated without the API. Renamed 2026-08-17. |
+| **band** | The atomic drawable: **one strand crossing one x-interval** — a single `<path>` or `<rect>` in `g.track`. A strand is made of many bands. *Avoid* "ribbon" for this; a ribbon reads as the whole strand. Added 2026-08-13. |
 | **span** | A minigraph node's GRCh38 base-pair extent (`end − start`), as recorded in `data/nodeTable.json`. *Avoid* "size", which conflates four separate quantities — see the note under Risks. Added 2026-08-13. |
 | **surface** | The pannable/zoomable area the map is drawn in. ~~Holding the tube-map SVG~~ — **amended 2026-08-16 (#40):** it holds a WebGL canvas, and the document is never attached to the page at all. There is exactly one surface. |
 | **navigator** | Thumbnail of the whole tube map, bottom-left, with a rect showing the current viewport. |
@@ -57,7 +57,7 @@ settled.
 
 ## What the colors mean
 
-Track color encodes **PCLAI — point cloud local ancestry inference** (Geleta et al.,
+Strand color encodes **PCLAI — point cloud local ancestry inference** (Geleta et al.,
 *Nature Genetics* 2026; `~/PanGenomeProject/pclai-nature-paper-2026/`).
 
 PCLAI deliberately **rejects discrete ancestry labels**. Instead each haplotypic
@@ -68,14 +68,14 @@ recombination breakpoints separating segments.
 
 Consequences for this viewer, all verified against the sample data:
 
-- Each track carries `pclaiX` / `pclaiY` — its local ancestry coordinate **at this
-  locus** — and a `color` that is a continuous function of them. Tracks at
+- Each strand carries `pclaiX` / `pclaiY` — its local ancestry coordinate **at this
+  locus** — and a `color` that is a continuous function of them. Strands at
   `(-1.746, 0.192)` and `(-1.745, 0.193)` receive `rgb(0,232,180)` and
   `rgb(0,232,180)`.
 - **Do not describe the colors as categories, families, or clusters.** They are
   samples of a continuous space. Visible banding is genuine structure in the data,
   not a palette.
-- Tracks with no PCLAI call carry `pclaiX="None"` and render flat gray
+- Strands with no PCLAI call carry `pclaiX="None"` and render flat gray
   `rgb(211,211,211)` — including `GRCh38#0#chr1`.
 - Consequently near-identical colors are *meaningful*: two ribbons look alike
   because those haplotypes are genetically close at this locus. This is precisely
@@ -84,7 +84,7 @@ Consequences for this viewer, all verified against the sample data:
 
 **One correction, 2026-08-14 — where this section over-reaches.** Everything above is
 true of the PCLAI *coordinates*. It is not true of the 8-bit color the data ships, and
-the difference decides whether anything can be done about tracks that cannot be told
+the difference decides whether anything can be done about strands that cannot be told
 apart. The `RGB` field
 is an encoding of the coordinate derived for **PGB's PCLAI chart**, a scatter where
 position separates the points and color is a supporting cue; a tube map has no position
@@ -97,7 +97,7 @@ So: near-identical colors *are* meaningful, and identical colors are **not** —
 quantisation, not a claim that two haplotypes are alike. Read as written, this section
 implies the collisions are the signal and nothing can be done about them, which is not
 the case. See
-[`docs/DISAMBIGUATING-TRACKS.md`](./docs/DISAMBIGUATING-TRACKS.md).
+[`docs/DISAMBIGUATING-STRANDS.md`](./docs/DISAMBIGUATING-STRANDS.md).
 
 ## Verified facts about the data
 
@@ -106,9 +106,9 @@ node), not assumed:
 
 - **3.4 MB**, `viewBox="0 -80 35562.42857142856 6325"` — a ~5.6:1 strip, ~25 screens
   wide at 1:1.
-- **369 tracks**, **75 segments**, **10,345 drawable elements** (4,603 `<rect>` +
+- **369 strands**, **75 segments**, **10,345 drawable elements** (4,603 `<rect>` +
   5,742 `<path>`).
-- **Every track element carries `class="track<N>"`** — avg 28 elements per track,
+- **Every element of a strand carries `class="track<N>"`** — avg 28 elements per strand,
   max 47. Highlighting a strand is therefore a **single CSS rule**, not a DOM walk.
 - **10,345 empty `<title>` elements**, one per drawable. Dead weight; they also
   fight custom tooltips.
@@ -118,7 +118,7 @@ node), not assumed:
 - **Segment boxes span the haplotypes that traverse them**, not always all of them:
   vertical span median 5418, min 33, max 5553; 48 of 75 exceed 5000. A short box is
   a variant only a few haplotypes carry.
-- **Segment boxes paint after tracks** and are hit-testable across their full fill
+- **Segment boxes paint after strands** and are hit-testable across their full fill
   area — `fill-opacity: 0.4` does *not* disable pointer events. They occupy narrow
   vertical bands, so without intervention they create thin invisible dead zones where
   strand hover silently fails.
@@ -343,7 +343,7 @@ That note flags its metadata table as inferred-not-confirmed. Both inferences ar
 
     **Pan and zoom stay suppressed, and that is settled, 2026-08-15.** The amendment above
     is about segments and reaches no further. Holding `Shift` *is* the act of isolating a
-    track with the cursor, and a map that moved under a sweep would slide the strand out
+    strand with the cursor, and a map that moved under a sweep would slide the strand out
     from under the feeler mid-gesture — the mode exists to hold the picture still while the
     cursor reads it. That reason is the mode's own purpose and has nothing to do with the
     ~28 ms hit-test this amendment retires, which is why retiring the one leaves the other
@@ -419,7 +419,7 @@ That note flags its metadata table as inferred-not-confirmed. Both inferences ar
 
     A comparison set of several haplotypes is still wanted (`SPEC.md` story 29). It needs a
     deliberate gesture rather than the side effect of a sweep, and the appearance table
-    already supports one — it holds a byte per track and has no opinion about how many are
+    already supports one — it holds a byte per strand and has no opinion about how many are
     lit. ~~The SVG surface's accumulating feeler is unchanged behind `?feeler`.~~
 
     **Deleted with the surface, 2026-08-16 (#40)**, and so is `?feeler`. Accumulation is
@@ -432,7 +432,7 @@ That note flags its metadata table as inferred-not-confirmed. Both inferences ar
     avoid strobing.
     **Superseded in practice, 2026-08-13:** "O(1) per hover" describes writing the
     rule, not honouring it. Each swap invalidates style for every one of the map's
-    ~10,000 track children — measured at **~28 ms**, with 190 of 582 frames dropped
+    ~10,000 children of `g.track` — measured at **~28 ms**, with 190 of 582 frames dropped
     during a sweep. Real maps tear and render partially.
 
     The general rule this establishes, which is not specific to highlighting:
@@ -456,11 +456,11 @@ That note flags its metadata table as inferred-not-confirmed. Both inferences ar
     **Reversed on the WebGL surface, 2026-08-14, by measurement.** The ~28 ms was a fact
     about DOM style invalidation, not about this problem, and the prediction that indirect
     invocation would be needed is withdrawn for that surface: feeler mode is wired to
-    pointer position there and **ships on**. Track appearance is a `DataTexture` of one
-    texel per track — RGB plus an emphasis byte — so lighting a strand writes one byte per
-    *track*, nothing per band and nothing per already-lit track, and the frame uploads 2 KB.
-    On `5520+` (464 tracks, 40,442 bands) a sweep that moves the emphasis 198 times across
-    198 tracks holds a **median write of 0.000 ms and a worst of 0.100 ms in every window of
+    pointer position there and **ships on**. Strand appearance is a `DataTexture` of one
+    texel per strand — RGB plus an emphasis byte — so lighting a strand writes one byte per
+    *strand*, nothing per band and nothing per already-lit strand, and the frame uploads 2 KB.
+    On `5520+` (464 strands, 40,442 bands) a sweep that moves the emphasis 198 times across
+    198 strands holds a **median write of 0.000 ms and a worst of 0.100 ms in every window of
     the sweep** — flat, and under what the page timer resolves, so the honest reading is
     *below 100 µs* rather than *zero*. The worst frame while sweeping (9.4 ms) equals the
     worst frame over the identical moves with `Shift` released (9.4 ms): inside a 16.67 ms
@@ -472,8 +472,8 @@ That note flags its metadata table as inferred-not-confirmed. Both inferences ar
 
     **What did not reverse: legibility at fit.** The highlight reads unmistakably from about
     one css pixel per band upward and locates nothing at fit-to-width, where a band on
-    `5520+` is 0.19 css pixels tall and 5.7 tracks share a device pixel row. That is
-    `docs/DISAMBIGUATING-TRACKS.md` constraint 3, and it is a pixel budget rather than a
+    `5520+` is 0.19 css pixels tall and 5.7 strands share a device pixel row. That is
+    `docs/DISAMBIGUATING-STRANDS.md` constraint 3, and it is a pixel budget rather than a
     performance one. A floor of ink for the emphasized band was tried against it and
     **removed**: a band emitting more ink than the document gave it is brightening the one
     rather than dimming the others, which decision #15 forbids, and it did not rescue the
@@ -543,15 +543,15 @@ That note flags its metadata table as inferred-not-confirmed. Both inferences ar
 
 ## Deferred — deliberately, not overlooked
 
-- **Telling one track from another.** Tracks running in proximity — parallel, in
+- **Telling one strand from another.** Strands running in proximity — parallel, in
   clusters — are often too close in color to separate, and sometimes share a color
-  exactly (`SPEC.md` story 28). Track color is PCLAI's shipped encoding, derived for the
+  exactly (`SPEC.md` story 28). Strand color is PCLAI's shipped encoding, derived for the
   PCLAI chart where *position* separates the points and color supports it; a tube map has
   no position channel to spare, so ~460 haplotypes arrive encoded in 120–150 distinct
   colors with four in five sharing one exactly. The
   strategies on the table — modifier-held emphasis with the rest receding, and depth
   cues now that the renderer is 3D — are collected in
-  [`docs/DISAMBIGUATING-TRACKS.md`](./docs/DISAMBIGUATING-TRACKS.md) with the
+  [`docs/DISAMBIGUATING-STRANDS.md`](./docs/DISAMBIGUATING-STRANDS.md) with the
   constraints each has to survive. Nothing is decided; the document is where proposals
   get checked before they get built.
 
@@ -559,13 +559,13 @@ That note flags its metadata table as inferred-not-confirmed. Both inferences ar
   receding** (#39, over the picking in #38). It answers the interaction half — from about
   one css pixel per band upward a single haplotype is traceable across the window against
   463 ghosts — and it does not answer the fit-to-width half, where there is no pixel in
-  which emphasized and receded can differ. It also only ever says which track is *under the
+  which emphasized and receded can differ. It also only ever says which strand is *under the
   cursor*, which the document itself flags as a smaller question than the one being asked.
   So this stays deferred as a whole; one tool in it now exists.
 - **`trackName` decoding.** `NA21309#2#CM092097.1` is `sample#haplotype#contig`, a
   3-part assembly-walk-shaped key addressable in PGB's vocabulary. Displayed
   verbatim in v1.
-- **PCLAI metadata display.** `pclaiX`, `pclaiY`, `pclaiScore` are on every track and
+- **PCLAI metadata display.** `pclaiX`, `pclaiY`, `pclaiScore` are on every strand and
   deliberately unused. Obvious future affordance: hovering a strand could locate that
   haplotype in the existing PCLAI chart panel.
 - **1D↔3D correspondence.** `pgb/CLAUDE.md` treats bidirectional mapping as
@@ -596,7 +596,7 @@ Both risks flagged for week one are answered, and both are good news.
   2026-08-12, so the committed fixture is a faithful stand-in.
 - **The "fixed" parameters are not what their names suggest.** `pathnumoption` is
   the load-bearing one and only its *presence* matters — drop it and the map falls
-  from 369 tracks to 46; any value works. `version=v2` and
+  from 369 strands to 46; any value works. `version=v2` and
   `nodewidthoption=compressed` are both already the defaults, but an unrecognised
   value for either returns 500. And an unknown `minigraphnode` returns **200 with a
   valid-looking SVG** in a fallback 8-color categorical palette, with no haplotype
@@ -606,7 +606,7 @@ Both risks flagged for week one are answered, and both are good news.
 ## Risks
 
 - **Every fact above comes from one minigraph node.** A larger or more variable node
-  could carry far more tracks or segments. Don't over-fit to 369×75. This is now the
+  could carry far more strands or segments. Don't over-fit to 369×75. This is now the
   only open risk.
 
   **Answered by measurement, 2026-08-13, and it was worse than the wording
@@ -618,7 +618,7 @@ Both risks flagged for week one are answered, and both are good news.
   | quantity | behaviour |
   |---|---|
   | **span** | The input. Drives nothing directly. |
-  | **track count** | **Invariant to span** — 464 on a 1 bp node and on a 6,440 bp node — but **varies by node**: 369, 378 and 464 all occur. It is how many haplotypes traverse *that* node. Never hard-code it; read it from the document. |
+  | **strand count** | **Invariant to span** — 464 on a 1 bp node and on a 6,440 bp node — but **varies by node**: 369, 378 and 464 all occur. It is how many haplotypes traverse *that* node. Never hard-code it; read it from the document. |
   | **segment count** | **Grows with span** — 40 → 48 → 318 → 767 — because a longer span holds more variant sites. |
   | **band count** | Follows segment count: 7,425 → 8,335 → 36,813 → 40,442. The only quantity the renderer's cost depends on. |
   | **bytes** | ~250–350 per band. Drives parse time and transport. |
@@ -658,10 +658,10 @@ Both risks flagged for week one are answered, and both are good news.
   investigation without a reason the viewer needs one.
 
 - **Retired 2026-08-13: the band grammar is not a one-document artifact.**
-  **127,101 of 127,101** track paths across all 17 retrieved documents conform to the
+  **127,101 of 127,101** strand paths across all 17 retrieved documents conform to the
   canonical form, with thickness always 15, the control point always within the middle
   40% of the span, and no strokes, text, gradients, clip paths or filters anywhere in
-  `g.track`. Consecutive pieces of a track **overlap by exactly 1.0 unit** with
+  `g.track`. Consecutive pieces of a strand **overlap by exactly 1.0 unit** with
   matching y at every one of 9,883 joins — the generator laps them, so there are no
   seams to hide. The grammar is confirmed only over spans of 1 bp–7,967 bp, because
   larger nodes cannot be retrieved.

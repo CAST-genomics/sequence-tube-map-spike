@@ -5,14 +5,14 @@
  * emphasis is a table write and a 2 KB upload, so moving it costs the same wherever it moves
  * and whatever the document. The second is the behaviour the user corrected on looking at the
  * built thing: **the emphasis follows the cursor and does not accumulate** — a sweep hands it
- * along rather than leaving a trail of lit tracks behind. `trackAppearance.test.ts` pins that
+ * along rather than leaving a trail of lit strands behind. `strandAppearance.test.ts` pins that
  * structurally, by counting texels; the sweep's screenshot here is what shows it.
  *
  * Same two rules as `verify_pick.mjs`, for the same reasons:
  *
  * - **Headed, so it runs on the real GPU.** Headless chromium falls back to SwiftShader,
  *   where a readback is software rasterization and the numbers say nothing.
- * - **Nothing is predicted that can be read.** The focused track and the costs come out of
+ * - **Nothing is predicted that can be read.** The focused strand and the costs come out of
  *   the surface's own readout, which is the state the interaction actually reached.
  *
  *     node scripts/verify_highlight.mjs                    # the committed 600 bp fixture
@@ -41,21 +41,21 @@ const map = await page.evaluate(async source => {
     const { parseBands } = await import('/src/parseBands.ts')
     const parsed = parseBands(await (await fetch(source)).text())
 
-    return { tracks: parsed.trackCount, bands: parsed.bandCount }
+    return { strands: parsed.strandCount, bands: parsed.bandCount }
 }, DOCUMENT)
 
 const canvas = await page.locator('canvas.stm-canvas').boundingBox()
-const rows = Math.ceil(map.tracks / 256)
+const rows = Math.ceil(map.strands / 256)
 
-console.log(`document:  ${map.tracks} tracks · ${map.bands} bands · ${DOCUMENT}`)
+console.log(`document:  ${map.strands} strands · ${map.bands} bands · ${DOCUMENT}`)
 console.log(`viewport:  ${canvas.width} x ${canvas.height} css px`)
 console.log(`table:     ${rows * 256 * 4} bytes, ${rows} rows of 256 texels\n`)
 
 /**
- * The surface's own readout: the pick, the focused track, and what table writes cost.
+ * The surface's own readout: the pick, the focused strand, and what table writes cost.
  *
  * Waits for a pick to have run, because pointer events do get dropped between the driver and
- * the page, and the readout says `track —` both before the first pick of a move and after the
+ * the page, and the readout says `strand —` both before the first pick of a move and after the
  * pointer has left the canvas.
  */
 async function state() {
@@ -73,7 +73,7 @@ async function state() {
     }
 
     return {
-        track: /^track (\S+)/.exec(text)[1],
+        strand: /^strand (\S+)/.exec(text)[1],
         pick: Number(/· ([\d.]+) ms/.exec(text)[1]),
         focus: '—' === focus[1] ? null : Number(focus[1]),
         write: Number(/table ([\d.]+) ms/.exec(text)[1]),
@@ -109,7 +109,7 @@ await settle()
 
 const hovered = await state()
 
-console.log(`hover, no Shift · picks answer (track ${hovered.track}) and nothing emphasizes: `
+console.log(`hover, no Shift · picks answer (strand ${hovered.strand}) and nothing emphasizes: `
     + `${null === hovered.focus ? 'focus — ✓' : `focus ${hovered.focus} ✗`}`)
 
 await page.screenshot({ path: `${SHOTS}/highlight-${LABEL}-plain.png` })
@@ -150,7 +150,7 @@ async function feelOne(label, shot) {
     await page.keyboard.up('Shift')
     await settle()
 
-    console.log(`one strand, ${label} · track ${found?.focus ?? 'none found'}`
+    console.log(`one strand, ${label} · strand ${found?.focus ?? 'none found'}`
         + ` · table write ${found?.write.toFixed(3) ?? '—'} ms · ${SHOTS}/${shot}`)
 }
 
@@ -168,7 +168,7 @@ await settle()
 await feelOne('zoomed in', `highlight-${LABEL}-one-zoomed.png`)
 
 // Out to fit, then a few steps back in for the sweep. Not at fit itself: on `5520+` the
-// bundle is 81 css pixels tall there and 5.7 tracks share every pixel row, so a sweep would
+// bundle is 81 css pixels tall there and 5.7 strands share every pixel row, so a sweep would
 // only ever reach the topmost few dozen of them. Every band is drawn at either zoom.
 for (let i = 0; i < 40; i += 1) {
     await page.mouse.wheel(0, 120)
@@ -222,7 +222,7 @@ const summarise = values => {
 }
 
 console.log(`\nsweep · ${SWEEP_STEPS} pointer moves down the middle of the map at ~6x fit, Shift held`)
-console.log(`  the focus moved ${moves.length} times, across ${visited.size} distinct tracks`)
+console.log(`  the focus moved ${moves.length} times, across ${visited.size} distinct strands`)
 console.log(null === swept.focus
     ? `  and ends emphasizing none of them: the sweep ran off the bundle, so the map is receded`
         + ` and nothing is at full colour — which is a state, not a trail`
@@ -247,7 +247,7 @@ console.log(`  a 60 Hz frame is 16.67 ms; the SVG surface cost ~28 ms per swap`)
 // ── Panning and zooming with the key held ────────────────────────────────────────────
 // The map holds still while it is being felt, so this is what a wheel and a drag must do:
 // nothing at all. What is compared is the *view*, read off the navigator rect — the camera's
-// own arithmetic, already in the DOM. Not the focused track: a drag moves the cursor, so the
+// own arithmetic, already in the DOM. Not the focused strand: a drag moves the cursor, so the
 // feeler lands on a different haplotype whether or not the map moved under it.
 const viewRect = () => page.evaluate(() => {
     const rect = document.querySelector('.stm-navigator-rect')

@@ -3,7 +3,7 @@
  * an element overlaid on the canvas is not a hole, and chrome over the map is not the map.
  *
  * The camera is read off the navigator rect — the camera's own arithmetic, already in the
- * DOM — exactly as `scripts/verify_pick.mjs` does. The track under the cursor is read off
+ * DOM — exactly as `scripts/verify_pick.mjs` does. The strand under the cursor is read off
  * the `?pick` readout.
  *
  * Headed, for the same reason `verify_pick.mjs` is: headless chromium rasterizes the pick
@@ -11,7 +11,7 @@
  *
  * Every chrome check was run against a build with the shield removed, and every one of
  * them failed there — a drag of the navigator rect panned the map underneath it, a pointer
- * over the navigator picked the track it covers, and a drag over the status layer panned.
+ * over the navigator picked the strand it covers, and a drag over the status layer panned.
  * The view-rect check is here because it caught exactly that with the shield *in place*:
  * the rect was `pointer-events: none`, so the element under the cursor over it was the
  * canvas and the pick ran on the map the navigator was covering.
@@ -94,7 +94,7 @@ check('wheel over an overlay zooms', afterWheel.width < beforeWheel.width,
 // ── 4. The feeler reaches through an overlaid element ──────────────────────────────────
 //
 // The claim is that the overlay changes nothing, so it is asserted as a comparison at one
-// point rather than as "a track was found" — which would also depend on there being ink
+// point rather than as "a strand was found" — which would also depend on there being ink
 // under that pixel at whatever zoom this arrived at.
 // Back to fit, where the whole map is on screen and a column through the middle of the
 // viewport is certain to cross ink. Zoomed in, most of the overlay's column is gap.
@@ -105,7 +105,7 @@ await page.waitForFunction(() => document.querySelector('.stm-status')?.hidden =
 await page.waitForTimeout(500)
 await page.keyboard.down('Shift')
 
-/** The track named at `point`, with the overlay taking pointer events or not. */
+/** The strand named at `point`, with the overlay taking pointer events or not. */
 async function feel(point, taking) {
     await overlay(taking)
     // Two moves: the first arrives, the second is the one whose pick is read, so the
@@ -123,13 +123,13 @@ let felt = null
 for (let y = 310; y < 590 && null === felt; y += 4) {
     const bare = await feel({ x: 660, y }, false)
 
-    if (/track \d+/.test(bare)) {
+    if (/strand \d+/.test(bare)) {
         felt = { y, bare }
     }
 }
 
 if (null === felt) {
-    check('the feeler picks through an overlay', false, 'no track under the overlay to feel')
+    check('the feeler picks through an overlay', false, 'no strand under the overlay to feel')
 } else {
     // Bare, overlaid, bare again at the one point: three readings, so a mismatch that is
     // really the view having moved cannot read as the overlay having changed the answer.
@@ -144,7 +144,7 @@ if (null === felt) {
 // ── 5. Chrome over the map does not drive a pick ───────────────────────────────────────
 //
 // Zoomed in first, until the map is taller than the viewport — at fit the map is a 249 px
-// band across the middle and the navigator sits below it in empty space, where "no track"
+// band across the middle and the navigator sits below it in empty space, where "no strand"
 // is the right answer for every binding and the check would prove nothing. The assertion
 // is the pair: ink at that point with the navigator out of the way, none with it there.
 await overlay(false)
@@ -168,7 +168,7 @@ for (let attempt = 0; attempt < 5 && null === underNavigator; attempt += 1) {
         const point = { x: navigator.x + navigator.width / 2 + dx, y: navigator.y + navigator.height / 2 }
         const bare = await feelUnderNavigator(point)
 
-        if (/track \d+/.test(bare)) {
+        if (/strand \d+/.test(bare)) {
             underNavigator = { point, bare }
         }
     }
@@ -185,10 +185,10 @@ for (let attempt = 0; attempt < 5 && null === underNavigator; attempt += 1) {
 }
 
 if (null === underNavigator) {
-    check('a pointer over the navigator does not pick', false, 'no track under the navigator to shadow')
+    check('a pointer over the navigator does not pick', false, 'no strand under the navigator to shadow')
 } else {
     const shadowed = await feel(underNavigator.point, false)
-    check('a pointer over the navigator does not pick', 'track —' === shadowed,
+    check('a pointer over the navigator does not pick', 'strand —' === shadowed,
         `${underNavigator.bare} under it, ${shadowed} over it`)
 }
 
@@ -199,11 +199,11 @@ const viewRect = await page.locator('.stm-navigator-rect').boundingBox()
 const inRect = { x: viewRect.x + viewRect.width / 2, y: viewRect.y + viewRect.height / 2 }
 const bareInRect = await feelUnderNavigator(inRect)
 
-if (false === /track \d+/.test(bareInRect)) {
-    check('a pointer over the navigator’s view rect does not pick', false, 'no track under the rect to shadow')
+if (false === /strand \d+/.test(bareInRect)) {
+    check('a pointer over the navigator’s view rect does not pick', false, 'no strand under the rect to shadow')
 } else {
     const shadowedInRect = await feel(inRect, false)
-    check('a pointer over the navigator’s view rect does not pick', 'track —' === shadowedInRect,
+    check('a pointer over the navigator’s view rect does not pick', 'strand —' === shadowedInRect,
         `${bareInRect} under it, ${shadowedInRect} over it`)
 }
 

@@ -90,7 +90,7 @@ export const SURFACE_STYLES = `
    segment becomes real, which is a different mode with no key held.
 
    There is nothing to make inert here — the canvas is one element and the pick pass answers
-   with a track id, so the dead zones the SVG surface had to rule out cannot arise. */
+   with a strand id, so the dead zones the SVG surface had to rule out cannot arise. */
 .stm-root.is-feeling .stm-canvas,
 .stm-root.is-feeling .stm-segment {
     cursor: pointer;
@@ -310,7 +310,7 @@ export const SURFACE_STYLES = `
 
 /* Hit-tested, unlike most things drawn over something else. It was pointer-events: none,
    which made the rect a window through the navigator onto the map behind it: the element
-   under the cursor there was the canvas, so the surface picked the track the navigator
+   under the cursor there was the canvas, so the surface picked the strand the navigator
    covers while the researcher was looking at the navigator. The drag is on the widget and
    the press bubbles to it either way, so taking events costs the gesture nothing. */
 .stm-navigator-rect {

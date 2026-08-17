@@ -171,7 +171,7 @@ describe('worldFromContentPoint', () => {
 
 /**
  * Picking aims a one-pixel camera with this, so an error here does not look like an
- * error: it returns a real track, just the wrong one, and only ever by a little.
+ * error: it returns a real strand, just the wrong one, and only ever by a little.
  */
 describe('worldFromViewportPoint', () => {
 

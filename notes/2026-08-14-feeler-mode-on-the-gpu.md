@@ -8,7 +8,7 @@ node scripts/verify_highlight.mjs                       # the committed 600 bp f
 node scripts/verify_highlight.mjs '<a live node url>'   # the numbers below are 5520+
 ```
 
-The strategy this belongs to is A in [`docs/DISAMBIGUATING-TRACKS.md`](../docs/DISAMBIGUATING-TRACKS.md);
+The strategy this belongs to is A in [`docs/DISAMBIGUATING-STRANDS.md`](../docs/DISAMBIGUATING-STRANDS.md);
 what follows is the dated record that document asks for.
 
 ## What was built
@@ -22,7 +22,7 @@ The mechanism is the one #32 deferred out of the renderer spike. Track appearanc
 the per-instance colour attribute into a `DataTexture` of one texel per track — RGB plus an
 emphasis byte — which the vertex shader fetches by `trackID`. Moving the emphasis is one byte
 per *track* in that table, nothing per band, and the frame that follows uploads 2 KB.
-`src/trackAppearance.ts` carries the reasoning; `src/__tests__/trackAppearance.test.ts` pins
+`src/strandAppearance.ts` carries the reasoning; `src/__tests__/strandAppearance.test.ts` pins
 the parts that could be silently wrong; `src/feelerKey.ts` is what `Shift` means, shared with
 the SVG surface so that the key is defined once.
 
@@ -77,7 +77,7 @@ Four things this says, in order of how load-bearing they are:
 2. **0.000 ms is below what the page timer resolves.** `performance.now()` in this browser
    quantises to 0.1 ms, so the honest reading is *under 100 µs*, not *zero*. The per-window
    worsts are what carry the claim; the structural argument — one byte per track, nothing per
-   band — is in `trackAppearance.test.ts`, which counts the texels a write touches.
+   band — is in `strandAppearance.test.ts`, which counts the texels a write touches.
 3. **Highlighting is not what the frame costs, and the frame is inside budget.** 9.4 ms worst
    while sweeping is the same number as 9.4 ms worst over the identical moves with `Shift`
    released, comfortably inside a 16.67 ms frame and a third of the ~28 ms the DOM version
@@ -91,7 +91,7 @@ Four things this says, in order of how load-bearing they are:
 
 ## Where it reads, and where it does not
 
-Judged by looking, per `docs/DISAMBIGUATING-TRACKS.md` constraint 5. The screenshots are
+Judged by looking, per `docs/DISAMBIGUATING-STRANDS.md` constraint 5. The screenshots are
 `notes/highlight-*.png`, written by the script.
 
 - **At a working zoom it is unmistakable.** `highlight-5520-one-zoomed.png`: one strand at
@@ -102,7 +102,7 @@ Judged by looking, per `docs/DISAMBIGUATING-TRACKS.md` constraint 5. The screens
 - **At fit-to-width it does not locate anything.** `highlight-5520-one-at-fit.png`: a band is
   0.19 css pixels tall there and 5.7 tracks share every device pixel row, and the emphasized
   strand cannot be picked out of the receded crowd by eye. This is
-  `docs/DISAMBIGUATING-TRACKS.md` constraint 3 happening exactly as written — *legibility at
+  `docs/DISAMBIGUATING-STRANDS.md` constraint 3 happening exactly as written — *legibility at
   fit is bounded by pixels, not by cleverness* — and it is the honest answer to that
   document's open question 2 for this treatment: **feeler mode works from about one css pixel
   per band upward.**
@@ -124,7 +124,7 @@ and in that order:
 
 What it was reaching for is real and is a pixel budget, not a treatment to tune. The
 candidates — a screen-space minimum thickness, or an outline on the emphasized track — are in
-`docs/DISAMBIGUATING-TRACKS.md`, and both trade the map's honesty about how thick a band is
+`docs/DISAMBIGUATING-STRANDS.md`, and both trade the map's honesty about how thick a band is
 for being able to find it. That trade has not been discussed.
 
 ## Choices worth knowing about
@@ -155,7 +155,7 @@ for being able to find it. That trade has not been discussed.
   cursor is pointing at.** Recorded here so it is not rediscovered as a defect. Reaching a
   haplotype the cursor cannot single out is answered from the other direction, by name (#50).
 - **The navigator is not re-rendered on selection.** Its thumbnail is baked once per document,
-  so the emphasized strand does not appear in it. `docs/DISAMBIGUATING-TRACKS.md` raises this
+  so the emphasized strand does not appear in it. `docs/DISAMBIGUATING-STRANDS.md` raises this
   under Strategy A question 4 — the whole strand, including the parts off screen — and it
   stays open.
 

@@ -20,12 +20,12 @@ is complex, and can go no further.
 The interior is a minigraph-cactus subgraph at base-level resolution, and the UCSD
 group already renders it as a sequence tube map, served as SVG. But an SVG in a
 browser tab is unusable at this scale. A single minigraph node expands to a strip
-roughly 25 screens wide holding 369 haplotype tracks stacked vertically. Opened
+roughly 25 screens wide holding 369 haplotype strands stacked vertically. Opened
 raw, the researcher can either see the whole node as an unreadable smear, or see
 legible detail with no idea where they are inside it.
 
-Compounding this, the tracks are *genuinely* near-identical in color, and
-meaningfully so. Track color encodes PCLAI — a continuous local-ancestry coordinate
+Compounding this, the strands are *genuinely* near-identical in color, and
+meaningfully so. Strand color encodes PCLAI — a continuous local-ancestry coordinate
 in PCA space (Geleta et al., *Nature Genetics* 2026), where distance approximates
 genetic drift. Two ribbons look alike because those haplotypes are genetically close
 at this locus. So the visual similarity is the signal, not a palette defect to be
@@ -123,7 +123,7 @@ and interaction layer over someone else's picture.
 
 > **Built, then disabled (2026-08-13).** Every story below is implemented and works
 > on the fixture, but on real maps the highlight tears and renders partially:
-> restyling ~10,000 track elements costs ~28 ms, and a sweep asks for that several
+> restyling ~10,000 strand elements costs ~28 ms, and a sweep asks for that several
 > times a second. Feeler mode is off by default (`strandFeeler`; `?feeler` re-arms
 > the harness). *(Both the flag and the surface it guarded were deleted 2026-08-16, #40;
 > the finding below is what outlives them.)*
@@ -147,9 +147,9 @@ and interaction layer over someone else's picture.
 >
 > **Re-enabled on the WebGL surface (2026-08-14, #39), and the general finding above is
 > withdrawn for it.** The ~28 ms was style invalidation in the DOM, not a property of this
-> problem. Track appearance is now a `DataTexture` of one texel per track, so moving the
-> emphasis writes one byte per *track* — nothing per band — and the frame uploads 2 KB: on
-> `5520+` a sweep that moves it 198 times across 198 tracks holds a median write of 0.000 ms
+> problem. Strand appearance is now a `DataTexture` of one texel per strand, so moving the
+> emphasis writes one byte per *strand* — nothing per band — and the frame uploads 2 KB: on
+> `5520+` a sweep that moves it 198 times across 198 strands holds a median write of 0.000 ms
 > and a worst of 0.100 ms in every window of the sweep, and the worst frame while sweeping
 > (9.4 ms) equals the worst frame over the same moves with the key released.
 > **The direct route is what ships there.** The indirect routes above are still worth having
@@ -166,15 +166,15 @@ and interaction layer over someone else's picture.
 > Met there: 25, 26, 27 (crosshair and a badge), 28 — *from about one css pixel per band
 > upward* — 30, 31, 32, 34, 36 (one canvas and a pick pass, so the dead zones this story was
 > written against cannot arise) and 37. **Two more are not met and are not merely pending:**
-> **33**, a smooth rather than instant change, which needs per-track animation and a surface
+> **33**, a smooth rather than instant change, which needs per-strand animation and a surface
 > that draws every frame rather than on demand; and **35**, seeing *which* strand is under the
 > cursor, which needs `trackName` — the band parser reads geometry, colour and `trackID` and
-> nothing else, so the harness's `?pick` readout can name a track only by number.
+> nothing else, so the harness's `?pick` readout can name a strand only by number.
 >
 > At fit-to-width story 28 is not met at all: a band on `5520+` is 0.19 css pixels tall and
-> 5.7 tracks share a device pixel row, so there is no pixel in which an emphasized and a
-> receded track can differ. That is a pixel budget, and the candidates for it are weighed in
-> [`docs/DISAMBIGUATING-TRACKS.md`](./docs/DISAMBIGUATING-TRACKS.md). One of them — a floor of
+> 5.7 strands share a device pixel row, so there is no pixel in which an emphasized and a
+> receded strand can differ. That is a pixel budget, and the candidates for it are weighed in
+> [`docs/DISAMBIGUATING-STRANDS.md`](./docs/DISAMBIGUATING-STRANDS.md). One of them — a floor of
 > ink for the emphasized band — was tried and removed, because a band emitting more ink than
 > the document gave it is brightening the one rather than dimming the others, which story 30
 > forbids. ~~The SVG surface keeps the paragraphs above unchanged: its feeler stays off, behind
@@ -238,7 +238,7 @@ and interaction layer over someone else's picture.
 
 - **The viewer is a pure viewer.** The server returns finished SVG; the viewer treats
   it as opaque and immutable. No layout, no path routing, no geometry, no charting
-  library. Re-ordering, filtering, or recoloring tracks would be server-side
+  library. Re-ordering, filtering, or recoloring strands would be server-side
   parameter requests, not client-side work.
 - **No Three.js.** Pure HTML / CSS / SVG / TypeScript. Zero dependency overlap with
   PGB's 3D stack.
@@ -282,8 +282,8 @@ rule management, tooltips.~~
 > behind the four calls of `BandSurface` (`show(text)`, `clear`, `resize`, `destroy`), which
 > is the whole of what the mount knows about it. Beside it, **`parseBands.ts`** and
 > **`parseSegmentBoxes.ts`** read the response, **`bandCamera.ts`** owns the framing
-> arithmetic, **`bandPicker.ts`** answers which track is under the cursor,
-> **`trackAppearance.ts`** holds how each one looks, **`feelerKey.ts`** owns what `Shift`
+> arithmetic, **`bandPicker.ts`** answers which strand is under the cursor,
+> **`strandAppearance.ts`** holds how each one looks, **`feelerKey.ts`** owns what `Shift`
 > means, and **`segmentOverlay.ts`** draws `g.node` as divs. `README.md` §"Shape of the
 > code" is the current table.
 
@@ -345,7 +345,7 @@ rule management, tooltips.~~
 > while it is held — not for the hit-test cost the paragraphs below give, which is gone, but
 > because the mode exists to hold the picture still while the cursor reads it. The
 > dead-zone argument below is also retired on its own terms: there is one canvas and a pick
-> pass answering with a track id, so the class of bug it guards against cannot arise.
+> pass answering with a strand id, so the class of bug it guards against cannot arise.
 
 **`Shift` arbitrates pointer ownership**, making the two interaction sets mutually
 exclusive by construction rather than by hit-test arbitration:
@@ -357,7 +357,7 @@ exclusive by construction rather than by hit-test arbitration:
 | Pan / zoom | suppressed | live |
 | Cursor | `crosshair` | default |
 
-This resolves a real hazard. Segment boxes paint *after* tracks and are hit-testable
+This resolves a real hazard. Segment boxes paint *after* strands and are hit-testable
 across their full fill area — `fill-opacity: 0.4` does not disable pointer events.
 They occupy narrow vertical bands, and strands are horizontal, so sweeping across
 strands means moving vertically at a fixed x. Without intervention, an x landing
@@ -377,12 +377,12 @@ are different intents, and mixing them makes both feel unreliable.
   leaves the ancestry coloring of the selected strands untouched, which matters
   because that color is data.
 - Implemented as **one swapped CSS rule** of the form
-  `g.track > *:not(.trackN) { opacity: … }`. Every track element carries
-  `class="track<N>"` (avg 28 elements per track, max 47), so highlighting is O(1) per
+  `g.track > *:not(.trackN) { opacity: … }`. Every element of a strand carries
+  `class="track<N>"` (avg 28 elements per strand, max 47), so highlighting is O(1) per
   hover regardless of element count — no DOM walk, no per-element listeners. A short
   transition prevents strobing during a sweep.
 - **This last claim did not survive contact with real maps.** O(1) covers *writing*
-  the rule; the browser still invalidates style for all ~10,000 track children on
+  the rule; the browser still invalidates style for all ~10,000 children of `g.track` on
   every swap — measured at ~28 ms each — at pointer-move rate. Hence the default-off
   flag. An indirect selection keeps everything in this section and only changes how
   often the rule is swapped.
@@ -399,13 +399,13 @@ are different intents, and mixing them makes both feel unreliable.
 Measured from the sample response for one minigraph node, not assumed:
 
 - `viewBox="0 -80 35562.42857142856 6325"` — ~5.6:1, ~25 screens wide at 1:1.
-- 369 tracks, 75 segments, 10,345 drawable elements, 3.4 MB.
+- 369 strands, 75 segments, 10,345 drawable elements, 3.4 MB.
 - Segment boxes span only the haplotypes that traverse them: vertical span median
   5418, min 33, max 5553. A short box is a variant few haplotypes carry.
 - `pclaiScore` is **not** a 0–1 float: integers 496–999 plus the non-numeric
   sentinels `"None"` and `"impainted"`. Any future parser must handle both strings.
-- Track color is a **continuous** function of `pclaiX`/`pclaiY`, not a categorical
-  palette. Tracks with no PCLAI call carry `pclaiX="None"` and render flat gray
+- Strand color is a **continuous** function of `pclaiX`/`pclaiY`, not a categorical
+  palette. Strands with no PCLAI call carry `pclaiX="None"` and render flat gray
   `rgb(211,211,211)`, including `GRCh38#0#chr1`.
 
 The last two contradict the inferred metadata table in
@@ -464,13 +464,13 @@ transform module's tests establish it.
 ## Out of Scope
 
 - **Any layout computation.** The server owns it.
-- **Track filtering, re-ordering, or recoloring.** Server-side parameters if ever
+- **Strand filtering, re-ordering, or recoloring.** Server-side parameters if ever
   needed. Recoloring in particular would destroy the ancestry signal.
 - **`trackName` decoding.** `NA21309#2#CM092097.1` is `sample#haplotype#contig`, a
   3-part assembly-walk-shaped key addressable in PGB's vocabulary, but v1 displays it
   verbatim.
 - **PCLAI metadata display.** `pclaiX`, `pclaiY`, `pclaiScore` are present on every
-  track and deliberately unused. The obvious future affordance — hovering a strand
+  strand and deliberately unused. The obvious future affordance — hovering a strand
   locating that haplotype in PGB's existing PCLAI chart panel — is not in v1.
 - **1D↔3D correspondence.** PGB's `CLAUDE.md` treats bidirectional mapping as
   load-bearing UX. v1 ships without it. **Raised and consciously scoped out** — a
@@ -502,7 +502,7 @@ transform module's tests establish it.
 
 **Every measurement here comes from one minigraph node**
 (`chr1:25331046-25331646`, `minigraphnode=5519`). A larger or more variable node
-could carry far more tracks or segments. Avoid over-fitting to 369×75.
+could carry far more strands or segments. Avoid over-fitting to 369×75.
 
 **The 3.4 MB fixture is committed deliberately** — reproducibility from a fresh clone
 beats repo hygiene in a spike. The equivalent question for the *pgb* repo is genuinely

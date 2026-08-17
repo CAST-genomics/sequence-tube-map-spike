@@ -1,4 +1,4 @@
-# Strategies for disambiguating sequence tube map tracks
+# Strategies for disambiguating sequence tube map strands
 
 **Status: open. Nothing here is decided.** This is the toolkit, the constraints each tool
 has to survive, and what is known versus assumed about each. Started 2026-08-14, from
@@ -7,35 +7,35 @@ are tried and as some of them fail.
 
 The problem itself is pinned in **#32**, which measured it and deliberately stopped there.
 This document is the layer above the tickets that build pieces of an answer — **#38**
-(track picking: which haplotype is under the cursor) and **#39** (highlighting and feeler
+(strand picking: which haplotype is under the cursor) and **#39** (highlighting and feeler
 mode) — and it exists so those get built against a strategy rather than each inventing
 one.
 
 ## The observation
 
-Tracks that run in proximity — parallel, in clusters, which is most of the strip — are
+Strands that run in proximity — parallel, in clusters, which is most of the strip — are
 often close enough in color that they cannot be told apart, and where the colors cannot be
-separated the tracks cannot be either. `SPEC.md` story 28 asks for the opposite:
+separated the strands cannot be either. `SPEC.md` story 28 asks for the opposite:
 *"separate one haplotype from its neighbours even when they are nearly the same color."*
 
 That is the whole of it. A few details shape what an answer can look like:
 
-- **Sometimes the colors are not merely close, they are equal.** On `5520+`, 464 tracks
-  carry 108 distinct colors and at least 356 share one with another track exactly (#32).
+- **Sometimes the colors are not merely close, they are equal.** On `5520+`, 464 strands
+  carry 108 distinct colors and at least 356 share one with another strand exactly (#32).
   Where that happens, magnification does not help — so a strategy that assumes the picture
   resolves once a band is a few pixels tall is answering a different question.
-- **At fit there is no room to draw a distinction.** 464 tracks land on ~177 device rows,
-  2.6 tracks per pixel row (`RENDERING.md`). Below one pixel per band only low-frequency
+- **At fit there is no room to draw a distinction.** 464 strands land on ~177 device rows,
+  2.6 strands per pixel row (`RENDERING.md`). Below one pixel per band only low-frequency
   cues survive.
 - **A strand does not fit on the screen.** The strip is 14:1 to 28:1, so following one
-  haplotype means following it across tens of screens. Identifying a track only where the
+  haplotype means following it across tens of screens. Identifying a strand only where the
   cursor sits answers a smaller question than the one being asked.
 - **Crossings are where the eye loses the thread**, and where the picture offers least:
   abutting bands of the same color.
 
 ## Why the colors collide
 
-The tube map does not choose its track colors and should not start. They arrive in the
+The tube map does not choose its strand colors and should not start. They arrive in the
 `RGB` field beside each PCLAI coordinate, computed upstream as a visual encoding of the
 haplotype's position in PCA space; PGB's 3D graph and its PCLAI chart read the same field.
 PGB's own note is explicit: *"The colors in PCLAI are not chosen — they ship with the
@@ -99,7 +99,7 @@ at ~28 ms each; nothing wired to pointer position.*
 
 **That number is a fact about the SVG DOM, not about this problem.** The 28 ms was style
 invalidation across ~10,000 elements. The WebGL surface has one mesh and one draw call;
-changing which track is emphasized is a buffer or uniform write, and the shader already
+changing which strand is emphasized is a buffer or uniform write, and the shader already
 runs per fragment regardless.
 
 **Measured 2026-08-14, and the constraint lifted** (#39): moving the emphasis is a 2 KB table
@@ -121,7 +121,7 @@ not because the old obstacle was removed.
 *Raised originally for the SVG surface; blocked there by the 28 ms restyle. Re-opened
 because the renderer changed.*
 
-Hold `Shift` (or another modifier), move over a track, that track stays fully drawn and
+Hold `Shift` (or another modifier), move over a strand, that strand stays fully drawn and
 the others recede. What "recede" means is the open question, and the candidates are not
 equivalent:
 
@@ -142,10 +142,10 @@ holds regardless of which treatment above wins.
 2. Does it survive the sub-pixel regime? At fit there may be no pixel in which "receded"
    and "not receded" can differ. If the answer is that this only works past some zoom, say
    so and make the affordance honest about it.
-3. What is being pointed *at* — the track under the cursor needs picking. GPU colour
+3. What is being pointed *at* — the strand under the cursor needs picking. GPU colour
    picking was the plan (`CONTEXT.md` #6); it is not built, and it is **#38**. Note that
-   picking answers a different question from disambiguation: it says which track is under
-   the cursor, not which track you are looking at three screens to the right. A strategy
+   picking answers a different question from disambiguation: it says which strand is under
+   the cursor, not which strand you are looking at three screens to the right. A strategy
    that only works where the cursor is has not solved this.
 4. Does the emphasis persist along the whole strand, including the parts off screen
    (story 34)? If yes, the navigator should show it too — which is an argument for the
@@ -157,23 +157,23 @@ Record: [`notes/2026-08-14-feeler-mode-on-the-gpu.md`](../notes/2026-08-14-feele
 Rerun it with `node scripts/verify_highlight.mjs '<url>'`.
 
 1. **Fast enough, measured, at pointer rate on `5520+`.** Emphasis moved into an appearance
-   table — one texel per track, RGB plus an emphasis byte — so moving it writes one byte per
-   *track* and the frame uploads 2 KB. Over a sweep that moved the emphasis **198 times across
-   198 of 464 tracks**: median write 0.000 ms and worst 0.100 ms **in every window of the
+   table — one texel per strand, RGB plus an emphasis byte — so moving it writes one byte per
+   *strand* and the frame uploads 2 KB. Over a sweep that moved the emphasis **198 times across
+   198 of 464 strands**: median write 0.000 ms and worst 0.100 ms **in every window of the
    sweep** — flat, and below what the page timer resolves, so read it as under 100 µs. Worst
    frame while sweeping 9.4 ms, against 9.4 ms for the identical moves with the key released:
    inside a frame, and a third of the ~28 ms the DOM spent per swap. The mechanism at the
    bottom of this document under *Not yet discussed* is no longer a proposal; it is what this
    is built on.
 
-   **The emphasis follows the cursor: one track at a time, not an accumulating set.** The
+   **The emphasis follows the cursor: one strand at a time, not an accumulating set.** The
    user's decision, 2026-08-14, reversing #39 and `SPEC.md` story 29 on looking at it built —
    a trail of lit strands behind a sweep makes the strand being pointed at one of dozens at
    full colour, which is this document's whole problem restated. A comparison set still wants
    a deliberate gesture, and this table supports one unchanged.
 2. **It does not survive the sub-pixel regime, and the affordance is now honest about it.**
    Unmistakable from ~1 css pixel per band upward; at fit on `5520+` — 0.19 css pixels per
-   band, 5.7 tracks per device pixel row — the emphasized strand cannot be found among the
+   band, 5.7 strands per device pixel row — the emphasized strand cannot be found among the
    receded ones by eye. **This is constraint 3 and it is a pixel budget, not a treatment that
    needs tuning.**
 
@@ -182,18 +182,18 @@ Rerun it with `node scripts/verify_highlight.mjs '<url>'`.
    a 59%-alpha hairline into a solid one on the fixture, did **not** make the strand findable
    at fit on `5520+`, and is brightening the one rather than dimming the others — which #39
    and story 30 both forbid, whatever the mechanism. The candidates that remain are a
-   screen-space minimum thickness or an outline: both below, both making the emphasized track
+   screen-space minimum thickness or an outline: both below, both making the emphasized strand
    wider than the map says it is, and that trade is still undiscussed.
 3. **Picking is built** (#38) and it is what the feeler touches. Its own caveat stands
    unchanged: it answers what is under the cursor, not what you are looking at three screens
    to the right.
-4. **Open.** Emphasis does persist along the whole strand — it is a property of the track,
+4. **Open.** Emphasis does persist along the whole strand — it is a property of the strand,
    not of the bands on screen — but the navigator's thumbnail is baked once per document, so
    the emphasized strand does not appear in it. One render would fix it and it was left alone.
 
 **Which treatment won, of the four in the table:** translucent. A receded band keeps its
 colour and drops its alpha, so it is a ghost of itself and whatever is behind it — the
-ground, or the emphasized track it crosses — shows through. Desaturation was rejected because grey
+ground, or the emphasized strand it crosses — shows through. Desaturation was rejected because grey
 already means `pclaiX="None"`; removal because a haplotype's path is read against its
 neighbours. The fear recorded against translucency, that dimming the crowd leaves nothing
 to sit against, did not materialise at working zooms: the bundle's envelope stays legible at
@@ -203,28 +203,28 @@ to sit against, did not materialise at working zooms: the bundle's envelope stay
 
 *Raised 2026-08-14. New: it was not available on the SVG surface at all.*
 
-The observation behind it: tracks disambiguate themselves in their **excursions** — a
-track crossing others is the moment it becomes distinct, and crossing is a depth relation
+The observation behind it: strands disambiguate themselves in their **excursions** — a
+strand crossing others is the moment it becomes distinct, and crossing is a depth relation
 we currently throw away. The renderer already has this information and discards it:
-instance order carries z-order where two tracks overlap, and that is the only sense in
+instance order carries z-order where two strands overlap, and that is the only sense in
 which the map has depth today.
 
 Candidate forms:
 
-- **Lift the selected track in z.** Give the emphasized track its own depth level so it
+- **Lift the selected strand in z.** Give the emphasized strand its own depth level so it
   passes *over* everything it crosses rather than being interleaved.
-- **Drop shadow / contact shadow.** A soft dark offset under the lifted track. This is the
+- **Drop shadow / contact shadow.** A soft dark offset under the lifted strand. This is the
   cue that actually makes lift visible, and it works at small scale — a shadow is a
   low-frequency signal, which is exactly what survives when the strand itself is
   sub-pixel.
-- **Depth as a continuous channel.** Not one lifted track but every track at its own
+- **Depth as a continuous channel.** Not one lifted strand but every strand at its own
   level, so crossings are consistently resolved everywhere rather than only at a
   selection. Closer to the physical intuition of ribbons in a bundle.
 
 **The hard constraints this runs into, all of them in the current renderer:**
 
 - **The camera is orthographic and will stay that way.** There is no parallax and no
-  perspective foreshortening, so translating a track in z produces *no image change at
+  perspective foreshortening, so translating a strand in z produces *no image change at
   all* on its own. Depth in this renderer reads only through cues we draw: occlusion
   order, shadow, outline, or a deliberate screen-space offset. That is not a reason to
   drop the strategy — it is the reason the shadow is the substance of it, and "translate
@@ -237,14 +237,14 @@ Candidate forms:
   has to be a compositing strategy, not a z-buffer strategy**, or it has to give up
   analytic coverage at small scale.
 - **Order is already meaningful.** Instance order is document order is paint order.
-  Anything that reorders or re-levels tracks is changing what the picture asserts about
+  Anything that reorders or re-levels strands is changing what the picture asserts about
   overlaps, so it needs to be a deliberate claim rather than a side effect.
 
 The version of this that looks most promising on paper — and it is only on paper — is
-**one lifted track plus its shadow, composited, with the depth buffer left off**: draw the
-map, then draw the selected track again over it with an offset dark pass beneath. That is
+**one lifted strand plus its shadow, composited, with the depth buffer left off**: draw the
+map, then draw the selected strand again over it with an offset dark pass beneath. That is
 two extra draw calls for one instance's worth of geometry, costs nothing per frame, and
-needs no change to how the other 463 tracks are drawn.
+needs no change to how the other 463 strands are drawn.
 
 ## Constraints any strategy has to survive
 
@@ -276,16 +276,16 @@ Written once here so each proposal can be checked against them rather than re-ar
 Listed for completeness, from the same problem rather than from the conversation that
 started this document. None of these have been thought through:
 
-- An **outline or halo** on the selected track — a screen-space stroke reads at any zoom
+- An **outline or halo** on the selected strand — a screen-space stroke reads at any zoom
   and does not touch the fill color. **Promoted from idle to the obvious next move by the
   2026-08-14 measurement**, together with its blunter cousin, a minimum *screen-space*
-  thickness for the lit track: both are the only things on this list that address the one
+  thickness for the lit strand: both are the only things on this list that address the one
   regime Strategy A demonstrably fails, and both trade the map's honesty about how thick a
   band is for being able to find it. That trade has not been discussed.
-- ~~**Appearance as a lookup table**~~ — **built 2026-08-14** (#39, `src/trackAppearance.ts`),
-  and it is what Strategy A above rests on: one texel per track, RGB plus an emphasis byte,
-  2 KB uploaded however many tracks are lit. Kept in this list because the mechanism is
-  available to any strategy that needs per-track appearance, not only to A — including the
+- ~~**Appearance as a lookup table**~~ — **built 2026-08-14** (#39, `src/strandAppearance.ts`),
+  and it is what Strategy A above rests on: one texel per strand, RGB plus an emphasis byte,
+  2 KB uploaded however many strands are lit. Kept in this list because the mechanism is
+  available to any strategy that needs per-strand appearance, not only to A — including the
   indirect selection below, which is now the obvious home for the comparison set that feeling
   one strand at a time gave up.
 - **Indirect selection**, which the 2026-08-13 note already argues for: a strand list, a
@@ -301,7 +301,7 @@ started this document. None of these have been thought through:
 - **Motion.** A slow animated flow along one strand distinguishes it with no static ink at
   all, and motion is the one channel that survives at sub-pixel scale. It also risks being
   the strobing distraction story 25 rules out.
-- **Exploded / spread view** — temporarily separating tracks vertically so crossings
+- **Exploded / spread view** — temporarily separating strands vertically so crossings
   resolve, at the cost of the layout the server gave us.
 
 ## Where this gets decided

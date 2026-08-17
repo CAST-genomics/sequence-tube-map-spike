@@ -9,7 +9,6 @@
 
 export const SURFACE_STYLES = `
 .stm-root {
-    --stm-recede: 0.05;
     --stm-ink: rgb(232, 234, 238);
     --stm-ground: rgb(250, 250, 250);
     --stm-chrome: rgba(18, 20, 24, 0.82);
@@ -18,15 +17,14 @@ export const SURFACE_STYLES = `
     width: 100%;
     height: 100%;
     overflow: hidden;
-    /* The WebGL surface takes its gestures here rather than on the canvas, so the browser's
-       own scroll and pinch have to be refused here too — on the canvas alone they would
-       still fire for a touch that started on anything mounted over it. Redundant for the
-       SVG surface, which refuses them again on .stm-surface. */
+    /* The surface takes its gestures here rather than on the canvas, so the browser's own
+       scroll and pinch have to be refused here too — on the canvas alone they would still
+       fire for a touch that started on anything mounted over it. */
     touch-action: none;
     overscroll-behavior: none;
     /* And the browser's text selection, for the same reason and one level higher up.
-       .stm-canvas and .stm-surface each refuse it, but a drag anchors a *range*, and a
-       range spans whatever lies between its ends — so a pan that crossed the segment
+       .stm-canvas refuses it too, but a drag anchors a *range*, and a range spans
+       whatever lies between its ends — so a pan that crossed the segment
        tooltip left it highlighted in blue, and left it that way, even though the tooltip
        is pointer-events: none and was never the drag's target. The map is a picture and
        the readouts over it are labels on that picture; none of it is a document. */
@@ -42,32 +40,11 @@ export const SURFACE_STYLES = `
     user-select: text;
 }
 
-.stm-surface {
-    position: absolute;
-    inset: 0;
-    overflow: hidden;
-    touch-action: none;
-    overscroll-behavior: none;
-    user-select: none;
-}
-
-.stm-content {
-    position: absolute;
-    top: 0;
-    left: 0;
-    transform-origin: 0 0;
-    will-change: transform;
-}
-
-.stm-content svg {
-    display: block;
-}
-
-/* The WebGL surface. The canvas is viewport-sized at every zoom level — the oversized
-   composited layer that broke the SVG surface is structurally impossible here — so it is
-   simply stretched over the root. It is the root that takes the pointer, so that anything
-   layered over the canvas is not a hole in pan, zoom and the feeler; the cursor stays here
-   because the canvas is exactly the region the map is drawn in. */
+/* The canvas is viewport-sized at every zoom level — the oversized composited layer that
+   broke the SVG surface is structurally impossible here — so it is simply stretched over
+   the root. It is the root that takes the pointer, so that anything layered over the canvas
+   is not a hole in pan, zoom and the feeler; the cursor stays here because the canvas is
+   exactly the region the map is drawn in. */
 .stm-canvas {
     position: absolute;
     inset: 0;
@@ -80,7 +57,7 @@ export const SURFACE_STYLES = `
     cursor: grab;
 }
 
-/* A pan in progress on the WebGL surface, and the one rule that says so.
+/* A pan in progress, and the one rule that says so.
 
    Written on the root and on everything the pointer can be over, rather than as \`:active\`
    on each: \`MapControls\` takes pointer capture on the root when a drag begins, and a
@@ -122,11 +99,12 @@ export const SURFACE_STYLES = `
 /* The segment boxes (#37). One wrapper carrying the camera's transform; the boxes inside it
    are positioned in world units and never touched by a pan or a zoom.
 
-   **No \`will-change\`.** That property is what promoted \`.stm-content\` to the composited
-   layer that came apart on 2026-08-13, and the wrapper's bounds top out near 280,000 ×
-   10,000 css px. It holds at most 767 rounded rects rather than a display list the size of
-   the band population, which is why it is a different thing — but it is the same class of
-   thing, so it is judged by looking rather than by argument.
+   **No \`will-change\`.** That property is what promoted the SVG surface's transformed
+   wrapper to the composited layer that came apart on 2026-08-13 — that surface, and the
+   \`.stm-content\` it transformed, were deleted by #40 — and this wrapper's bounds top out
+   near 280,000 × 10,000 css px. It holds at most 767 rounded rects rather than a display
+   list the size of the band population, which is why it is a different thing — but it is
+   the same class of thing, so it is judged by looking rather than by argument.
 
    Inert itself, since it spans the whole map: only the boxes inside it take the cursor. */
 .stm-segments {
@@ -165,43 +143,6 @@ export const SURFACE_STYLES = `
    outranking it. */
 .stm-segment[hidden] {
     display: none;
-}
-
-/* A short transition keeps a sweep across many strands from strobing. */
-.stm-content g.track > * {
-    transition: opacity 120ms ease-out;
-}
-
-/* Inspect mode: segments own the cursor, strands are inert. */
-.stm-root:not(.is-feeling) .stm-content g.track > * {
-    pointer-events: none;
-}
-
-/* Inspect mode: the map is also a thing you take hold of and drag, as in PGB. */
-.stm-root:not(.is-feeling) .stm-surface {
-    cursor: grab;
-}
-
-.stm-root.is-panning .stm-surface {
-    cursor: grabbing;
-}
-
-/* A drag is a grip on the whole map rather than a pointer at anything inside it,
-   so nothing under the cursor is a target for its duration. Skipping the
-   hit-testing says that, and spares ~10,345 elements per pointer move saying it. */
-.stm-root.is-panning .stm-content {
-    pointer-events: none;
-}
-
-/* Feeler mode: strands own the cursor; segment boxes cannot shadow them. The cursor follows
-   the WebGL surface's, because feelerKey.ts is explicit that the two surfaces may differ
-   about how they answer the key but not about what the researcher sees when it is held. */
-.stm-root.is-feeling .stm-surface {
-    cursor: pointer;
-}
-
-.stm-root.is-feeling .stm-content g.node > * {
-    pointer-events: none;
 }
 
 .stm-mode-badge {
@@ -318,22 +259,6 @@ export const SURFACE_STYLES = `
 
 .graph-tooltip.is-shown {
     display: block;
-}
-
-/* The SVG surface's own tooltip, which is a different thing under a different name. */
-.stm-tooltip {
-    position: absolute;
-    top: 0;
-    left: 0;
-    max-width: 48ch;
-    padding: 5px 9px;
-    border-radius: 5px;
-    background: var(--stm-chrome);
-    color: var(--stm-ink);
-    white-space: pre-wrap;
-    overflow-wrap: anywhere;
-    pointer-events: none;
-    z-index: 3;
 }
 
 /* Instrumentation, not chrome: only ?pick puts this on the surface.
@@ -496,7 +421,7 @@ export const SURFACE_STYLES = `
 }
 
 @media (prefers-reduced-motion: reduce) {
-    .stm-content g.track > * { transition: none; }
+    .stm-mode-badge { transition: none; }
     .stm-spinner { animation-duration: 2s; }
 }
 `

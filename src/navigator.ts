@@ -5,26 +5,27 @@
  *
  * ## It does not draw the map
  *
- * It sizes a canvas to the map's aspect and hands it to whoever mounted it. The two
- * surfaces fill it in ways that have nothing in common — the SVG surface rasterizes
- * the document it already parsed, the WebGL surface renders its own scene into a
- * render target — and neither is the navigator's business. What is its business is
- * the chrome: the rect, the clipping, and the two gestures.
+ * It sizes a canvas to the map's aspect and hands it to whoever mounted it, and how the
+ * picture gets there is not its business. The surface renders its own scene into a render
+ * target and reads it back; the SVG surface used to rasterize the document it had already
+ * parsed, which is why the widget asks for a *painter* rather than for bytes. That surface
+ * is gone (#40, 2026-08-16) and the seam is kept: it is what makes the widget's own
+ * business legible, which is the chrome — the rect, the clipping, and the two gestures.
  *
  * ## It holds no view state
  *
  * `update` is handed the slice of content space currently on screen, computed by the
  * surface from whatever it steers by; `onNavigate` asks for a content point back. So
  * the navigator cannot disagree with the surface about where the view is, and it
- * needs to know nothing about `{x, y, scale}` or `camera.zoom` to say so.
+ * needs to know nothing about `camera.zoom` to say so.
  *
  * Content coordinates are the map's own: origin at its top-left corner, y down,
  * extent `content`.
  */
 
+import { clamp, type Point, type Rect, type Size } from './geometry.ts'
 import { createPointerDrag } from './pointerDrag.ts'
 import { shieldFromMap } from './surfacePointer.ts'
-import { clamp, type Point, type Rect, type Size } from './viewportTransform.ts'
 
 /**
  * Widest the thumbnail is drawn, in CSS pixels — and the number the widget's whole
@@ -80,7 +81,7 @@ export function createNavigator(parent: HTMLElement, options: NavigatorOptions):
     element.append(canvas, rect)
     parent.append(element)
 
-    // Chrome, not map. The WebGL surface takes its gestures on the common ancestor of
+    // Chrome, not map. The surface takes its gestures on the common ancestor of
     // everything mounted here, so without this a drag of the rect would also pan the map
     // under it, and a wheel over the thumbnail would zoom the map it is a picture of.
     shieldFromMap(element)

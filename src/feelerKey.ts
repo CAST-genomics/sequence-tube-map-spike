@@ -12,16 +12,16 @@
  * strand out from under the feeler mid-gesture. The mode exists to hold the picture still
  * while the cursor reads it, which is a reason of its own and not the hit-test cost.
  *
- * The two surfaces still answer the key *differently* below it: the SVG surface cancels a
- * drag and probes with `elementFromPoint` — it is unchanged, and the arbitrating description
- * above still fits it — while the WebGL surface runs a pick pass and lets segment hover
- * through. What they must not differ about is when the mode is on, what the researcher sees
- * when it is, or the fact that a window losing focus while the key is down never reports the
- * key coming up.
+ * This was shared by two surfaces, which answered the key differently below it and had to
+ * agree above it. **#40 left one, 2026-08-16**, and with it went the `armed` option — the
+ * SVG surface passed it false because its highlight cost ~28 ms a swap, and there is no
+ * longer a caller with a reason to leave the mode unreachable. The key is always live.
  *
- * So this module owns exactly that much and no more: the listeners, the flag, the
- * `is-feeling` class the stylesheet hangs the crosshair off, and the badge. Everything about
- * what feeling *does* stays with the surface that does it.
+ * The module survives the surface it was factored out for, because what it owns is still
+ * one coherent thing and still not the surface's: the listeners, the flag, the
+ * `is-feeling` class the stylesheet hangs the cursor off, and the badge — including the
+ * fact that a window losing focus while the key is down never reports the key coming up.
+ * Everything about what feeling *does* stays with the surface that does it.
  */
 
 /** A mode that is held rather than toggled. */
@@ -36,33 +36,22 @@ export interface FeelerKey {
 export interface FeelerKeyOptions {
     /** Carries the `is-feeling` class and hosts the badge. */
     root: HTMLElement
-    /**
-     * Whether the key does anything at all. Left false, the mode is *unreachable* rather than
-     * merely unused: no listener is registered, so nothing can set the flag and every branch
-     * that reads it takes the other side for the mount's whole life. The SVG surface needs
-     * this — its highlight costs ~28 ms a swap (`CONTEXT.md` #15) — and the WebGL surface
-     * does not.
-     */
-    armed: boolean
     onEnter(): void
     onLeave(): void
 }
 
 export function watchFeelerKey(options: FeelerKeyOptions): FeelerKey {
 
-    const { root, armed } = options
+    const { root } = options
     const doc = root.ownerDocument
     const view = doc.defaultView ?? window
 
-    // The badge announces a mode that cannot be entered unless the key is armed, so it is
-    // mounted only alongside it. The stylesheet fades it in with `is-feeling`.
-    const badge = armed ? doc.createElement('div') : null
+    // The stylesheet fades it in with `is-feeling`.
+    const badge = doc.createElement('div')
 
-    if (null !== badge) {
-        badge.className = 'stm-mode-badge'
-        badge.textContent = 'feeler'
-        root.append(badge)
-    }
+    badge.className = 'stm-mode-badge'
+    badge.textContent = 'feeler'
+    root.append(badge)
 
     let held = false
 
@@ -104,11 +93,9 @@ export function watchFeelerKey(options: FeelerKeyOptions): FeelerKey {
         leave()
     }
 
-    if (armed) {
-        view.addEventListener('keydown', onKeyDown)
-        view.addEventListener('keyup', onKeyUp)
-        view.addEventListener('blur', onBlur)
-    }
+    view.addEventListener('keydown', onKeyDown)
+    view.addEventListener('keyup', onKeyUp)
+    view.addEventListener('blur', onBlur)
 
     return {
 
@@ -124,7 +111,7 @@ export function watchFeelerKey(options: FeelerKeyOptions): FeelerKey {
             view.removeEventListener('keydown', onKeyDown)
             view.removeEventListener('keyup', onKeyUp)
             view.removeEventListener('blur', onBlur)
-            badge?.remove()
+            badge.remove()
         }
     }
 }

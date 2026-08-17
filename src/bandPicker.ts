@@ -46,7 +46,7 @@ import {
     type WebGLRenderer
 } from 'three'
 import { devicePixel, worldFromViewportPoint, type CameraView, type Viewport } from './bandCamera.ts'
-import type { Point } from './viewportTransform.ts'
+import type { Point } from './geometry.ts'
 
 /** What the cursor is over, and what asking cost. */
 export interface Pick {

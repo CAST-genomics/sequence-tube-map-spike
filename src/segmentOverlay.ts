@@ -14,9 +14,9 @@
  * DOM layer whose rasterization the browser must redo at the camera's scale over a display
  * list the size of the band population.* That population — 40,442 bands — stays on the GPU
  * permanently. This is **767 rectangles at most**, `g.node`'s entire contents, and the
- * wrapper carries **no `will-change`**, which is the property that promoted `.stm-content`
- * to the layer that came apart. It is still the same *class* of thing, so it is judged by
- * looking at `5514+` at 200× rather than by argument.
+ * wrapper carries **no `will-change`**, which is the property that promoted the SVG
+ * surface's transformed wrapper to the layer that came apart. It is still the same *class*
+ * of thing, so it is judged by looking at `5514+` at 200× rather than by argument.
  *
  * ## Nothing per box on a pan or a zoom
  *
@@ -54,8 +54,8 @@
  */
 
 import { overlayTranslation, type CameraView, type Viewport } from './bandCamera.ts'
+import type { Point, Size } from './geometry.ts'
 import type { SegmentBox } from './parseSegmentBoxes.ts'
-import type { Point, Size } from './viewportTransform.ts'
 
 /**
  * How wide a box must be on screen, in css pixels, before it is drawn at all.

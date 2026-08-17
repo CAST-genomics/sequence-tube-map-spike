@@ -28,7 +28,7 @@
  * decides that; a badge that ever took its own events would have to call `shieldFromMap`.
  */
 
-import type { Point } from './viewportTransform.ts'
+import type { Point } from './geometry.ts'
 
 /** The half-open rectangle a `DOMRect` describes, which is all `canvasPoint` reads of one. */
 export interface Bounds {

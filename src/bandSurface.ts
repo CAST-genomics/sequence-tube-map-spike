@@ -1,6 +1,11 @@
 /**
- * The WebGL surface: a three.js scene holding every band of one document, driven by
+ * The surface: a three.js scene holding every band of one document, driven by
  * `MapControls`.
+ *
+ * The only one, since #40 (2026-08-16) retired the SVG surface this was built beside.
+ * Where the notes below say what the SVG surface did differently they are history, not a
+ * live comparison — kept because each names a wall this design exists to be on the far
+ * side of.
  *
  * Rewritten from `spike/bandSurface.ts` after the verdict in
  * `notes/2026-08-14-three-js-renderer-verdict.md`. Two things changed in the rewrite and
@@ -18,7 +23,8 @@
  * There is no `{x, y, scale}` object, no fit-to-width transform, no hand-written wheel
  * handling and no CSS transform. Zoom is `camera.zoom`, pan is `camera.position`, and
  * gestures come from `MapControls` configured exactly as PGB configures it. The SVG
- * surface reimplemented that library by hand because it had no three.js; this does not.
+ * surface reimplemented that library by hand because it had no three.js; that copy went
+ * with it.
  *
  * ## Where the pointer is taken
  *
@@ -71,7 +77,8 @@
  * writes one byte and the frame that follows uploads the table. Nothing per band, nothing
  * per lit track — which is what makes lighting one strand and lighting two hundred cost the
  * same, and why this ships on rather than behind a flag. Measured in
- * `scripts/verify_highlight.mjs`.
+ * `scripts/verify_highlight.mjs`. It is the only feeler now, and the flag that switched
+ * the other one on went with #40.
  *
  * ## The segment boxes are not in the scene
  *
@@ -119,14 +126,13 @@ import {
 } from './bandCamera.ts'
 import { createBandPicker, type BandPicker } from './bandPicker.ts'
 import { watchFeelerKey, type FeelerKey } from './feelerKey.ts'
+import type { Point, Size } from './geometry.ts'
 import { createNavigator, type NavigatorHandle } from './navigator.ts'
 import { THICKNESS, parseBands, type ParsedMap } from './parseBands.ts'
 import { parseSegmentBoxes } from './parseSegmentBoxes.ts'
 import { createSegmentOverlay, type SegmentOverlay } from './segmentOverlay.ts'
 import { canvasPoint, overChrome } from './surfacePointer.ts'
 import { APPEARANCE_ROW, createTrackAppearance, type TrackAppearance } from './trackAppearance.ts'
-import type { SurfaceRenderer } from './surfaceRenderer.ts'
-import type { Point, Size } from './viewportTransform.ts'
 
 // Bands carry the colours the document gave them, byte for byte. We are reproducing a
 // picture, not lighting a scene, so nothing converts colour anywhere.
@@ -356,6 +362,37 @@ interface Drawing {
     appearance: TrackAppearance
 }
 
+/**
+ * What the mount knows about the surface, and all it knows.
+ *
+ * `mountTubeMapSurface` owns the container, the fetch, the spinner and the error state;
+ * everything about the *view* — fitting, zooming, what a resize does to the framing —
+ * is behind these four calls, because none of it is the mount's business.
+ *
+ * `show` takes the response text rather than a parsed document: reading the bytes into
+ * six floats per band is this surface's own act, and the gate that can refuse them is
+ * part of it.
+ *
+ * This lived in `surfaceRenderer.ts` until 2026-08-16, where it was the vocabulary two
+ * surfaces answered in. #40 left one, so it is declared beside the one.
+ */
+export interface BandSurface {
+    /**
+     * Display the document. Throws if it cannot be drawn — the mount turns that into the
+     * error state, so the surface never shows half a map.
+     */
+    show(text: string): void
+    /** Drop the current document, leaving the surface empty and ready for another. */
+    clear(): void
+    /**
+     * The container changed size. Preserve the view and reveal more or less of the map,
+     * except that a view still untouched at initial fit re-fits (`CONTEXT.md` #10).
+     */
+    resize(): void
+    /** Remove every listener, node and GPU resource this surface created. */
+    destroy(): void
+}
+
 export interface BandSurfaceOptions {
     /**
      * Report the track under the cursor, what asking cost, and what the feeler's table
@@ -366,7 +403,7 @@ export interface BandSurfaceOptions {
     pickReadout?: boolean
 }
 
-export function createBandSurface(host: HTMLElement, options: BandSurfaceOptions = {}): SurfaceRenderer {
+export function createBandSurface(host: HTMLElement, options: BandSurfaceOptions = {}): BandSurface {
 
     const doc = host.ownerDocument
 
@@ -742,9 +779,6 @@ export function createBandSurface(host: HTMLElement, options: BandSurfaceOptions
 
     const feeler: FeelerKey = watchFeelerKey({
         root: host,
-        // Always. What kept this off on the SVG surface was the cost of its highlight, and
-        // this surface's highlight is a table write.
-        armed: true,
         onEnter: enterFeelerMode,
         onLeave: leaveFeelerMode
     })

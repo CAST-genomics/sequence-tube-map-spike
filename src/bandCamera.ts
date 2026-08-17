@@ -1,5 +1,5 @@
 /**
- * How the orthographic camera is framed, and the only arithmetic the WebGL surface does
+ * How the orthographic camera is framed, and the only arithmetic the surface does
  * that is not in a shader.
  *
  * **The frustum is measured in CSS pixels, not world units**, and `camera.zoom` therefore
@@ -16,7 +16,7 @@
  * is what `zoomRange` is for.
  */
 
-import type { Point, Rect, Size } from './viewportTransform.ts'
+import type { Point, Rect, Size } from './geometry.ts'
 
 /** A viewport in CSS pixels. */
 export interface Viewport {
@@ -90,7 +90,7 @@ export function usable(viewport: Viewport): boolean {
 
 /**
  * The slice of the map on screen, in **content coordinates** — origin at the map's
- * top-left corner, y down, the same vocabulary the SVG surface's transform speaks.
+ * top-left corner, y down — the map's own frame, which the navigator thinks in.
  *
  * This is the translation the navigator needs, and the only place the two coordinate
  * systems meet. `parseBands.ts` centres the map on the origin and flips y so nothing

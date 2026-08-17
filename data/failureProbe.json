@@ -1,5 +1,5 @@
 {
- "generatedAt": "2026-08-13 17:38",
+ "generatedAt": "2026-08-17 08:29",
  "timeoutSeconds": 180,
  "control": {
   "node": "5514+",
@@ -197,6 +197,253 @@
    "bytes": 2975639,
    "seconds": 17.0,
    "note": "window 0.125\u00d7 (1,526 bp)"
+  }
+ ],
+ "ceilingBisection": [
+  {
+   "node": "5511+",
+   "fraction": 0.5,
+   "windowBp": 6106,
+   "start": 25290859,
+   "end": 25296965,
+   "bytesPerBp": 1982.3,
+   "outcome": "ok",
+   "status": 200,
+   "bytes": 12103840,
+   "seconds": 51.4,
+   "note": "bisect window 0.5000x (6,106 bp)"
+  },
+  {
+   "node": "5511+",
+   "fraction": 1.0,
+   "windowBp": 12212,
+   "start": 25287806,
+   "end": 25300018,
+   "bytesPerBp": null,
+   "outcome": "http-error",
+   "status": 500,
+   "seconds": 100.4,
+   "server": "uvicorn",
+   "contentType": "text/plain; charset=utf-8",
+   "headers": {
+    "date": "Mon, 17 Aug 2026 12:15:01 GMT",
+    "server": "uvicorn",
+    "content-length": "21",
+    "content-type": "text/plain; charset=utf-8",
+    "connection": "close"
+   },
+   "bodyHead": "Internal Server Error",
+   "note": "bisect window 1.0000x (12,212 bp)"
+  },
+  {
+   "node": "5511+",
+   "fraction": 0.75,
+   "windowBp": 9158,
+   "start": 25289333,
+   "end": 25298491,
+   "bytesPerBp": null,
+   "outcome": "http-error",
+   "status": 500,
+   "seconds": 73.7,
+   "server": "uvicorn",
+   "contentType": "text/plain; charset=utf-8",
+   "headers": {
+    "date": "Mon, 17 Aug 2026 12:17:12 GMT",
+    "server": "uvicorn",
+    "content-length": "21",
+    "content-type": "text/plain; charset=utf-8",
+    "connection": "close"
+   },
+   "bodyHead": "Internal Server Error",
+   "note": "bisect window 0.7500x (9,158 bp)"
+  },
+  {
+   "node": "5511+",
+   "fraction": 0.625,
+   "windowBp": 7632,
+   "start": 25290096,
+   "end": 25297728,
+   "bytesPerBp": 1930.3,
+   "outcome": "ok",
+   "status": 200,
+   "bytes": 14732114,
+   "seconds": 65.6,
+   "note": "bisect window 0.6250x (7,632 bp)"
+  },
+  {
+   "node": "5511+",
+   "fraction": 0.6875,
+   "windowBp": 8394,
+   "start": 25289715,
+   "end": 25298109,
+   "bytesPerBp": null,
+   "outcome": "http-error",
+   "status": 500,
+   "seconds": 68.4,
+   "server": "uvicorn",
+   "contentType": "text/plain; charset=utf-8",
+   "headers": {
+    "date": "Mon, 17 Aug 2026 12:20:32 GMT",
+    "server": "uvicorn",
+    "content-length": "21",
+    "content-type": "text/plain; charset=utf-8",
+    "connection": "close"
+   },
+   "bodyHead": "Internal Server Error",
+   "note": "bisect window 0.6875x (8,394 bp)"
+  },
+  {
+   "node": "5511+",
+   "fraction": 0.65625,
+   "windowBp": 8014,
+   "start": 25289905,
+   "end": 25297919,
+   "bytesPerBp": null,
+   "outcome": "http-error",
+   "status": 500,
+   "seconds": 70.0,
+   "server": "uvicorn",
+   "contentType": "text/plain; charset=utf-8",
+   "headers": {
+    "date": "Mon, 17 Aug 2026 12:22:10 GMT",
+    "server": "uvicorn",
+    "content-length": "21",
+    "content-type": "text/plain; charset=utf-8",
+    "connection": "close"
+   },
+   "bodyHead": "Internal Server Error",
+   "note": "bisect window 0.6562x (8,014 bp)"
+  },
+  {
+   "node": "5508+",
+   "fraction": 0.125,
+   "windowBp": 786,
+   "start": 25268228,
+   "end": 25269014,
+   "bytesPerBp": 3121.1,
+   "outcome": "ok",
+   "status": 200,
+   "bytes": 2453188,
+   "seconds": 6.8,
+   "note": "bisect window 0.1250x (786 bp)"
+  },
+  {
+   "node": "5508+",
+   "fraction": 1.0,
+   "windowBp": 6288,
+   "start": 25265477,
+   "end": 25271765,
+   "bytesPerBp": null,
+   "outcome": "http-error",
+   "status": 500,
+   "seconds": 34.7,
+   "server": "uvicorn",
+   "contentType": "text/plain; charset=utf-8",
+   "headers": {
+    "date": "Mon, 17 Aug 2026 12:24:27 GMT",
+    "server": "uvicorn",
+    "content-length": "21",
+    "content-type": "text/plain; charset=utf-8",
+    "connection": "close"
+   },
+   "bodyHead": "Internal Server Error",
+   "note": "bisect window 1.0000x (6,288 bp)"
+  },
+  {
+   "node": "5508+",
+   "fraction": 0.5625,
+   "windowBp": 3536,
+   "start": 25266853,
+   "end": 25270389,
+   "bytesPerBp": 1509.4,
+   "outcome": "ok",
+   "status": 200,
+   "bytes": 5337415,
+   "seconds": 14.5,
+   "note": "bisect window 0.5625x (3,536 bp)"
+  },
+  {
+   "node": "5508+",
+   "fraction": 0.78125,
+   "windowBp": 4912,
+   "start": 25266165,
+   "end": 25271077,
+   "bytesPerBp": 1502.1,
+   "outcome": "ok",
+   "status": 200,
+   "bytes": 7378233,
+   "seconds": 18.9,
+   "note": "bisect window 0.7812x (4,912 bp)"
+  },
+  {
+   "node": "5508+",
+   "fraction": 0.890625,
+   "windowBp": 5600,
+   "start": 25265821,
+   "end": 25271421,
+   "bytesPerBp": 1457.3,
+   "outcome": "ok",
+   "status": 200,
+   "bytes": 8160903,
+   "seconds": 20.9,
+   "note": "bisect window 0.8906x (5,600 bp)"
+  },
+  {
+   "node": "5508+",
+   "fraction": 0.945312,
+   "windowBp": 5944,
+   "start": 25265649,
+   "end": 25271593,
+   "bytesPerBp": 1410.7,
+   "outcome": "ok",
+   "status": 200,
+   "bytes": 8385321,
+   "seconds": 20.5,
+   "note": "bisect window 0.9453x (5,944 bp)"
+  },
+  {
+   "node": "5508+",
+   "fraction": 0.972656,
+   "windowBp": 6116,
+   "start": 25265563,
+   "end": 25271679,
+   "bytesPerBp": null,
+   "outcome": "http-error",
+   "status": 500,
+   "seconds": 32.6,
+   "server": "uvicorn",
+   "contentType": "text/plain; charset=utf-8",
+   "headers": {
+    "date": "Mon, 17 Aug 2026 12:28:47 GMT",
+    "server": "uvicorn",
+    "content-length": "21",
+    "content-type": "text/plain; charset=utf-8",
+    "connection": "close"
+   },
+   "bodyHead": "Internal Server Error",
+   "note": "bisect window 0.9727x (6,116 bp)"
+  }
+ ],
+ "ceilingSummary": [
+  {
+   "node": "5511+",
+   "span": 12212,
+   "largestSuccessBytes": 14732114,
+   "largestSuccessWindowBp": 7632,
+   "smallestFailureWindowBp": 8014,
+   "smallestFailurePredictedBytes": 15886042,
+   "predictedFrom": "max bytes/bp observed on this node; NOT measured -- a 500 returns an empty body",
+   "nonMonotonic": false
+  },
+  {
+   "node": "5508+",
+   "span": 6288,
+   "largestSuccessBytes": 8385321,
+   "largestSuccessWindowBp": 5944,
+   "smallestFailureWindowBp": 6116,
+   "smallestFailurePredictedBytes": 19088674,
+   "predictedFrom": "max bytes/bp observed on this node; NOT measured -- a 500 returns an empty body",
+   "nonMonotonic": false
   }
  ]
 }

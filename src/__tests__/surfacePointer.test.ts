@@ -6,7 +6,7 @@
  * 28 css px wide rather than the canvas. `canvasPoint` is what replaces it, and it is
  * asserted here rather than judged by eye because the failure it guards against looks like
  * a pick that is *nearly* right: off by the overlay's own origin, which is small, plausible
- * and points at the wrong track.
+ * and points at the wrong strand.
  */
 
 import { describe, expect, it } from 'vitest'

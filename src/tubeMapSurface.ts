@@ -40,7 +40,7 @@ const STYLE_ELEMENT_ID = 'stm-surface-styles'
 
 export interface TubeMapSurfaceOptions {
     /**
-     * Report the track under the cursor, with what the pick cost. Harness
+     * Report the strand under the cursor, with what the pick cost. Harness
      * instrumentation for #38.
      */
     pickReadout?: boolean

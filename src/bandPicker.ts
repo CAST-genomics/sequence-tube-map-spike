@@ -14,9 +14,10 @@
  * no per-band arithmetic on the CPU — the GPU already knows how to rasterize these bands,
  * and asking it "what did you put here" reuses that exactly.
  *
- * **A track is 13 to 47 separate bands**, and `trackID` is what unites them, so the answer
+ * **A strand is 13 to 47 separate bands**, and `trackID` is what unites them, so the answer
  * is a haplotype rather than a fragment. That falls out of the attribute; nothing here
- * stitches anything.
+ * stitches anything. (`trackID` is the document's spelling of a strand id, and stays
+ * spelled that way wherever the document is being quoted — see `parseBands.ts`.)
  *
  * ## Why one pixel and not a region
  *
@@ -51,7 +52,7 @@ import type { Point } from './geometry.ts'
 /** What the cursor is over, and what asking cost. */
 export interface Pick {
     /** The haplotype under the cursor, or `null` over empty space. */
-    trackId: number | null
+    strandId: number | null
     /** Wall-clock milliseconds for the pass, including the readback stall. */
     milliseconds: number
 }
@@ -63,13 +64,13 @@ export interface BandPicker {
 }
 
 /**
- * The pixel the pick pass wrote, read back as a track id.
+ * The pixel the pick pass wrote, read back as a strand id.
  *
  * Alpha is the hit flag rather than a colour. The target is cleared to a fully
  * transparent black that no kept fragment can produce, so zero alpha means empty space
- * — not track 0, which is a real haplotype on every document we have.
+ * — not strand 0, which is a real haplotype on every document we have.
  */
-export function decodeTrackId(pixel: Uint8Array): number | null {
+export function decodeStrandId(pixel: Uint8Array): number | null {
     if (0 === pixel[3]) {
         return null
     }
@@ -103,7 +104,7 @@ export function createBandPicker(
 
             // The pad is what keeps a band thinner than a pick pixel from falling between
             // sample points and reporting empty space where the researcher can plainly
-            // see a track. Measured against the pick pixel, not the screen's.
+            // see a strand. Measured against the pick pixel, not the screen's.
             const size = devicePixel(view.zoom, 1)
 
             material.uniforms.uHalfPixel.value = size * 0.5
@@ -128,7 +129,7 @@ export function createBandPicker(
                 scene.overrideMaterial = restore
             }
 
-            return { trackId: decodeTrackId(pixel), milliseconds: performance.now() - started }
+            return { strandId: decodeStrandId(pixel), milliseconds: performance.now() - started }
         },
 
         dispose(): void {

@@ -19,7 +19,7 @@ import { readFileSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
 import { NonConformingDocument } from '../documentGrammar.ts'
 import { describeFailure } from '../loadFailure.ts'
-import { MAX_TRACK_ID, parseBands } from '../parseBands.ts'
+import { MAX_STRAND_ID, parseBands } from '../parseBands.ts'
 import { parseSegmentBoxes } from '../parseSegmentBoxes.ts'
 
 const FIXTURE = 'public/stm-chr1-25331046-25331646.svg'
@@ -63,10 +63,10 @@ const CORRUPTIONS: Array<{ what: string, corrupt: (text: string) => string }> = 
     },
     {
         what: 'a trackID is too large for the instance buffer',
-        corrupt: text => text.replaceAll('trackID="0"', `trackID="${MAX_TRACK_ID + 1}"`)
+        corrupt: text => text.replaceAll('trackID="0"', `trackID="${MAX_STRAND_ID + 1}"`)
     },
     {
-        what: 'the track ids are sparse',
+        what: 'the strand ids are sparse',
         corrupt: text => text.replaceAll('trackID="0"', 'trackID="9000"')
     },
     {

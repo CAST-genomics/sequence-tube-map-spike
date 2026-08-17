@@ -262,7 +262,7 @@ if (null === box) {
 
         await page.keyboard.up('Shift')
 
-        check('the feeler picks the strand under a box', /track \d+/.test(readout), readout.split('·')[0].trim())
+        check('the feeler picks the strand under a box', /strand \d+/.test(readout), readout.split('·')[0].trim())
     }
 
     // ── 6. Pan and zoom pass through ───────────────────────────────────────────────────

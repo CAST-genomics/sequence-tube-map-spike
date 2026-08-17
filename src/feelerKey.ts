@@ -8,7 +8,7 @@
  * does without the key, and releasing subtracts the emphasis and nothing else. The exclusion
  * existed to keep two interaction sets off one hit-test that cost ~28 ms, and that hit-test
  * is gone. **Pan and zoom still yield, and that is settled**: holding the key *is* the act
- * of isolating a track with the cursor, and a map that moved under a sweep would slide the
+ * of isolating a strand with the cursor, and a map that moved under a sweep would slide the
  * strand out from under the feeler mid-gesture. The mode exists to hold the picture still
  * while the cursor reads it, which is a reason of its own and not the hit-test cost.
  *

@@ -22,8 +22,8 @@ field, and Open. Three query parameters:
 
 - `?url=…` — open a different tube map. Defaults to the committed fixture.
 - `?fps=1` — frame meter, top left. Click it to reset the worst-frame figure.
-- `?pick` — read the pick pass and the feeler out loud: the track under the cursor, what
-  the pick cost, which track is emphasized, and what the last and worst appearance-table
+- `?pick` — read the pick pass and the feeler out loud: the strand under the cursor, what
+  the pick cost, which strand is emphasized, and what the last and worst appearance-table
   writes cost. Instrumentation; feeler mode runs without it.
 
 `?renderer=` and `?feeler` are gone as of 2026-08-16 (#40): there is one surface, and its
@@ -65,12 +65,12 @@ measurements, is
 [`notes/2026-08-14-three-js-renderer-verdict.md`](./notes/2026-08-14-three-js-renderer-verdict.md);
 how a band is drawn is [`docs/RENDERING.md`](./docs/RENDERING.md).
 
-Tracks running in proximity are often too close in color to tell apart, and sometimes
-share a color exactly. Track color is PCLAI's shipped encoding of a PCA coordinate,
+Strands running in proximity are often too close in color to tell apart, and sometimes
+share a color exactly. Strand color is PCLAI's shipped encoding of a PCA coordinate,
 derived for the PCLAI chart — where position separates the points and color supports it —
 and a tube map has no position channel to spare. The strategies for adding back a channel
 the chart did not need are collected in
-[`docs/DISAMBIGUATING-TRACKS.md`](./docs/DISAMBIGUATING-TRACKS.md).
+[`docs/DISAMBIGUATING-STRANDS.md`](./docs/DISAMBIGUATING-STRANDS.md).
 
 **Nothing falls back.** A document the band grammar rejects gets a named error state and
 stops there. That was already the behaviour before the surface was deleted — nothing was
@@ -122,9 +122,9 @@ it (#40).
 
 ### Feeler mode
 
-Hold `Shift` and the cursor becomes a feeler. The map recedes on the key alone, the track
+Hold `Shift` and the cursor becomes a feeler. The map recedes on the key alone, the strand
 under the cursor is drawn as the document drew it, moving the cursor hands the emphasis to
-the next track, and releasing brings the whole map back. Hover alone does nothing —
+the next strand, and releasing brings the whole map back. Hover alone does nothing —
 highlighting is deliberate rather than incidental. Pan and zoom are suppressed while the
 key is held, because a strand that slides out from under the cursor cannot be felt.
 
@@ -140,20 +140,20 @@ shipped switched off, because there each swap invalidated style across ~10,000 e
 ([`notes/2026-08-13-direct-strand-interaction-is-not-viable.md`](./notes/2026-08-13-direct-strand-interaction-is-not-viable.md));
 that surface and its `?feeler` flag were deleted 2026-08-16 (#40).
 
-Here track appearance is a `DataTexture` of one texel per track — RGB plus an emphasis
-byte — so moving the emphasis writes one byte per *track*, nothing per band, and the frame
-uploads 2 KB. On `5520+`, 464 tracks and 40,442 bands, a sweep that
-moves it 198 times across 198 tracks holds a median write of 0.000 ms and a worst of
+Here strand appearance is a `DataTexture` of one texel per strand — RGB plus an emphasis
+byte — so moving the emphasis writes one byte per *strand*, nothing per band, and the frame
+uploads 2 KB. On `5520+`, 464 strands and 40,442 bands, a sweep that
+moves it 198 times across 198 strands holds a median write of 0.000 ms and a worst of
 0.100 ms in every window of the sweep — flat, and under what the page timer resolves, so
 read it as *below 100 µs*. The worst frame while sweeping is 9.4 ms, the same as the worst
 frame over the identical moves with the key released: inside a 16.67 ms frame, and a third
 of the ~28 ms a single DOM swap cost.
 
 What it does not do is work at fit-to-width, where a band on `5520+` is 0.19 css pixels
-tall and 5.7 tracks share a device pixel row: there is no pixel in which emphasized and
+tall and 5.7 strands share a device pixel row: there is no pixel in which emphasized and
 receded can differ. It reads unmistakably from about one css pixel per band upward. That is
 a pixel budget rather than a performance one, and
-[`docs/DISAMBIGUATING-TRACKS.md`](./docs/DISAMBIGUATING-TRACKS.md) is where the candidates
+[`docs/DISAMBIGUATING-STRANDS.md`](./docs/DISAMBIGUATING-STRANDS.md) is where the candidates
 for the other regime are weighed.
 
 Measurements, screenshots and the choices behind the treatment:
@@ -188,7 +188,7 @@ really keeps apart is the fetch and the camera.
 | `src/bandCamera.ts` | the camera's framing, and the navigator's content coordinates — pure, DOM-free, tested |
 | `src/geometry.ts` | `Point`, `Size`, `Rect`, `clamp` — the vocabulary the rest of it measures in |
 | `src/navigator.ts` | the navigator's chrome: viewport rect, drag and press-to-jump. The surface paints the thumbnail |
-| `src/bandPicker.ts`, `src/trackAppearance.ts`, `src/feelerKey.ts` | which track is under the cursor, how each one looks, and what `Shift` means |
+| `src/bandPicker.ts`, `src/strandAppearance.ts`, `src/feelerKey.ts` | which strand is under the cursor, how each one looks, and what `Shift` means |
 | `src/fetchDocument.ts` | the fetch, and the failures worth naming |
 | `src/loadFailure.ts` | which of the four failures happened, in words a researcher can act on |
 | `src/surfaceStyles.ts` | the viewer's stylesheet, as a string so the host imports no CSS |

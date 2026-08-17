@@ -37,22 +37,22 @@
 import { NUMBER as N, NonConformingDocument, countOccurrences } from './documentGrammar.ts'
 import type { Point } from './geometry.ts'
 
-/** Constant across all 127,101 surveyed track paths, and every `<rect>` height. */
+/** Constant across all 127,101 surveyed strand paths, and every `<rect>` height. */
 export const THICKNESS = 15
 
-/** Largest track id the Uint16 instance buffer can hold without wrapping. */
-export const MAX_TRACK_ID = 65535
+/** Largest strand id the Uint16 instance buffer can hold without wrapping. */
+export const MAX_STRAND_ID = 65535
 
 export interface ParsedMap {
     /** Six floats per band, document order: x0, y0, width, y1, uTop, uBottom. World
      *  coordinates, y up, centred on the origin. `y0`/`y1` are the upper edge. */
     geometry: Float32Array
-    /** One track id per band, parallel to `geometry`. */
-    trackIds: Uint16Array
+    /** One strand id per band, parallel to `geometry`. */
+    strandIds: Uint16Array
     bandCount: number
-    /** RGB triples, one per track, indexed by track id. */
-    trackColors: Uint8Array
-    trackCount: number
+    /** RGB triples, one per strand, indexed by strand id. */
+    strandColors: Uint8Array
+    strandCount: number
     /** Extent of the content, in world units. Centred on the origin. */
     content: { width: number, height: number }
     /** The viewBox centre subtracted above, in the document's own units. Anything else
@@ -61,6 +61,12 @@ export interface ParsedMap {
     centre: Point
 }
 
+/**
+ * `trackID` is UCSD's spelling, not ours. This renderer calls the thing a **strand** — the
+ * word collides with PGB's annotation track otherwise — but the attribute in the document
+ * is named by whoever writes the document, so every pattern matching the source text keeps
+ * the upstream name and only what we build out of it is renamed.
+ */
 const FILL = 'style="fill: rgb\\((\\d+), (\\d+), (\\d+)\\); fill-opacity: 1;" trackID="(\\d+)"'
 
 /** A degenerate band: flat, so its control abscissae carry no information. */
@@ -88,26 +94,27 @@ export function parseBands(text: string): ParsedMap {
     // the whitelisted exception and are not this renderer's business. Slicing here
     // rather than filtering later is what keeps the grammar check written against
     // `g.track` specifically.
-    const trackEnd = text.indexOf('<g class="node"')
-    const track = -1 === trackEnd ? text : text.slice(0, trackEnd)
+    // `trackGroup` keeps the document's own name: it is the text of `g.track`, not a strand.
+    const trackGroupEnd = text.indexOf('<g class="node"')
+    const trackGroup = -1 === trackGroupEnd ? text : text.slice(0, trackGroupEnd)
 
-    const expected = countOccurrences(track, '<rect') + countOccurrences(track, '<path')
+    const expected = countOccurrences(trackGroup, '<rect') + countOccurrences(trackGroup, '<path')
 
     if (0 === expected) {
         throw new NonConformingDocument('The document draws no bands at all; its g.track group is empty.')
     }
 
     const geometry = new Float32Array(expected * 6)
-    const trackIds = new Uint16Array(expected)
+    const strandIds = new Uint16Array(expected)
     const colors = new Map<number, [number, number, number]>()
 
     let bands = 0
-    let maxTrackId = -1
+    let maxStrandId = -1
     let match: RegExpExecArray | null
 
     ELEMENT.lastIndex = 0
 
-    while (null !== (match = ELEMENT.exec(track))) {
+    while (null !== (match = ELEMENT.exec(trackGroup))) {
         const isRect = undefined !== match[1]
 
         let x0: number
@@ -166,9 +173,9 @@ export function parseBands(text: string): ParsedMap {
         // The instance buffer stores ids as Uint16. Silently wrapping would draw a
         // plausible map of the wrong haplotypes, which is the failure this parser
         // exists to refuse.
-        if (id > MAX_TRACK_ID) {
+        if (id > MAX_STRAND_ID) {
             throw new NonConformingDocument(
-                `A band carries trackID ${id}, above the ${MAX_TRACK_ID} this renderer can hold.`
+                `A band carries trackID ${id}, above the ${MAX_STRAND_ID} this renderer can hold.`
             )
         }
 
@@ -185,14 +192,14 @@ export function parseBands(text: string): ParsedMap {
         geometry[at + 3] = centreY - y1
         geometry[at + 4] = (controlTop - x0) / width
         geometry[at + 5] = (controlBottom - x0) / width
-        trackIds[bands] = id
+        strandIds[bands] = id
 
         if (false === colors.has(id)) {
             colors.set(id, [red, green, blue])
         }
 
-        if (id > maxTrackId) {
-            maxTrackId = id
+        if (id > maxStrandId) {
+            maxStrandId = id
         }
 
         bands += 1
@@ -208,28 +215,28 @@ export function parseBands(text: string): ParsedMap {
         )
     }
 
-    const trackCount = maxTrackId + 1
-    const trackColors = new Uint8Array(trackCount * 3)
+    const strandCount = maxStrandId + 1
+    const strandColors = new Uint8Array(strandCount * 3)
 
     for (const [id, rgb] of colors) {
-        trackColors[id * 3] = rgb[0]
-        trackColors[id * 3 + 1] = rgb[1]
-        trackColors[id * 3 + 2] = rgb[2]
+        strandColors[id * 3] = rgb[0]
+        strandColors[id * 3 + 1] = rgb[1]
+        strandColors[id * 3 + 2] = rgb[2]
     }
 
-    if (colors.size !== trackCount) {
+    if (colors.size !== strandCount) {
         throw new NonConformingDocument(
-            `The document draws ${colors.size} tracks but numbers them up to ${maxTrackId}; `
-            + 'track ids must run from 0 upward with no gaps.'
+            `The document draws ${colors.size} strands but numbers them up to ${maxStrandId}; `
+            + 'strand ids must run from 0 upward with no gaps.'
         )
     }
 
     return {
         geometry,
-        trackIds,
+        strandIds,
         bandCount: bands,
-        trackColors,
-        trackCount,
+        strandColors,
+        strandCount,
         content: { width: viewBox.width, height: viewBox.height },
         centre: { x: centreX, y: centreY }
     }

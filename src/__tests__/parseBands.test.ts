@@ -10,12 +10,12 @@
 import { readFileSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
 import { NonConformingDocument } from '../documentGrammar.ts'
-import { MAX_TRACK_ID, THICKNESS, parseBands } from '../parseBands.ts'
+import { MAX_STRAND_ID, THICKNESS, parseBands } from '../parseBands.ts'
 
 const FIXTURES = {
-    small: { path: 'public/stm-chr1-25331046-25331646.svg', bands: 10270, tracks: 369, width: 35562.42857142856 },
-    '5520+': { path: 'public/stm-node-5520-chr1-25331646-25335796.svg', bands: 40442, tracks: 464, width: 108982.57142857135 },
-    '5514+': { path: 'public/stm-node-5514-chr1-25301271-25309238.svg', bands: 38423, tracks: 378, width: 177993.5714285708 }
+    small: { path: 'public/stm-chr1-25331046-25331646.svg', bands: 10270, strands: 369, width: 35562.42857142856 },
+    '5520+': { path: 'public/stm-node-5520-chr1-25331646-25335796.svg', bands: 40442, strands: 464, width: 108982.57142857135 },
+    '5514+': { path: 'public/stm-node-5514-chr1-25301271-25309238.svg', bands: 38423, strands: 378, width: 177993.5714285708 }
 }
 
 describe('parseBands', () => {
@@ -26,7 +26,7 @@ describe('parseBands', () => {
             const map = parseBands(readFileSync(fixture.path, 'utf8'))
 
             expect(map.bandCount).toBe(fixture.bands)
-            expect(map.trackCount).toBe(fixture.tracks)
+            expect(map.strandCount).toBe(fixture.strands)
             expect(map.content.width).toBeCloseTo(fixture.width, 6)
         })
 
@@ -66,7 +66,7 @@ describe('parseBands', () => {
                     Array.from(map.geometry.subarray(i * 6, i * 6 + 6))
 
                 expect(width).toBeGreaterThan(0)
-                expect(map.trackIds[i]).toBeLessThan(map.trackCount)
+                expect(map.strandIds[i]).toBeLessThan(map.strandCount)
                 expect(Number.isFinite(y0)).toBe(true)
                 expect(Number.isFinite(y1)).toBe(true)
 
@@ -83,7 +83,7 @@ describe('parseBands', () => {
         })
     }
 
-    it('places tracks with no gap between them', () => {
+    it('places strands with no gap between them', () => {
         // Pitch 15 against thickness 15, so the map is a solid field of colour rather
         // than thin ribbons on white. This is load-bearing for what the renderer has to
         // preserve at fit scale, so it is asserted rather than remembered.
@@ -91,7 +91,7 @@ describe('parseBands', () => {
         const first = new Map<number, number>()
 
         for (let i = 0; i < map.bandCount; i += 1) {
-            const id = map.trackIds[i]
+            const id = map.strandIds[i]
 
             if (false === first.has(id)) {
                 first.set(id, map.geometry[i * 6 + 1])
@@ -123,7 +123,7 @@ describe('parseBands', () => {
             .toThrow(/not an SVG document/)
     })
 
-    it('rejects a document whose track ids are sparse', () => {
+    it('rejects a document whose strand ids are sparse', () => {
         const text = readFileSync(FIXTURES.small.path, 'utf8')
 
         expect(() => parseBands(text.replaceAll('trackID="0"', 'trackID="9000"')))
@@ -154,9 +154,9 @@ describe('parseBands', () => {
         expect(flat).toBe(4603)
     })
 
-    it('rejects a track id too large for the instance buffer', () => {
+    it('rejects a strand id too large for the instance buffer', () => {
         const text = readFileSync(FIXTURES.small.path, 'utf8')
-        const broken = text.replaceAll('trackID="0"', `trackID="${MAX_TRACK_ID + 1}"`)
+        const broken = text.replaceAll('trackID="0"', `trackID="${MAX_STRAND_ID + 1}"`)
 
         expect(() => parseBands(broken)).toThrow(NonConformingDocument)
     })

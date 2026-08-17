@@ -33,14 +33,14 @@ show(initialUrl)
 // and there is one, the second re-armed the feeler on the surface that could not afford it.
 hint.textContent += ' · hold shift to feel strands'
 
-// `?pick` reads the pick pass out loud: the track under the cursor, what asking cost, which
-// track the feeler has lit, and what the worst appearance-table write cost. Feeler
+// `?pick` reads the pick pass out loud: the strand under the cursor, what asking cost, which
+// strand the feeler has lit, and what the worst appearance-table write cost. Feeler
 // mode runs the same pass without it — this only says the numbers out loud, and is also
 // what makes a pick happen on a plain hover, which nothing else does.
 const pickReadout = parameters.has('pick')
 
 if (pickReadout) {
-    hint.textContent += ' · picking the track under the cursor'
+    hint.textContent += ' · picking the strand under the cursor'
 }
 
 const viewer = mountTubeMapSurface(container, { pickReadout })

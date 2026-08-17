@@ -26,8 +26,8 @@ const SAMPLES = 120
 const DEEP_SAMPLES = 20
 /** Enough wheel steps to reach the 200x clamp from fit, whatever the step size works out to. */
 const WHEEL_STEPS = 140
-/** The haplotype whose every band is picked, to show the answer is a track and not a piece. */
-const TRACK = 368
+/** The haplotype whose every band is picked, to show the answer is a strand and not a piece. */
+const STRAND = 368
 
 const browser = await chromium.launch({ headless: false })
 const page = await browser.newPage({ viewport: { width: 1400, height: 900 } })
@@ -86,7 +86,7 @@ const { bandCount, content, groups } = await page.evaluate(async source => {
         }
     }
 
-    /** The track the pass must answer: the last band in document order putting any ink in
+    /** The strand the pass must answer: the last band in document order putting any ink in
      *  a pick pixel of `size` world units centred on the point. */
     window.__predict = (worldX, worldY, size) => {
         let answer = null
@@ -102,7 +102,7 @@ const { bandCount, content, groups } = await page.evaluate(async source => {
             const hi = Math.min(edge.top, worldY + size * 0.5)
 
             if (hi - lo > 0) {
-                answer = map.trackIds[band]
+                answer = map.strandIds[band]
             }
         }
 
@@ -119,7 +119,7 @@ const { bandCount, content, groups } = await page.evaluate(async source => {
 
         return null === edge
             ? null
-            : { x: worldX, y: (edge.top + edge.bottom) * 0.5, trackId: map.trackIds[band] }
+            : { x: worldX, y: (edge.top + edge.bottom) * 0.5, strandId: map.strandIds[band] }
     }
 
     /** The vertical middle of a band at its own mid-span: a point unambiguously inside it. */
@@ -128,15 +128,15 @@ const { bandCount, content, groups } = await page.evaluate(async source => {
         const worldX = map.geometry[at] + map.geometry[at + 2] * 0.5
         const edge = edges(band, worldX)
 
-        return { x: worldX, y: (edge.top + edge.bottom) * 0.5, trackId: map.trackIds[band] }
+        return { x: worldX, y: (edge.top + edge.bottom) * 0.5, strandId: map.strandIds[band] }
     }
 
-    // How interleaved the document is: a track's bands are not emitted together, so
+    // How interleaved the document is: a strand's bands are not emitted together, so
     // nothing about the file's order groups a haplotype. Only the id does.
     let runs = 1
 
     for (let band = 1; band < map.bandCount; band += 1) {
-        if (map.trackIds[band] !== map.trackIds[band - 1]) {
+        if (map.strandIds[band] !== map.strandIds[band - 1]) {
             runs += 1
         }
     }
@@ -144,14 +144,14 @@ const { bandCount, content, groups } = await page.evaluate(async source => {
     return {
         bandCount: map.bandCount,
         content: map.content,
-        groups: { runs, tracks: new Set(map.trackIds).size }
+        groups: { runs, strands: new Set(map.strandIds).size }
     }
 }, DOCUMENT)
 
 const canvas = await page.locator('canvas.stm-canvas').boundingBox()
 
 console.log(`document:  ${bandCount} bands · ${content.width.toFixed(0)} x ${content.height} units`)
-console.log(`grouping:  ${groups.tracks} tracks, but ${groups.runs} contiguous runs — the file does not group a haplotype`)
+console.log(`grouping:  ${groups.strands} strands, but ${groups.runs} contiguous runs — the file does not group a haplotype`)
 console.log(`viewport:  ${canvas.width} x ${canvas.height} css px\n`)
 
 /**
@@ -217,7 +217,7 @@ const onCanvas = point =>
 
 /** Blank the readout so the value read next is certainly a fresh pick. */
 async function armPick() {
-    await page.evaluate(() => { document.querySelector('.stm-pick').textContent = 'track —' })
+    await page.evaluate(() => { document.querySelector('.stm-pick').textContent = 'strand —' })
 }
 
 async function readPick(timeout) {
@@ -228,10 +228,10 @@ async function readPick(timeout) {
     )
 
     const text = await page.locator('.stm-pick').textContent()
-    const track = /^track (\S+)/.exec(text)[1]
+    const strand = /^strand (\S+)/.exec(text)[1]
 
     return {
-        trackId: '\u2014' === track ? null : Number(track),
+        strandId: '\u2014' === strand ? null : Number(strand),
         milliseconds: Number(/\u00b7 ([\d.]+) ms/.exec(text)[1])
     }
 }
@@ -304,10 +304,10 @@ for (let i = 0; i < SAMPLES; i += 1) {
 
     fitCosts.push(got.milliseconds)
 
-    if (got.trackId === expected) {
+    if (got.strandId === expected) {
         fitAgreed += 1
     } else {
-        fitWrong.push({ band, expected, got: got.trackId })
+        fitWrong.push({ band, expected, got: got.strandId })
     }
 }
 
@@ -319,7 +319,7 @@ if (fitWrong.length > 0) {
 }
 
 // ── One haplotype, all of its pieces ─────────────────────────────────────────────────
-// The document does not emit a track's bands together — 10,270 bands form 6,016
+// The document does not emit a strand's bands together — 10,270 bands form 6,016
 // contiguous runs — so this is the claim being tested rather than assumed: separate
 // elements, scattered through the file and across the map, answering with one haplotype.
 const subject = await page.evaluate(id => {
@@ -327,13 +327,13 @@ const subject = await page.evaluate(id => {
     const bands = []
 
     for (let band = 0; band < map.bandCount; band += 1) {
-        if (map.trackIds[band] === id) {
+        if (map.strandIds[band] === id) {
             bands.push(band)
         }
     }
 
-    return { trackId: id, bands }
-}, TRACK)
+    return { strandId: id, bands }
+}, STRAND)
 
 let answered = 0
 let tested = 0
@@ -366,28 +366,28 @@ for (const band of subject.bands) {
     minY = Math.min(minY, centre.y)
     maxY = Math.max(maxY, centre.y)
 
-    if (got.trackId === subject.trackId) {
+    if (got.strandId === subject.strandId) {
         answered += 1
-    } else if (got.trackId === expected) {
-        // Another track is genuinely on top of this band at this point. The pick is
+    } else if (got.strandId === expected) {
+        // Another strand is genuinely on top of this band at this point. The pick is
         // right; this band is simply not the one visible there.
         occluded += 1
     } else {
-        hapWrong.push({ band, expected, got: got.trackId })
+        hapWrong.push({ band, expected, got: got.strandId })
     }
 }
 
-console.log(`\nhaplotype, not fragment · track ${subject.trackId}, ${subject.bands.length} separate bands`)
+console.log(`\nhaplotype, not fragment · strand ${subject.strandId}, ${subject.bands.length} separate bands`)
 console.log(`  spanning x ${(maxX - minX).toFixed(0)} units and y ${(maxY - minY).toFixed(0)} units`)
 console.log(`  reachable and tested: ${tested}`)
-console.log(`  answered with track ${subject.trackId}: ${answered}`)
-console.log(`  occluded by a track drawn over it, and the pick said so: ${occluded}`)
+console.log(`  answered with strand ${subject.strandId}: ${answered}`)
+console.log(`  occluded by a strand drawn over it, and the pick said so: ${occluded}`)
 console.log(`  wrong: ${hapWrong.length} ${0 === hapWrong.length ? '\u2713' : JSON.stringify(hapWrong)}`)
 
 // ── Empty space ──────────────────────────────────────────────────────────────────────
 const empty = await pickAt({ x: canvas.x + canvas.width * 0.5, y: canvas.y + 4 })
 
-console.log(`\nempty space above the map: ${null === empty.trackId ? 'no track ✓' : `track ${empty.trackId} ✗`}`)
+console.log(`\nempty space above the map: ${null === empty.strandId ? 'no strand ✓' : `strand ${empty.strandId} ✗`}`)
 
 // ── Zoomed to the clamp, where a band is ~118 css px tall ────────────────────────────
 const deepCosts = []
@@ -454,10 +454,10 @@ for (const band of visibleBands) {
 
     deepCosts.push(got.milliseconds)
 
-    if (got.trackId === expected) {
+    if (got.strandId === expected) {
         deepAgreed += 1
     } else {
-        deepWrong.push({ band, expected, got: got.trackId })
+        deepWrong.push({ band, expected, got: got.strandId })
     }
 }
 

@@ -90,7 +90,7 @@ band, so no background survives and the result looks saturated and crisp — but
 of the bands covering a pixel can be represented, and the rest are simply lost.
 
 Measured at fit on `5520+`, 1400×900 at dpr 2, over a 600×155 device-pixel sample well
-inside the map. 464 tracks land on **177 device rows**, so 2.6 tracks share every pixel row:
+inside the map. 464 strands land on **177 device rows**, so 2.6 strands share every pixel row:
 
 | | saturation | min channel | distinct colours | distinct per column |
 |---|---|---|---|---|
@@ -112,7 +112,7 @@ concentrated entirely on band edges. Saturation 0.821 versus 0.812. They are the
 picture.
 
 So the coverage question, which the original treats as the central design risk, turns out to
-be confined to the zoom range where 464 tracks are decimated onto ~177 rows and no technique
+be confined to the zoom range where 464 strands are decimated onto ~177 rows and no technique
 can render them legibly anyway.
 
 **Corrected 2026-08-15 — that last sentence conflates two things, and only one of them is
@@ -132,9 +132,9 @@ fraction of the background surviving, whatever colour the bands are:
 
 A band's interior is opaque — exactly zero transmittance. But a band three pixels tall has one
 interior row in three, and the other two leak a quarter of what is behind them, because
-`(1 − a)(1 − (1 − a))` peaks at exactly 0.25 when a boundary falls at a pixel centre. Tracks are
+`(1 − a)(1 − (1 − a))` peaks at exactly 0.25 when a boundary falls at a pixel centre. Strands are
 stacked at a regular pitch, so every seam is in phase and they all leak at once: a coherent
-ghost of the track behind, visible by eye at ordinary working zooms.
+ghost of the strand behind, visible by eye at ordinary working zooms.
 
 Full record, method and consequences:
 [`notes/2026-08-15-how-much-shows-through.md`](../notes/2026-08-15-how-much-shows-through.md).
@@ -146,14 +146,14 @@ coverage-weighted average of the covering bands with **no background term** — 
 total coverage rather than compositing over white. That would give full saturation *and*
 exact proportions: better than SVG rather than equal to it.
 
-Not built, because it costs order-independence — where two tracks genuinely overlap, the
+Not built, because it costs order-independence — where two strands genuinely overlap, the
 painter's-algorithm z-order that instance order currently carries would be lost — and
 because the regime it improves is one that cannot be read regardless.
 
 **The second half of that reason is withdrawn, 2026-08-15.** It improves a third of the rows at
 3 css px per band, which reads perfectly well — see the correction above. The first half stands
 and is now the whole of the objection, and it is a sharper objection than it was: front-most
-wins where tracks cross is a property that was deliberately kept when picking was reconsidered
+wins where strands cross is a property that was deliberately kept when picking was reconsidered
 on the same day. Normalising averages the two instead. Filed as its own ticket rather than
 folded into a rendering tidy-up.
 
@@ -161,12 +161,12 @@ folded into a rendering tidy-up.
 
 The navigator renders this scene into a `WebGLRenderTarget` at 720 px wide — one camera
 change, once per document. That puts the coverage path at the far end of the regime the
-table above measures: a device pixel is ~300 world units and a band is 15, so ~20 tracks
+table above measures: a device pixel is ~300 world units and a band is 15, so ~20 strands
 share every pixel row instead of 2.6.
 
 Two consequences follow, both of them the arithmetic behaving as designed rather than
 anything new. `uPad` is doing real work — without a band grown to cover a pixel, a 0.05 px
-band falls between sample rows and the thumbnail becomes a picture of whichever tracks
+band falls between sample rows and the thumbnail becomes a picture of whichever strands
 happened to land on one. And the wash toward white is stronger still, for the reason given
 above: twenty independently-composited 0.05-coverage bands leave most of the background
 showing. The thumbnail is pale, and it is pale in proportion to what is there, which is

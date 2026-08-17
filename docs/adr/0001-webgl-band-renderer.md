@@ -16,7 +16,7 @@ revised: 2026-08-16
 > summary: the camera is driven by `MapControls`, not by an `{x, y, scale}` object; the
 > segment boxes ~~will be geometry, not a DOM overlay~~ **are HTML divs, reversed again
 > 2026-08-15**; the sub-pixel-ribbon framing is
-> misleading because tracks abut; and the prediction about MSAA is wrong in its mechanism.
+> misleading because strands abut; and the prediction about MSAA is wrong in its mechanism.
 > The *geometry* reasoning — the grammar, the smoothstep collapse, the lapped joins, six
 > floats per band — holds exactly and is what made the renderer a day's work.
 >
@@ -53,10 +53,10 @@ which is comparable work and leaves the ~28 ms interaction wall standing.
 
 ## What makes it tractable
 
-The price is bounded by a fact measured, not assumed: **127,101 of 127,101 track paths
+The price is bounded by a fact measured, not assumed: **127,101 of 127,101 strand paths
 across 17 documents conform to one grammar, with zero exceptions.** (Originally
 established on the fixture's 5,667 paths; confirmed 2026-08-13 across every node the
-API would return — spans of 1 bp to 7,967 bp, 369 to 464 tracks. Larger nodes are
+API would return — spans of 1 bp to 7,967 bp, 369 to 464 strands. Larger nodes are
 untested because they cannot be fetched.)
 
 ```
@@ -73,16 +73,16 @@ So a band is six floats, and the renderer needs no path parser and no tessellato
 **A band is a fragment, not a ribbon.** One haplotype is drawn as many pieces — a
 median of 28 in the fixture, ~87 in `5520+` — alternating between segment-crossing
 rectangles and inter-segment curves. That fragmentation is *why* the grammar is
-uniform: the server has already decomposed every track into elementary smoothstep
+uniform: the server has already decomposed every strand into elementary smoothstep
 transitions, which is the reason there are no arbitrary beziers left to tessellate.
 Two further consequences, both measured:
 
 - **The pieces are lapped, not butted.** Every one of 9,883 joins overlaps by exactly
   **1.0 unit** with identical y on both sides. Abutting shapes under analytic coverage
-  would seam; lapped ones do not, and since lapped pieces share a track and therefore a
+  would seam; lapped ones do not, and since lapped pieces share a strand and therefore a
   colour, the double-blend is a no-op. The seam problem is solved upstream.
 - **The instance count is irreducible.** Merging consecutive collinear pieces saves
-  **0%** — a track never has two horizontal pieces in a row at the same y, because the
+  **0%** — a strand never has two horizontal pieces in a row at the same y, because the
   two kinds strictly alternate.
 
 ## Consequences
@@ -99,7 +99,7 @@ Two further consequences, both measured:
 
     1. **The band height is fixture-dependent, and "ribbons" is misleading.** 0.6 px is
        the 600 bp fixture; `5520+` gives **0.19 px** and `5514+` 0.12 px. More
-       importantly, **tracks abut with zero gap** — pitch 15 against thickness 15 — so
+       importantly, **strands abut with zero gap** — pitch 15 against thickness 15 — so
        the map is a solid field of colour, not thin ribbons on white. Nothing thin is
        drawn against a background; what must survive is the colour transition between
        touching neighbours.
@@ -107,11 +107,11 @@ Two further consequences, both measured:
        outright by one band, so no background survives and the result looks *more*
        saturated than analytic coverage — but at most four of the 2.6-to-5 bands
        covering a pixel can be represented, and the rest are lost: 101 distinct values
-       per column against analytic's 119, out of 464 tracks. The conclusion survives;
+       per column against analytic's 119, out of 464 strands. The conclusion survives;
        the mechanism was wrong.
     3. **The choice barely matters.** At 40× zoom the two techniques differ by 6.18% of
        pixels at a mean channel delta of 2.32/255. The entire question lives below one
-       pixel per band — the regime where 464 tracks land on 177 device rows and nothing
+       pixel per band — the regime where 464 strands land on 177 device rows and nothing
        is legible regardless. Analytic is kept because it preserves ~10× more distinct
        colour at no cost, not because the difference is visible where anyone works.
 
@@ -225,7 +225,7 @@ Two further consequences, both measured:
     events and own hover; `MapControls` and the pick listeners move to the common
     ancestor so pan, zoom and the strand feeler pass through them. See `CONTEXT.md` #13.
 - **Appearance becomes a table, not a stylesheet.** Each instance carries its
-  `trackID`; a `DataTexture` holds one texel of appearance per track. Highlighting is
+  `trackID`; a `DataTexture` holds one texel of appearance per strand. Highlighting is
   a ~2 KB upload whose cost is independent of how many strands are lit — retiring the
   ~28 ms wall that `CONTEXT.md` #15 ran into, and reviving feeler mode.
 - **The canvas is viewport-sized.** The 2026-08-13 rendering failure is not fixed but

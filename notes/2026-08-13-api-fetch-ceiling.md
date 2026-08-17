@@ -87,7 +87,7 @@ UCSD first, but it is on the table and it was not before.
 
 Measured across the 17 retrieved documents. "Size" was doing four jobs at once:
 
-- **Track count is invariant to span** — a 1 bp node and a 6,440 bp node both carry
+- **Strand count is invariant to span** — a 1 bp node and a 6,440 bp node both carry
   464 — but **varies by node**: 369, 378 and 464 all appear. It is how many haplotypes
   traverse *that* node. Never hard-code it.
 - **Segment count grows with span** — 40 → 48 → 318 → 767.

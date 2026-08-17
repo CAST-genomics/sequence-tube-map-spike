@@ -6,8 +6,8 @@ of [`2026-08-15-probe-transmittance.mjs`](./2026-08-15-probe-transmittance.mjs),
 
 Raised by the user against a claim I had made while explaining where alpha comes from: that at
 one device pixel per band and above, a band's interior is opaque and the map is therefore
-essentially opaque. Two screenshots said otherwise — a track passing *behind* several
-foreground tracks was plainly visible through them, at a zoom where every foreground band was
+essentially opaque. Two screenshots said otherwise — a strand passing *behind* several
+foreground strands was plainly visible through them, at a zoom where every foreground band was
 two or three pixels tall. **The claim was wrong as a description of the picture, and this is
 what is actually true.**
 
@@ -16,7 +16,7 @@ what is actually true.**
 Transmittance `T` is the fraction of the background surviving at a pixel. Render the same view
 twice, once over a white ground and once over a black ground, and subtract: `T = (white −
 black) / 255`. It is independent of what colour the bands themselves are, which is what makes
-it usable on a map of 369 pastel tracks. `T = 0` is opaque; `T = 0.25` means a quarter of
+it usable on a map of 369 pastel strands. `T = 0` is opaque; `T = 0.25` means a quarter of
 whatever is behind is showing.
 
 Sampled down the middle column of a 1400 × 900 viewport on the committed fixture, over the rows
@@ -50,12 +50,12 @@ which peaks at **exactly 0.25** when the boundary falls at a pixel centre. Measu
 
 Two details follow from the layout rather than the arithmetic:
 
-- **The seams are all in phase.** Tracks are stacked at a regular pitch, so every boundary
+- **The seams are all in phase.** Strands are stacked at a regular pitch, so every boundary
   falls at the same offset within its pixel and every seam leaks the same amount at the same
-  time. That is why this reads as a coherent ghost of the track behind rather than as noise —
+  time. That is why this reads as a coherent ghost of the strand behind rather than as noise —
   and why it was spotted by eye before it was measured.
 - **The worst rows are not seams at all.** `T` of 0.5–0.8 shows up where the layout leaves a
-  genuine gap between groups of tracks. That is real empty space and is supposed to show
+  genuine gap between groups of strands. That is real empty space and is supposed to show
   through.
 
 ## What this corrects, and what it does not
@@ -65,7 +65,7 @@ shapes is the classic conflation artifact"* — and says SVG has it identically,
 inherited rather than introduced. Two of its conclusions were drawn too narrowly, and the file
 is corrected:
 
-1. That the coverage question is *"confined to the zoom range where 464 tracks are decimated
+1. That the coverage question is *"confined to the zoom range where 464 strands are decimated
    onto ~177 rows and no technique can render them legibly anyway."* The **MSAA-versus-analytic
    difference** is indeed confined there — 6.18% of pixels at 40× zoom, all on band edges. The
    **conflation** is not: it lives at every seam at every zoom, and a seam exists at every band
@@ -82,9 +82,9 @@ drawn, and nothing here argues for changing the shader that draws one.
 - **The fix is the third option already in `docs/RENDERING.md`**: normalise by total coverage
   instead of compositing over white. At a seam the two coverages sum to 1, so the result is a
   weighted average of the two band colours with no background term at all. Filed as its own
-  ticket, because its cost — order-independence where tracks genuinely overlap — lands on a
+  ticket, because its cost — order-independence where strands genuinely overlap — lands on a
   property that was deliberately kept.
-- **It explains why an obscured track looks selectable.** A track visible through a third of
+- **It explains why an obscured strand looks selectable.** A strand visible through a third of
   the rows above it looks like something you could point at, and picking answers with the
   front-most band. That was considered and left alone on 2026-08-15: whatever is in front should
   win, because that is what the cursor is pointing at. See

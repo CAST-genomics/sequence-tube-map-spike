@@ -15,10 +15,10 @@ shader's real requirements known.
 
 **The fidelity fixture changed, because band height at fit scale is not invariant.**
 The brief treats the 600 bp fixture as representative and `5520+` as a throughput
-case. Track count is invariant to span; **strip width is not**, and band height at fit
-falls as `viewportWidth × contentHeight / stripWidth ÷ tracks`:
+case. Strand count is invariant to span; **strip width is not**, and band height at fit
+falls as `viewportWidth × contentHeight / stripWidth ÷ strands`:
 
-| fixture | strip width | content height | tracks | band height at fit, 1400 px |
+| fixture | strip width | content height | strands | band height at fit, 1400 px |
 |---|---|---|---|---|
 | 600 bp (`stm-chr1-25331046-25331646.svg`) | 35,562 | 6,325 | 369 | **0.675 CSS px** ← the ADR's "0.6 px" |
 | `5520+` | 108,983 | 7,785 | 464 | **0.216 CSS px** |
@@ -84,7 +84,7 @@ entire transition curve is a few pixels wide.
   bytes untouched end to end. We are reproducing a specific rasterizer, not rendering
   a physically correct scene; matching its technically-incorrect blending is the goal.
 - **Z-order.** Bands are **opaque** (`fill-opacity: 1`, inline, no stylesheet) and SVG
-  paints them in document order, which is *track* order — where two tracks cross, the
+  paints them in document order, which is *strand* order — where two strands cross, the
   later-numbered one wins. Free in the DOM, not free on the GPU. The instance buffer
   preserves document order and relies on in-order instance rasterization within the
   single draw call. **This is the least-trusted assumption in the plan**: if the

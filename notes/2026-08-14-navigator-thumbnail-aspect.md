@@ -16,7 +16,7 @@ The thumbnail's height is not a design choice. It follows from the map, which is
 | `5514+` | 177,994 × 6,360 | 28 : 1 | **360 × 13** | 720 × 26 |
 
 `NAVIGATOR_WIDTH = 360` was chosen against the first row and never seen against the
-others. 464 tracks in 26 pixels was the number the ticket named; `5514+` is worse, and
+others. 464 strands in 26 pixels was the number the ticket named; `5514+` is worse, and
 13 px is the number nobody had looked at at all.
 
 ## What it looks like
@@ -80,5 +80,5 @@ One detail carries the picture. At thumbnail zoom a device pixel is ~300 world u
 a band is 15, so a band that landed between sample rows would simply vanish. The
 surface's own `uPad` grows every band to cover a pixel and the fragment shader gives it
 an alpha of its true thickness over that pixel's height, so bands accumulate into the
-pixel they belong to. Without it the thumbnail would be a picture of whichever tracks
+pixel they belong to. Without it the thumbnail would be a picture of whichever strands
 happened to fall on a sample row — plausible-looking, and not the map.

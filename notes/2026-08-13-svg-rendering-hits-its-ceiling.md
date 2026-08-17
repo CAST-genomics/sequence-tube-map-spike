@@ -116,7 +116,7 @@ no stroke joins or caps, no dash patterns, no fill-rule ambiguity, and no text, 
 is the hardest thing to render in WebGL.
 
 **Rough sizing — superseded 2026-08-13.** The estimate below assumed general cubic
-tessellation. Re-measuring the fixture showed **all 5,667 track paths conform to one
+tessellation. Re-measuring the fixture showed **all 5,667 strand paths conform to one
 grammar with zero exceptions**, with both control points of each cubic sharing an x
 and a constant band thickness of 15. A band is therefore six floats, needs no
 tessellator, and the map is ~10,270 instances of a single parametric shape in one
@@ -129,7 +129,7 @@ the order of 380k triangles for the whole map, mergeable into one buffer and one
 call. Trivial for a GPU.~~
 
 **What this buys beyond fixing the bug.** Highlighting stops being a style
-invalidation and becomes a per-track attribute or lookup-texture update — effectively
+invalidation and becomes a per-strand attribute or lookup-texture update — effectively
 free — which retires the ~28 ms wall and would likely make direct hover interaction
 viable again. Per-element hit-testing returns via GPU colour picking (render ids to
 an offscreen buffer, read the pixel under the cursor). PGB already ships three.js, so

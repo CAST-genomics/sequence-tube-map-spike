@@ -660,7 +660,7 @@ fragment shader — and that choice sets both the cost and the antialiasing qual
   outright by a single band, so no background survives and the result looks
   <i>more</i> saturated than analytic coverage; but at most four of the bands covering a
   pixel can be represented and the rest are lost. At fit on the largest document, 464
-  tracks land on 177 device rows, and a column carries 101 distinct values under MSAA
+  strands land on 177 device rows, and a column carries 101 distinct values under MSAA
   against 119 under analytic coverage. The conclusion stands; the mechanism was wrong.
 </aside>
 
@@ -668,7 +668,7 @@ fragment shader — and that choice sets both the cost and the antialiasing qual
   <b>And the choice barely matters.</b> At 40× zoom, where a band is 7.7 CSS px, the two
   techniques differ by 6.18% of pixels at a mean channel delta of 2.32 out of 255 —
   entirely on band edges. The whole question lives below one pixel per band, which is
-  the regime where hundreds of tracks share every pixel row and nothing is legible under
+  the regime where hundreds of strands share every pixel row and nothing is legible under
   any technique. Analytic coverage is kept because it preserves about ten times more
   distinct colour at no cost, not because the difference is visible where anyone works.
 </aside>
@@ -844,8 +844,8 @@ That was the second reason to leave the DOM.
 </p>
 
 <p>
-In the new renderer, each instance carries the track id it already had in the SVG, and
-a small texture holds one texel of appearance per track: RGB for its colour, alpha for
+In the new renderer, each instance carries the strand id it already had in the SVG, and
+a small texture holds one texel of appearance per strand: RGB for its colour, alpha for
 how much it is dimmed. The fragment shader reads its own row and multiplies:
 </p>
 
@@ -854,7 +854,7 @@ outColor   = vec4(look.rgb, look.a * coverage);</code></pre>
 
 <figure>
 <div class="svg-scroll">
-<svg viewBox="0 0 720 200" role="img" aria-label="Instance data carries a track id which indexes a small appearance texture; highlighting rewrites two kilobytes of that texture and touches no geometry.">
+<svg viewBox="0 0 720 200" role="img" aria-label="Instance data carries a strand id which indexes a small appearance texture; highlighting rewrites two kilobytes of that texture and touches no geometry.">
   <defs>
     <marker id="ar2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
       <path d="M 0 0 L 10 5 L 0 10 z" fill="currentColor"/>
@@ -880,7 +880,7 @@ outColor   = vec4(look.rgb, look.a * coverage);</code></pre>
       <rect class="band-f" x="386" y="60" width="26" height="30" opacity="0.30"/>
       <rect x="256" y="60" width="156" height="30" fill="none" stroke="currentColor" stroke-width="1.2"/>
     </g>
-    <text class="faint-f mono" x="256" y="107" font-size="10.5">512 × 1 RGBA · one row per track</text>
+    <text class="faint-f mono" x="256" y="107" font-size="10.5">512 × 1 RGBA · one row per strand</text>
     <text class="sig-f" x="299" y="128" font-size="10.5">↑ lit</text>
 
     <line x1="412" y1="75" x2="500" y2="75" stroke="currentColor" stroke-width="1.2" marker-end="url(#ar2)"/>
@@ -905,7 +905,7 @@ outColor   = vec4(look.rgb, look.a * coverage);</code></pre>
 </figure>
 
 <p>
-Hit-testing comes back the same way it left. A second pass renders track ids as colours
+Hit-testing comes back the same way it left. A second pass renders strand ids as colours
 into a one-pixel scissored buffer under the cursor; reading that pixel names the strand.
 About forty lines, given the attribute already exists.
 </p>

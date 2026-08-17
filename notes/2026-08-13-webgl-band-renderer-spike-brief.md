@@ -57,11 +57,11 @@ channel delta.
   monotone and per-pixel coverage remains well defined.
 - **Zero** strokes in `g.track`; **zero** text, gradients, clip paths or filters
   anywhere. Text was the failure mode with no good answer; it does not occur.
-- Track counts **369 / 378 / 464** — varies by node, so nothing may hard-code it.
+- Strand counts **369 / 378 / 464** — varies by node, so nothing may hard-code it.
 - **Confirmed only over spans of 1 bp – 7,967 bp.** 13 nodes could not be fetched;
   see the fetch-ceiling note. The largest nodes are untested, not tested and passing.
 
-**1. Promote the fixture.** `5520+` (4,150 bp, 14.2 MB, 464 tracks, 274 segments,
+**1. Promote the fixture.** `5520+` (4,150 bp, 14.2 MB, 464 strands, 274 segments,
 **40,442 bands**) becomes the spike fixture — the largest band count the API would
 return, 3.9× the current one. Keep the 600 bp fixture as the fast inner-loop case.
 Consider `5514+` (7,967 bp, **767 segments**) as a second case: it has the most
@@ -86,11 +86,11 @@ N that is indistinguishable. Adaptive tessellation (bucketing instances by rise)
 real option but premature before N=64 is shown not to be free.
 
 **4. Highlight.** `trackID` as an instanced attribute; a `DataTexture` holding one
-texel of appearance per track — RGB colour, alpha as dim factor. Highlighting writes
-the table and sets `needsUpdate`. **Size the table from the parsed document**: track
+texel of appearance per strand — RGB colour, alpha as dim factor. Highlighting writes
+the table and sets `needsUpdate`. **Size the table from the parsed document**: strand
 counts of 369, 378 and 464 all occur across the surveyed nodes, so no count may be
 hard-coded. Note this is also what makes highlighting operate on *haplotypes* rather
-than fragments — a track is ~28–87 separate shapes, and `trackID` is what unites them.
+than fragments — a strand is ~28–87 separate shapes, and `trackID` is what unites them.
 
 **5. Picking — last, and only if 1 and 2 pass.** GPU colour picking: second pass
 writing `trackID` as colour to a 1×1 scissored target, read one pixel. ~40 lines given

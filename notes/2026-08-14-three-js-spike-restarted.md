@@ -45,10 +45,10 @@ shimmers" is a result about MSAA, not a verdict on the spike.
 
 Both measured 2026-08-14, both absent from every earlier document.
 
-### Tracks abut exactly — there is no background between them
+### Strands abut exactly — there is no background between them
 
-Baseline pitch between adjacent tracks is **15** and thickness is **15**, so the gap is
-**zero**. 464 tracks span y ∈ [20, 6965] with no gaps anywhere.
+Baseline pitch between adjacent strands is **15** and thickness is **15**, so the gap is
+**zero**. 464 strands span y ∈ [20, 6965] with no gaps anywhere.
 
 The map is a **solid field of colour**, not thin ribbons drawn on white. The "0.6 px
 sub-pixel ribbon" framing in ADR `0001` is therefore partly misleading: nothing thin is
@@ -134,7 +134,7 @@ Two predictions from the earlier work are now testable rather than arguable:
   is unremarkable for an M1 Pro. The overdraw is real; the rejection may not survive.
 
 A third consideration appears only now that zoom is uncapped. 40,442 bands over 464
-tracks is ~87 pieces per track, so the average piece spans **~1,250 units** — at 200×
+strands is ~87 pieces per strand, so the average piece spans **~1,250 units** — at 200×
 that is **~3,200 px wide on screen**, and 64 rungs is one rung per 50 px. Linear
 interpolation between rungs across a smoothstep curve may visibly facet. That is a
 *high-zoom* failure, distinct from the fit-scale one, and the two point at different
@@ -180,7 +180,7 @@ the project is baked at all.
 
 **Survives** — all of it measured, none of it plan-dependent:
 
-- The band grammar. **127,101 / 127,101 track paths conform** across 17 documents;
+- The band grammar. **127,101 / 127,101 strand paths conform** across 17 documents;
   thickness always 15; control abscissae always within u ∈ [0.30, 0.70]; no strokes,
   text, gradients, clip paths or filters in `g.track`.
 - The geometry derivation in `2026-08-13-six-floats-per-band.html` §§01–02, 05, 08 — the

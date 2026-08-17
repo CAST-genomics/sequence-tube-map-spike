@@ -57,7 +57,7 @@ reasoning applied to our own work, not the browser's.
 
 Same rig as the pan/zoom note: headless-driven Google Chrome (Playwright
 `channel: 'chrome'`), 1400×850 viewport, dev server on the committed fixture
-(`chr1:25,331,046–25,331,646`, `minigraphnode=5519`, 10,270 track elements). A
+(`chr1:25,331,046–25,331,646`, `minigraphnode=5519`, 10,270 strand elements). A
 `requestAnimationFrame` sampler recorded inter-frame intervals; first two frames of
 each run discarded.
 

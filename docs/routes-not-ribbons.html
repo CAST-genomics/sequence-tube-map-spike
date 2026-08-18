@@ -1,0 +1,823 @@
+<title>Routes, Not Ribbons</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Spectral:ital,wght@0,300;0,400;0,600;0,700;1,400&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+
+<style>
+:root{
+  --ground:#ffffff;
+  --panel:#f6f4ef;
+  --panel-2:#efece5;
+  --ink:#16191b;
+  --ink-2:#41474b;
+  --ink-3:#6d7479;
+  --rule:#ddd9d1;
+  --rule-soft:#ebe7e0;
+  --accent:#1d5c60;
+  --accent-soft:#e2ecec;
+  --c0:#1d5c60;
+  --c1:#7b3f5e;
+  --c2:#3b5378;
+  --c3:#8a6a1f;
+  --c4:#96482c;
+  --grid:#e6e2da;
+  --shadow:0 1px 0 rgba(22,25,27,.04);
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --ground:#0f1214;
+    --panel:#171b1d;
+    --panel-2:#1d2225;
+    --ink:#e9e6e0;
+    --ink-2:#b9bec1;
+    --ink-3:#878d91;
+    --rule:#2b3134;
+    --rule-soft:#22282a;
+    --accent:#63b3b3;
+    --accent-soft:#16292a;
+    --c0:#5fb0b0;
+    --c1:#c88bab;
+    --c2:#8aa5cd;
+    --c3:#ceac5c;
+    --c4:#dd8e6d;
+    --grid:#262c2f;
+    --shadow:none;
+  }
+}
+:root[data-theme="dark"]{
+  --ground:#0f1214;
+  --panel:#171b1d;
+  --panel-2:#1d2225;
+  --ink:#e9e6e0;
+  --ink-2:#b9bec1;
+  --ink-3:#878d91;
+  --rule:#2b3134;
+  --rule-soft:#22282a;
+  --accent:#63b3b3;
+  --accent-soft:#16292a;
+  --c0:#5fb0b0;
+  --c1:#c88bab;
+  --c2:#8aa5cd;
+  --c3:#ceac5c;
+  --c4:#dd8e6d;
+  --grid:#262c2f;
+  --shadow:none;
+}
+
+*{box-sizing:border-box}
+body{
+  background:var(--ground);
+  color:var(--ink);
+  font-family:Spectral,Georgia,"Times New Roman",serif;
+  font-weight:400;
+  font-size:17.5px;
+  line-height:1.62;
+  margin:0;
+  -webkit-font-smoothing:antialiased;
+}
+.wrap{max-width:1180px;margin:0 auto;padding:0 28px 120px}
+
+/* ---- typographic scale ---- */
+h1,h2,h3{text-wrap:balance;margin:0}
+h1{font-size:clamp(2.6rem,6vw,4.1rem);font-weight:700;line-height:1.02;letter-spacing:-.022em}
+h2{font-size:1.62rem;font-weight:600;line-height:1.2;letter-spacing:-.012em}
+h3{font-size:1.06rem;font-weight:600;line-height:1.3}
+p{margin:0}
+.mono,code,th,.label,.num{font-family:"IBM Plex Mono",ui-monospace,Menlo,monospace}
+.label{
+  font-size:.685rem;font-weight:500;letter-spacing:.13em;text-transform:uppercase;
+  color:var(--ink-3);
+}
+em{font-style:italic}
+strong{font-weight:600}
+code{
+  font-size:.86em;background:var(--panel);border:1px solid var(--rule-soft);
+  border-radius:2px;padding:.06em .34em;color:var(--ink-2);
+}
+a{color:var(--accent);text-decoration:none;border-bottom:1px solid color-mix(in srgb,var(--accent) 35%,transparent)}
+a:hover{border-bottom-color:var(--accent)}
+a:focus-visible{outline:2px solid var(--accent);outline-offset:3px;border-radius:2px}
+
+/* ---- masthead ---- */
+header.mast{padding:88px 0 0;border-bottom:1px solid var(--rule);margin-bottom:56px}
+.mast .label{display:block;margin-bottom:26px}
+.mast .deck{
+  font-size:1.3rem;line-height:1.45;color:var(--ink-2);max-width:34em;margin-top:26px;
+  font-weight:300;
+}
+.mast .deck b{font-weight:600;color:var(--ink)}
+.colophon{
+  display:flex;flex-wrap:wrap;gap:0 40px;margin:44px 0 26px;
+  font-family:"IBM Plex Mono",monospace;font-size:.76rem;color:var(--ink-3);line-height:1.9;
+}
+.colophon div span{color:var(--ink-2)}
+
+/* ---- article grid: main measure + sidenote rail ---- */
+section{
+  display:grid;grid-template-columns:minmax(0,64ch) 1fr;gap:0 52px;align-items:start;
+}
+section > *{grid-column:1}
+figure,.tablewrap,.glossary,.callout,.builds{grid-column:1 / -1}
+.side{
+  grid-column:2;font-size:.83rem;line-height:1.5;color:var(--ink-3);
+  border-top:1px solid var(--rule);padding-top:10px;max-width:27ch;margin-top:.35em;
+}
+.side b{color:var(--ink-2);font-weight:600}
+@media (max-width:1000px){
+  section{grid-template-columns:minmax(0,1fr)}
+  section > *,.side{grid-column:1}
+  .side{max-width:none;border-top:0;border-left:2px solid var(--rule);padding:0 0 0 16px;margin:1.6em 0 0}
+}
+
+/* ---- section rhythm ---- */
+section{margin-top:64px}
+.sechead{display:flex;gap:16px;align-items:baseline;margin-bottom:22px}
+.sechead .n{
+  font-family:"IBM Plex Mono",monospace;font-size:.8rem;font-weight:600;color:var(--accent);
+  padding-top:.25em;letter-spacing:.02em;
+}
+p + p{margin-top:1.05em}
+h2 + p, h3 + p{margin-top:.7em}
+p + h3{margin-top:2em}
+.lede{font-size:1.12rem;color:var(--ink-2)}
+
+/* ---- figures ---- */
+figure{margin:38px 0 0;grid-column:1 / -1}
+figure svg{display:block;width:100%;height:auto;overflow:visible}
+figcaption{
+  font-family:"IBM Plex Mono",monospace;font-size:.755rem;line-height:1.6;color:var(--ink-3);
+  margin-top:14px;max-width:72ch;
+}
+figcaption b{color:var(--ink-2);font-weight:500}
+.figframe{border-top:1px solid var(--rule);padding-top:22px}
+
+/* ---- tables ---- */
+.tablewrap{overflow-x:auto;grid-column:1 / -1;margin:34px 0 0}
+table{border-collapse:collapse;width:100%;font-size:.845rem;font-variant-numeric:tabular-nums}
+th{
+  font-size:.68rem;font-weight:500;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3);
+  text-align:right;padding:0 0 9px 22px;border-bottom:1px solid var(--rule);white-space:nowrap;
+}
+th:first-child,td:first-child{text-align:left;padding-left:0}
+td{
+  padding:9px 0 9px 22px;text-align:right;border-bottom:1px solid var(--rule-soft);
+  font-family:"IBM Plex Mono",monospace;white-space:nowrap;color:var(--ink-2);
+}
+td:first-child{font-family:"IBM Plex Mono",monospace;font-size:.8rem;color:var(--ink)}
+td.hi{color:var(--ink);font-weight:600}
+tr.flag td{background:var(--accent-soft)}
+tbody tr:last-child td{border-bottom:1px solid var(--rule)}
+
+/* ---- glossary ---- */
+.glossary{
+  grid-column:1 / -1;background:var(--panel);border:1px solid var(--rule-soft);
+  border-radius:3px;padding:34px 36px;margin-top:26px;
+}
+.gterms{
+  display:grid;grid-template-columns:repeat(auto-fit,minmax(268px,1fr));gap:22px 40px;margin-top:24px;
+}
+.gterm dt{
+  font-family:"IBM Plex Mono",monospace;font-size:.79rem;font-weight:600;color:var(--ink);
+  margin-bottom:3px;
+}
+.gterm dd{margin:0;font-size:.905rem;line-height:1.5;color:var(--ink-2)}
+.gterm dd em{color:var(--ink-3)}
+
+/* ---- callout ---- */
+.callout{
+  grid-column:1 / -1;border-left:3px solid var(--accent);background:var(--panel);
+  padding:22px 26px;margin-top:34px;border-radius:0 3px 3px 0;
+}
+.callout p{font-size:1rem}
+.callout .label{margin-bottom:8px;color:var(--accent)}
+
+/* ---- ranked build list ---- */
+.builds{grid-column:1 / -1;margin-top:14px;border-top:1px solid var(--rule)}
+.build{
+  display:grid;grid-template-columns:2.4rem minmax(0,1fr) 11rem;gap:0 24px;
+  padding:22px 0;border-bottom:1px solid var(--rule-soft);align-items:start;
+}
+.build .r{font-family:"IBM Plex Mono",monospace;font-size:.8rem;color:var(--accent);font-weight:600;padding-top:.2em}
+.build h3{margin-bottom:5px}
+.build p{font-size:.95rem;color:var(--ink-2)}
+.build .cost{
+  font-family:"IBM Plex Mono",monospace;font-size:.72rem;color:var(--ink-3);line-height:1.55;
+  text-align:right;
+}
+@media (max-width:720px){
+  .build{grid-template-columns:2.2rem minmax(0,1fr)}
+  .build .cost{grid-column:2;text-align:left;margin-top:8px}
+}
+
+/* ---- key ---- */
+.key{display:flex;flex-wrap:wrap;gap:6px 20px;margin-top:16px;font-family:"IBM Plex Mono",monospace;font-size:.73rem;color:var(--ink-3)}
+.key span{display:inline-flex;align-items:center;gap:7px}
+.key i{width:10px;height:10px;border-radius:2px;display:inline-block}
+
+footer{
+  grid-column:1 / -1;margin-top:80px;padding-top:26px;border-top:1px solid var(--rule);
+  font-family:"IBM Plex Mono",monospace;font-size:.75rem;color:var(--ink-3);line-height:1.8;
+}
+@media (prefers-reduced-motion:no-preference){
+  .fig-anim rect,.fig-anim circle{animation:in .5s ease-out both}
+}
+@keyframes in{from{opacity:0}to{opacity:1}}
+</style>
+
+<div class="wrap">
+
+<header class="mast">
+  <span class="label">Sequence tube map · survey of the data · 18 August 2026</span>
+  <h1>Routes,<br>Not Ribbons</h1>
+  <p class="deck">A pangenome tube map draws <b>466 haplotype strands</b> and asks a
+  researcher to read them. The data underneath holds between <b>4 and 198 distinct
+  assertions</b>. Five natural groupings are already sitting in the files, unused — and one
+  of them turns out to be a small correction to what the whole project assumed the colours
+  meant.</p>
+  <div class="colophon">
+    <div>Source<br><span>pgb/public/datasets/api-v3 · 6 loci</span></div>
+    <div>Method<br><span>scripts/strand_grouping_survey.py</span></div>
+    <div>Strategy note<br><span>docs/DISAMBIGUATING-STRANDS.md § C</span></div>
+  </div>
+</header>
+
+<div class="body">
+
+<section style="margin-top:0">
+  <div class="sechead"><span class="n">§</span><h2>The language, first</h2></div>
+  <p class="lede">This document uses the domain's own words, because using anything else
+  would make it harder to check against the data. Here is what each one means. Nothing
+  below assumes any of it.</p>
+
+  <div class="glossary">
+    <span class="label">Legend</span>
+    <dl class="gterms">
+      <div class="gterm"><dt>pangenome</dt><dd>Not one reference genome but many, held
+      together in a single structure — so that “the genome” becomes a population rather than
+      a string.</dd></div>
+
+      <div class="gterm"><dt>pangenome graph</dt><dd>The data structure that does it. A
+      directed graph whose <b>nodes</b> are stretches of DNA sequence and whose edges say
+      which stretches can follow which. Shared sequence is stored once; where individuals
+      differ, the graph branches and rejoins.</dd></div>
+
+      <div class="gterm"><dt>node</dt><dd>One vertex of that graph: a run of sequence, from
+      1 base to 72,000, that every individual carrying it carries identically. <em>The
+      choke points in the picture are nodes that everyone passes through.</em></dd></div>
+
+      <div class="gterm"><dt>haplotype</dt><dd>One individual's one copy of a region.
+      Humans carry two copies of most of the genome — one from each parent — so a
+      <b>sample</b> (a person) contributes <b>two haplotypes</b>. Each strand in the tube map
+      is one haplotype's walk through the graph.</dd></div>
+
+      <div class="gterm"><dt>allele</dt><dd>A particular version of a stretch of sequence —
+      one of the alternatives available at a place where individuals differ. In graph terms:
+      which branch you take. <em>This document mostly says “route” instead, because that is
+      literally what the data holds.</em></dd></div>
+
+      <div class="gterm"><dt>route <em>(this document's term)</em></dt><dd>The set of nodes
+      one haplotype traverses. Two haplotypes on the same route walked the same path through
+      the graph and are, at this scale, the same object.</dd></div>
+
+      <div class="gterm"><dt>PCLAI</dt><dd>The upstream model that places each haplotype at
+      a 2-D coordinate summarising its ancestry, and ships a colour encoding that coordinate.
+      The tube map does not choose strand colours; it reads this field.</dd></div>
+
+      <div class="gterm"><dt>local ancestry</dt><dd>The observation that ancestry is not one
+      label per person. Different stretches of one person's genome can descend from different
+      ancestral populations, so the coordinate is properly a function of <em>position</em>,
+      not just of the individual.</dd></div>
+
+      <div class="gterm"><dt>PanSN naming</dt><dd>The convention behind names like
+      <code>HG00097#1#CM094060.1</code> — sample, then which of the two copies, then the
+      contig it came from. Sample identity and haplotype index are therefore free to read.</dd></div>
+
+      <div class="gterm"><dt>homozygous / heterozygous</dt><dd>A sample whose two haplotypes
+      are the same over a region is homozygous there; different, heterozygous. Below this is
+      called a <b>concordant</b> or discordant pair, since “same” here means “same route”.</dd></div>
+
+      <div class="gterm"><dt>silhouette score</dt><dd>Standard clustering diagnostic, −1 to 1.
+      Above ~0.7 means the clusters are tight and well separated — i.e. the grouping is in the
+      data, not imposed by the algorithm.</dd></div>
+
+      <div class="gterm"><dt>AMI</dt><dd>Adjusted mutual information, 0 to 1. How much knowing
+      one grouping tells you about another. 0 means independent.</dd></div>
+
+      <div class="gterm"><dt><code>impainted</code></dt><dd>A literal value the confidence
+      field takes, in place of a number — a placement filled in rather than inferred. Spelled
+      as it appears in the data.</dd></div>
+    </dl>
+  </div>
+</section>
+
+<section>
+  <div class="sechead"><span class="n">§</span><h2>The question</h2></div>
+  <p>The tube map's standing problem is that strands cannot be told apart: they run
+  parallel in dense bundles, hundreds of them share a colour exactly, and at fit-to-screen
+  464 of them land on about 177 rows of pixels. Every strategy the project has tried so far
+  starts from one strand and tries to pull it out of the crowd.</p>
+
+  <p>This survey asks the opposite question. <strong>Before you try to separate one strand
+  from the crowd, how much of the crowd is actually there?</strong> The answer changes what is
+  worth building, because a great deal of the apparent complexity is not complexity — it is
+  repetition drawn at full price.</p>
+
+  <p class="side"><b>Why it matters.</b> The failure at fit-to-screen is a pixel budget, not
+  a rendering flaw. Nothing subtle fixes it. Reducing the number of things drawn is the only
+  move that attacks it at the cause.</p>
+</section>
+
+<section>
+  <div class="sechead"><span class="n">01</span><h2>466 haplotypes, 21 routes</h2></div>
+  <p>Group haplotypes by the set of nodes they traverse. Two haplotypes on the same route
+  took the same path through the graph; over that window there is nothing to tell apart,
+  and no picture could.</p>
+
+  <figure class="figframe fig-anim">
+    <div id="fig-routes"></div>
+    <figcaption><b>Figure 1.</b> Each bar is one locus, 100% of its haplotypes. Each block is
+    one route, ordered largest first; block width is the share of haplotypes taking it. Five
+    of six loci put four in five haplotypes on five or fewer routes.
+    <code>chr6-160531482-160664275</code> is the exception, and the exception is informative.</figcaption>
+  </figure>
+
+  <div class="tablewrap">
+  <table>
+    <thead><tr><th>Locus</th><th>Haplotypes</th><th>Nodes</th><th>Routes</th><th>Largest</th><th>Top 5</th><th>Alone</th></tr></thead>
+    <tbody>
+      <tr><td>small-graph-chr2-879500-880000</td><td>457</td><td>8</td><td class="hi">4</td><td>84%</td><td>100%</td><td>1</td></tr>
+      <tr><td>il7</td><td>466</td><td>12</td><td class="hi">6</td><td>68%</td><td>100%</td><td>0</td></tr>
+      <tr><td>PCBD1-pca-chart-dot-issue</td><td>466</td><td>10</td><td class="hi">8</td><td>56%</td><td>98%</td><td>1</td></tr>
+      <tr><td>cici</td><td>466</td><td>45</td><td class="hi">21</td><td>39%</td><td>94%</td><td>9</td></tr>
+      <tr><td>egfr</td><td>461</td><td>54</td><td class="hi">37</td><td>28%</td><td>86%</td><td>16</td></tr>
+      <tr class="flag"><td>chr6-160531482-160664275</td><td>466</td><td>59</td><td class="hi">198</td><td>3%</td><td>14%</td><td>98</td></tr>
+    </tbody>
+  </table>
+  </div>
+
+  <p style="margin-top:2em">The same collapse appears one level down, inside a single node's
+  expansion. Reconstructing routes from the tube map SVGs in <code>public/</code> — a
+  coarser method, since node membership there has to be inferred from geometry — 369 strands
+  reduce to 47 routes, 378 to 118, and 464 to 112, with the top five routes carrying 45–69%
+  of the strands in each.</p>
+
+  <p><code>chr6</code> deserves its highlight. 198 routes, 98 of them travelled by a single
+  haplotype, no route above 3%. <strong>The payoff from grouping is a property of the locus,
+  not a constant</strong> — and a locus where grouping buys nothing is itself a finding the
+  researcher should be handed, not one they should have to discover by squinting at a wall
+  of ribbons.</p>
+
+  <p class="side"><b>Read the exception this way:</b> loci differ in kind, not just in size.
+  A viewer that says which kind you have landed in is doing real work before you touch
+  anything.</p>
+</section>
+
+<section>
+  <div class="sechead"><span class="n">02</span><h2>Most nodes separate nobody</h2></div>
+  <p>Bucket the nodes of each locus by how many haplotypes carry them. A node carried by
+  everyone is a choke point — by construction it distinguishes no one, and drawing it at
+  full weight spends ink on a fact that is already known. A node carried by 10–90% is where
+  the population actually divides.</p>
+
+  <figure class="figframe fig-anim">
+    <div id="fig-spectrum"></div>
+    <figcaption><b>Figure 2.</b> Nodes per locus by carrier frequency. <code>il7</code> is a
+    calm backbone with a single real decision in it; <code>egfr</code> and <code>chr6</code>
+    are dominated by the variable band. Bars are scaled to node count, which differs by
+    locus — the shape is the point, not the length.</figcaption>
+    <div class="key" id="key-spectrum"></div>
+  </figure>
+
+  <p style="margin-top:2em">The contrast sharpens at fine granularity. In the tube map SVG
+  for node <code>5520+</code>, <strong>171 of 274 nodes are variable against only 2
+  universal</strong> — a hypervariable neighbourhood. Its neighbour <code>5514+</code> is
+  242 universal and 256 common: a quiet backbone with a handful of bubbles. These are
+  qualitatively different objects and the current picture presents them identically.</p>
+
+  <p class="side"><b>Free affordance.</b> A frequency threshold that hides universal nodes
+  costs no information whatsoever. It cannot hide a distinction, because those nodes hold
+  none.</p>
+</section>
+
+<section>
+  <div class="sechead"><span class="n">03</span><h2>Five ancestry groups, and they are crisp</h2></div>
+  <p>The PCLAI coordinates are not diffuse. Clustering them with k-means and letting the
+  silhouette score choose k gives <strong>k = 5 in all six loci, at silhouette 0.89–0.93</strong>.
+  That is an unusually clean separation: five buckets with no modelling judgement left to
+  make, and the same five however the data is sliced.</p>
+
+  <figure class="figframe fig-anim">
+    <div id="fig-scatter"></div>
+    <figcaption><b>Figure 3.</b> Every haplotype in <code>cici</code> at its mean PCLAI
+    coordinate, coloured by cluster. This is the space the strand colours are derived from —
+    and the reason they collide is visible here: the map has to encode a cloud this tight
+    into 120–150 distinguishable colours.</figcaption>
+    <div class="key" id="key-scatter"></div>
+  </figure>
+
+  <p style="margin-top:2em">Note what the figure also shows. The two large lobes at lower
+  right are close enough that neighbouring points receive colours a single unit apart in one
+  channel. Position separates them; colour, on its own, cannot. That is the existing problem
+  restated in its own coordinate system.</p>
+</section>
+
+<section>
+  <div class="sechead"><span class="n">04</span><h2>The strands come in pairs</h2></div>
+  <p>Names follow the PanSN convention, so sample identity and haplotype index are free to
+  read — no lookup, no new field. Each person contributes two strands, and often those two
+  strands take the same route through the region.</p>
+
+  <div class="tablewrap">
+  <table>
+    <thead><tr><th>Locus</th><th>Samples</th><th>Concordant pairs</th><th>Share</th><th>Ribbons after collapse</th></tr></thead>
+    <tbody>
+      <tr><td>small-graph-chr2-879500-880000</td><td>223</td><td>162</td><td class="hi">73%</td><td>295</td></tr>
+      <tr><td>il7</td><td>232</td><td>135</td><td class="hi">58%</td><td>331</td></tr>
+      <tr><td>cici</td><td>232</td><td>107</td><td class="hi">46%</td><td>359</td></tr>
+      <tr><td>PCBD1-pca-chart-dot-issue</td><td>232</td><td>87</td><td class="hi">38%</td><td>379</td></tr>
+      <tr><td>egfr</td><td>227</td><td>62</td><td class="hi">27%</td><td>399</td></tr>
+      <tr class="flag"><td>chr6-160531482-160664275</td><td>232</td><td>3</td><td class="hi">1%</td><td>463</td></tr>
+    </tbody>
+  </table>
+  </div>
+
+  <p style="margin-top:2em">Collapsing a person's two identical strands into one is a real
+  reduction at most loci. Where it is not — <code>chr6</code> again, where three samples out
+  of 232 are concordant — <strong>the discordance is itself the finding</strong>, and a
+  viewer that offers “show me only the samples whose two copies differ here” has said
+  something no amount of highlighting could.</p>
+
+  <p class="side"><b>Cheapest of the five.</b> It needs one field the band parser does not
+  currently read, and a string split.</p>
+</section>
+
+<section>
+  <div class="sechead"><span class="n">05</span><h2>Not every colour is a measurement</h2></div>
+  <p>The confidence field beside each coordinate is not simply a number. It takes the
+  literal value <code>impainted</code> — a filled-in rather than inferred placement — and the
+  coordinate object is sometimes <strong>empty</strong>, which is the case the renderer
+  already draws in grey. Both are common, and how common varies enormously by locus.</p>
+
+  <div class="tablewrap">
+  <table>
+    <thead><tr><th>Locus</th><th>≥ 990</th><th>950–989</th><th>&lt; 950</th><th>impainted</th><th>unplaced</th></tr></thead>
+    <tbody>
+      <tr><td>il7</td><td>1,875</td><td>302</td><td>240</td><td class="hi">923</td><td>80</td></tr>
+      <tr><td>cici</td><td>8,211</td><td>1,473</td><td>826</td><td class="hi">2,431</td><td>266</td></tr>
+      <tr><td>egfr</td><td>7,653</td><td>1,764</td><td>887</td><td class="hi">1,402</td><td>1,325</td></tr>
+      <tr><td>PCBD1-pca-chart-dot-issue</td><td>1,728</td><td>186</td><td>190</td><td class="hi">459</td><td>351</td></tr>
+      <tr><td>small-graph-chr2-879500-880000</td><td>1,415</td><td>178</td><td>274</td><td class="hi">12</td><td>418</td></tr>
+      <tr class="flag"><td>chr6-160531482-160664275</td><td>7,655</td><td>1,216</td><td>1,116</td><td class="hi">972</td><td>6,063</td></tr>
+    </tbody>
+  </table>
+  </div>
+
+  <p style="margin-top:2em">Counts are per observation — one haplotype at one node — not per
+  haplotype. In <code>chr6</code>, <strong>more than a third of all observations have no
+  placement at all</strong>. Downstream, the same swing shows up between two tube map SVGs of
+  adjacent nodes: 6 unplaced strands in one, 99 in the other.</p>
+
+  <p>A researcher reading colour as ancestry is entitled to know which strands are carrying
+  a filled-in placement, a low-confidence one, or none. This is a grouping in the strict
+  sense — a partition of the strands — and it is the one with the clearest duty attached.</p>
+</section>
+
+<section>
+  <div class="sechead"><span class="n">§</span><h2>Where routes and ancestry meet</h2></div>
+  <p>Cross-tabulating route against ancestry cluster gives an AMI of <strong>0.02 to
+  0.19</strong> across the six loci. Weak — and the weakness is the interesting part. The
+  common routes draw from all five clusters roughly in proportion: shared structure is
+  shared by everyone, which is what a pangenome is for.</p>
+
+  <p>The signal lives in the tail. <strong>Two to four of the sizeable routes in each locus
+  are at least 90% a single ancestry cluster.</strong> In the 600 bp tube map SVG, the top
+  route splits 14 / 26 / 40 / 49 / 8 across the five clusters — essentially
+  population-agnostic — while three smaller routes, carrying 18, 9 and 8 strands, come almost
+  entirely from one.</p>
+
+  <div class="callout">
+    <span class="label">The filter this implies</span>
+    <p>Show me the routes carried by only one ancestry group. That takes a screen of
+    ribbons to a short list of claims, and it is not a rendering trick — it is the picture
+    answering a question that was asked of it.</p>
+  </div>
+</section>
+
+<section>
+  <div class="sechead"><span class="n">§</span><h2>A correction the survey forces</h2></div>
+  <p>The project has been treating the PCLAI coordinate, and the colour derived from it, as
+  a property of the haplotype. In the source it is a property of <strong>the haplotype at a
+  node</strong>: the field sits inside each node's assembly metadata, and a haplotype
+  appearing at 45 nodes carries 45 coordinates. That is local ancestry along the genome,
+  which is what it ought to be — it is simply not what the downstream reading assumed.</p>
+
+  <p>In practice this changes almost nothing, and occasionally changes everything.</p>
+
+  <div class="tablewrap">
+  <table>
+    <thead><tr><th>Locus</th><th>Median drift</th><th>p90</th><th>Max</th><th>Cluster switchers</th></tr></thead>
+    <tbody>
+      <tr><td>cici</td><td>0.004</td><td>0.009</td><td>0.081</td><td>4 / 460</td></tr>
+      <tr><td>egfr</td><td>0.004</td><td>0.010</td><td>0.086</td><td>1 / 457</td></tr>
+      <tr><td>il7</td><td>0.005</td><td>0.012</td><td>0.058</td><td>2 / 461</td></tr>
+      <tr class="flag"><td>chr6-160531482-160664275</td><td>0.003</td><td>0.007</td><td class="hi">0.434</td><td>2 / 463</td></tr>
+      <tr><td>PCBD1-pca-chart-dot-issue</td><td>0.003</td><td>0.006</td><td>0.044</td><td>0 / 459</td></tr>
+      <tr><td>small-graph-chr2-879500-880000</td><td>0.000</td><td>0.000</td><td>0.000</td><td>0 / 452</td></tr>
+    </tbody>
+  </table>
+  </div>
+
+  <p style="margin-top:2em">Drift is how far one haplotype's coordinates spread across a
+  locus, as a fraction of the whole cloud's diameter. The median is <strong>three to five
+  parts in a thousand</strong> — invisible. 410 of 460 haplotypes in <code>cici</code>
+  receive more than one colour across the locus, and the median worst difference between
+  them is <strong>2 units in 255</strong>, which is below the threshold at which the colour
+  encoding collides with itself anyway.</p>
+
+  <p>Then there is <code>HG02004#2</code> in <code>chr6</code>. Across two nodes it moves
+  <strong>43% of the cloud's diameter</strong> and its colour shifts <strong>101 units in a
+  channel</strong>. That haplotype changes ancestry group inside the window. It is a real
+  event, it is rare — <strong>0 to 4 haplotypes per locus</strong> — and the current picture
+  renders it as one ribbon among 466 that quietly changes hue.</p>
+
+  <div class="callout">
+    <span class="label">The rarest bucket found here</span>
+    <p>“Haplotypes that change ancestry group within this window.” Zero to four strands out
+    of 466. This grouping was not known to be available, and no existing affordance would
+    ever surface it.</p>
+  </div>
+
+  <p style="margin-top:2em">One consequence for anything built next: each tube map SVG in
+  <code>public/</code> covers a single node, which is <em>why</em> a haplotype has exactly
+  one coordinate in each of them. That is a property of the window, not of the haplotype, and
+  nothing should be built on it.</p>
+
+  <p class="side"><b>The original question,</b> answered precisely: a haplotype name determines
+  its coordinate within one node's view, but the same name carries a different coordinate at
+  the next node — and once in a few hundred, a materially different one.</p>
+</section>
+
+<section>
+  <div class="sechead"><span class="n">§</span><h2>What this suggests building</h2></div>
+  <p>Ranked by how much complexity each removes per unit of work. None of these has been
+  rendered; every number in this document is a count, and this project's own rule is that
+  counts propose and the screen decides.</p>
+
+  <div class="builds">
+    <div class="build">
+      <span class="r">1</span>
+      <div>
+        <h3>Collapse to routes</h3>
+        <p>One ribbon per distinct route, thickness carrying how many haplotypes take it,
+        expanding on demand. At <code>cici</code> this is 466 ribbons down to 21 — and every
+        one of them is thicker than a pixel at fit-to-screen, which is the first thing found
+        that attacks the pixel budget at its cause rather than working around it.</p>
+      </div>
+      <div class="cost">466 → 4–37<br>except chr6</div>
+    </div>
+
+    <div class="build">
+      <span class="r">2</span>
+      <div>
+        <h3>Flag ancestry-restricted routes</h3>
+        <p>Highlight routes whose carriers are ≥90% a single PCLAI cluster. Two to four per
+        locus. This is the one that converts the picture from a display into a finding, and
+        it composes with the route collapse rather than competing with it.</p>
+      </div>
+      <div class="cost">2–4 routes<br>per locus</div>
+    </div>
+
+    <div class="build">
+      <span class="r">3</span>
+      <div>
+        <h3>Frequency threshold on nodes</h3>
+        <p>Hide the universal nodes; keep the variable band. Costs no information by
+        construction. Also gives the locus a character badge up front — calm backbone or
+        hypervariable — so the researcher knows which kind of place they have landed in.</p>
+      </div>
+      <div class="cost">no information<br>lost</div>
+    </div>
+
+    <div class="build">
+      <span class="r">4</span>
+      <div>
+        <h3>Collapse concordant sample pairs</h3>
+        <p>Fold a person's two identical strands into one, with a toggle for the inverse:
+        show only samples whose two copies differ here. Nearly free — the names already carry
+        everything needed.</p>
+      </div>
+      <div class="cost">up to −35%<br>ribbons</div>
+    </div>
+
+    <div class="build">
+      <span class="r">5</span>
+      <div>
+        <h3>Surface placement quality</h3>
+        <p>Separate the strands carrying measured placements from filled-in, low-confidence,
+        and absent ones, and show the counts. Not a reduction — an honesty affordance, and
+        the one with a duty attached.</p>
+      </div>
+      <div class="cost">up to 36%<br>unplaced</div>
+    </div>
+
+    <div class="build">
+      <span class="r">6</span>
+      <div>
+        <h3>Flag ancestry switchers</h3>
+        <p>The haplotypes whose PCLAI cluster is not constant across the window. Zero to
+        four per locus — the rarest and most specific bucket available, and invisible in the
+        picture as it stands.</p>
+      </div>
+      <div class="cost">0–4 strands<br>of 466</div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="sechead"><span class="n">§</span><h2>Method, and what would break it</h2></div>
+  <p>Every figure comes from <code>scripts/strand_grouping_survey.py</code> run over the six
+  datasets in <code>pgb/public/datasets/api-v3</code> — PGB's own source data, so node
+  membership is <em>read</em>, not inferred. The secondary numbers quoted from the tube map
+  SVGs in <code>public/</code> are reconstructed from rendered geometry by matching each
+  strand's segments against node bounding boxes, and should be treated as approximate.</p>
+
+  <p>Four things that would change the conclusions:</p>
+
+  <p><strong>Routes are scale-dependent.</strong> A route here is a set of nodes at the
+  dataset's own granularity. Two haplotypes identical at that level can differ inside a
+  node — the SVG survey shows exactly that happening. Any affordance built on routes has to
+  state at what scale it means “the same”.</p>
+
+  <p><strong>Thickness would be a new claim.</strong> Today a band's thickness means one
+  haplotype. Making it mean <em>n</em> haplotypes changes what the map asserts, and that has
+  to be deliberate rather than a side effect of collapsing.</p>
+
+  <p><strong>The viewer cannot compute this yet.</strong> These numbers come from the dataset
+  JSON. The band parser does not currently read haplotype names, let alone node membership.
+  Whether routes are computed client-side or arrive from PGB is undecided, and is the first
+  question, not the last.</p>
+
+  <p><strong>Six loci is six loci.</strong> The k = 5 clustering is remarkably stable across
+  all of them, and the route collapse holds in five. Neither is a claim about the genome.</p>
+</section>
+
+<footer>
+  Sequence tube map spike · findings recorded in docs/DISAMBIGUATING-STRANDS.md, Strategy C ·
+  reproduce with <code style="border:0;background:none;padding:0">python3 scripts/strand_grouping_survey.py &lt;datasets dir&gt;</code>
+</footer>
+
+</div>
+</div>
+
+<script>
+const DATA = {
+  routes: {
+    "small-graph-chr2-879500-880000":{h:457,r:[383,61,12,1]},
+    "il7":{h:466,r:[319,105,21,10,9,2]},
+    "PCBD1-pca-chart-dot-issue":{h:466,r:[263,72,57,42,22,5,4,1]},
+    "cici":{h:466,r:[182,169,73,9,5,4,4,3,2,2,2,2,1,1,1,1,1,1,1,1,1]},
+    "egfr":{h:461,r:[131,130,93,27,17,6,5,5,3,3,3,3,3,2,2,2,2,2,2,2,2,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1]},
+    "chr6-160531482-160664275":{h:466,r:null}
+  },
+  chr6routes:[15,14,13,12,10,10,9,8,8,7,7,7,7,7,7,7,6,6,5,5,5,4,4,4,4,4,4,4,4,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
+  spectrum: {
+    "il7":[6,1,1,4,0],
+    "small-graph-chr2-879500-880000":[3,1,2,1,1],
+    "PCBD1-pca-chart-dot-issue":[3,2,4,1,0],
+    "cici":[10,6,16,8,5],
+    "egfr":[10,3,21,14,6],
+    "chr6-160531482-160664275":[8,10,34,6,1]
+  },
+  pts: [[0.443,-1.392,2],[0.435,-1.399,2],[0.441,-1.373,2],[0.434,-1.409,2],[0.432,-1.412,2],[0.43,-1.437,2],[0.438,-1.41,2],[0.434,-1.414,2],[0.435,-1.419,2],[0.435,-1.388,2],[0.434,-1.397,2],[0.448,-1.375,2],[0.44,-1.394,2],[0.432,-1.406,2],[0.434,-1.365,2],[0.527,-0.636,3],[0.442,-1.379,2],[0.437,-1.389,2],[0.447,-1.389,2],[0.44,-1.396,2],[0.433,-1.392,2],[0.426,-1.399,2],[0.471,-1.314,2],[0.469,-1.319,2],[0.569,-0.261,3],[0.448,-1.358,2],[0.456,-1.372,2],[0.454,-1.349,2],[0.468,-1.298,2],[0.466,-1.323,2],[0.471,-1.313,2],[0.452,-1.359,2],[0.471,-1.306,2],[0.457,-1.357,2],[0.447,-1.368,2],[0.444,-1.37,2],[0.448,-1.367,2],[0.479,-1.314,2],[0.763,1.383,1],[0.766,1.391,1],[0.765,1.384,1],[0.76,1.381,1],[0.754,1.38,1],[0.76,1.388,1],[0.753,1.384,1],[0.759,1.39,1],[0.758,1.363,1],[0.747,1.309,1],[0.762,1.392,1],[0.765,1.391,1],[0.764,1.38,1],[0.764,1.38,1],[0.759,1.394,1],[0.757,1.377,1],[0.763,1.379,1],[0.763,1.381,1],[-1.685,0.176,0],[-1.726,0.195,0],[0.554,-0.454,3],[0.451,-1.329,2],[0.767,1.39,1],[0.76,1.383,1],[0.765,1.38,1],[0.757,1.39,1],[0.756,1.386,1],[0.762,1.379,1],[0.464,-1.277,2],[0.445,-1.313,2],[0.444,-1.386,2],[0.426,-1.388,2],[0.63,0.266,4],[0.447,-1.379,2],[0.439,-1.382,2],[0.455,-1.316,2],[-1.711,0.183,0],[-1.678,0.174,0],[0.434,-1.403,2],[0.438,-1.398,2],[0.543,-0.403,3],[0.439,-1.386,2],[0.599,-0.158,4],[-1.717,0.188,0],[-1.714,0.194,0],[0.449,-1.346,2],[-1.731,0.199,0],[0.527,-0.842,3],[0.451,-1.317,2],[0.467,-1.294,2],[0.467,-1.348,2],[-1.645,0.122,0],[0.441,-1.398,2],[0.409,-1.37,2],[0.434,-1.398,2],[0.581,-0.058,4],[0.433,-1.403,2],[-1.733,0.194,0],[-1.729,0.197,0],[0.499,-0.969,3],[0.463,-1.333,2],[0.439,-1.346,2],[-1.653,0.161,0],[0.441,-1.369,2],[0.435,-1.383,2],[0.455,-1.366,2],[0.488,-1.119,2],[0.508,-0.677,3],[0.445,-1.367,2],[0.439,-1.382,2],[0.646,0.315,4],[0.459,-1.333,2],[0.454,-1.378,2],[0.63,0.321,4],[0.446,-1.383,2],[0.64,0.339,4],[0.441,-1.359,2],[0.43,-1.413,2],[0.442,-1.404,2],[0.433,-1.358,2],[0.421,-1.367,2],[0.441,-1.378,2],[0.442,-1.395,2],[-1.717,0.189,0],[-1.736,0.191,0],[-1.734,0.189,0],[-1.711,0.185,0],[0.65,0.396,4],[0.669,0.34,4],[0.644,0.314,4],[0.597,0.138,4],[0.677,0.318,4],[0.655,0.246,4],[0.621,0.175,4],[0.672,0.316,4],[0.666,0.326,4],[0.694,0.334,4],[0.44,-1.418,2],[-1.711,0.176,0],[0.447,-1.342,2],[0.661,0.376,4],[0.659,0.285,4],[0.686,0.346,4],[0.662,0.297,4],[0.657,0.338,4],[0.518,-0.991,2],[0.471,-1.186,2],[0.636,0.256,4],[0.663,0.338,4],[0.473,-1.334,2],[0.643,0.268,4],[0.756,1.375,1],[0.764,1.368,1],[0.762,1.381,1],[0.76,1.376,1],[0.759,1.388,1],[0.767,1.375,1],[-1.724,0.192,0],[-1.723,0.196,0],[0.762,1.381,1],[0.756,1.388,1],[0.766,1.388,1],[0.766,1.372,1],[0.765,1.376,1],[0.761,1.378,1],[0.757,1.372,1],[0.756,1.374,1],[0.758,1.392,1],[0.759,1.38,1],[-1.716,0.19,0],[-1.72,0.193,0],[0.763,1.37,1],[0.759,1.39,1],[0.76,1.384,1],[0.756,1.388,1],[0.766,1.392,1],[0.761,1.376,1],[-1.738,0.184,0],[-1.703,0.179,0],[0.679,0.347,4],[0.661,0.321,4],[0.763,1.383,1],[0.762,1.387,1],[0.766,1.384,1],[0.757,1.385,1],[0.767,1.388,1],[0.757,1.382,1],[-1.726,0.195,0],[-1.717,0.193,0],[-1.71,0.194,0],[-1.738,0.194,0],[0.627,0.252,4],[0.64,0.304,4],[-1.677,0.177,0],[-1.712,0.186,0],[0.676,0.346,4],[0.654,0.317,4],[0.634,0.282,4],[0.655,0.408,4],[0.759,1.373,1],[0.757,1.379,1],[0.762,1.381,1],[0.753,1.374,1],[-1.742,0.202,0],[-1.722,0.187,0],[-1.709,0.189,0],[-1.726,0.194,0],[0.758,1.388,1],[0.762,1.381,1],[0.759,1.375,1],[0.759,1.378,1],[-1.727,0.19,0],[-1.721,0.191,0],[-1.695,0.18,0],[-1.708,0.182,0],[-1.712,0.192,0],[-1.696,0.174,0],[0.489,-0.562,3],[0.477,-0.705,3],[-1.666,0.16,0],[-1.475,0.048,0],[-1.71,0.178,0],[-1.698,0.178,0],[-1.686,0.171,0],[-1.707,0.181,0],[-1.713,0.18,0],[-1.715,0.193,0],[-1.704,0.179,0],[-1.673,0.165,0],[0.491,-0.647,3],[0.474,-0.78,3],[-1.712,0.183,0],[-1.695,0.178,0],[-1.69,0.177,0],[-1.688,0.178,0],[0.483,-0.601,3],[0.481,-0.798,3],[0.453,-1.182,2],[0.482,-0.726,3],[-1.699,0.178,0],[-1.701,0.176,0],[-1.675,0.176,0],[-1.666,0.162,0],[-1.628,0.149,0],[-1.691,0.173,0],[-1.689,0.173,0],[-1.685,0.171,0],[-1.73,0.192,0],[-1.713,0.182,0],[-1.73,0.192,0],[-1.723,0.194,0],[-1.73,0.195,0],[-1.721,0.189,0],[-1.632,0.154,0],[-1.703,0.179,0],[0.486,-0.598,3],[0.49,-0.668,3],[-1.66,0.164,0],[-1.709,0.192,0],[-1.716,0.188,0],[-1.718,0.186,0],[-1.697,0.18,0],[-1.704,0.184,0],[-1.72,0.183,0],[-1.72,0.187,0],[-1.72,0.187,0],[-1.724,0.186,0],[-1.727,0.184,0],[-1.737,0.193,0],[-1.718,0.191,0],[-1.736,0.194,0],[-1.712,0.183,0],[-1.732,0.19,0],[0.478,-0.793,3],[0.472,-0.816,3],[-1.72,0.186,0],[-1.73,0.192,0],[-1.716,0.187,0],[-1.698,0.184,0],[-1.72,0.191,0],[-1.725,0.187,0],[-1.715,0.187,0],[-1.744,0.199,0],[-1.712,0.183,0],[-1.73,0.19,0],[-1.741,0.191,0],[-1.706,0.174,0],[-1.739,0.194,0],[-1.728,0.196,0],[-1.735,0.192,0],[-1.715,0.191,0],[-1.714,0.19,0],[-1.666,0.17,0],[-1.707,0.184,0],[-1.721,0.182,0],[-1.702,0.181,0],[-1.72,0.189,0],[0.492,-0.582,3],[0.478,-0.78,3],[0.495,-0.436,3],[0.479,-0.688,3],[0.489,-0.555,3],[0.484,-0.643,3],[0.484,-0.712,3],[0.495,-0.47,3],[0.471,-1.281,2],[0.491,-0.646,3],[0.488,-0.555,3],[0.496,-0.519,3],[0.495,-0.511,3],[0.489,-0.552,3],[0.491,-0.49,3],[0.494,-0.497,3],[0.527,-0.342,3],[0.495,-0.469,3],[0.496,-0.486,3],[0.505,-0.398,3],[0.518,-0.415,3],[0.49,-0.513,3],[0.493,-0.535,3],[0.486,-0.672,3],[0.486,-0.644,3],[0.509,-0.373,3],[0.492,-0.543,3],[0.482,-0.789,3],[0.487,-0.568,3],[0.491,-0.57,3],[0.501,-0.61,3],[0.576,0.023,4],[0.496,-0.514,3],[0.487,-0.543,3],[0.766,1.358,1],[0.503,-0.396,3],[0.485,-0.624,3],[0.486,-0.592,3],[0.496,-0.566,3],[0.485,-0.576,3],[0.488,-0.535,3],[0.471,-0.943,3],[0.494,-0.454,3],[0.496,-0.448,3],[-1.707,0.182,0],[-1.715,0.189,0],[-1.719,0.193,0],[-1.715,0.188,0],[-1.74,0.192,0],[-1.714,0.185,0],[-1.705,0.179,0],[-1.704,0.176,0],[0.762,1.381,1],[0.763,1.386,1],[0.761,1.382,1],[0.761,1.383,1],[0.757,1.389,1],[0.756,1.375,1],[0.761,1.37,1],[0.763,1.381,1],[0.767,1.384,1],[0.762,1.385,1],[-1.722,0.191,0],[-1.727,0.194,0],[-1.712,0.183,0],[-1.738,0.191,0],[0.767,1.388,1],[0.754,1.386,1],[0.769,1.384,1],[0.76,1.37,1],[0.758,1.371,1],[0.76,1.369,1],[0.757,1.378,1],[0.761,1.387,1],[0.762,1.37,1],[0.761,1.387,1],[0.764,1.387,1],[0.764,1.375,1],[0.76,1.382,1],[0.761,1.382,1],[0.758,1.382,1],[0.761,1.377,1],[0.76,1.381,1],[0.761,1.381,1],[0.758,1.379,1],[0.762,1.377,1],[0.764,1.389,1],[0.753,1.352,1],[0.758,1.392,1],[0.762,1.388,1],[0.764,1.386,1],[0.765,1.387,1],[0.757,1.376,1],[0.758,1.381,1],[0.758,1.374,1],[0.76,1.384,1],[-1.686,0.172,0],[-1.715,0.183,0],[-1.675,0.167,0],[0.754,1.367,1],[0.761,1.383,1],[-1.74,0.188,0],[-1.73,0.186,0],[-1.733,0.19,0],[-1.714,0.185,0],[-1.712,0.183,0],[-1.736,0.19,0],[-1.623,0.152,0],[-1.644,0.154,0],[-1.683,0.171,0],[-1.713,0.183,0],[-1.598,0.128,0],[-1.603,0.134,0],[-1.636,0.149,0],[-1.661,0.168,0],[0.591,0.116,4],[0.645,0.313,4],[-1.728,0.191,0],[0.442,-0.874,3],[0.449,-1.215,2],[0.481,-1.083,2],[-1.736,0.194,0],[-1.719,0.189,0],[-1.703,0.181,0],[-1.725,0.191,0],[-1.71,0.187,0],[-1.731,0.198,0],[-1.734,0.201,0],[0.455,-1.357,2],[-1.747,0.196,0],[-1.732,0.188,0],[0.442,-1.384,2],[0.44,-1.371,2],[0.431,-1.406,2],[0.447,-1.283,2],[0.438,-1.398,2],[0.449,-1.369,2],[0.433,-1.416,2],[0.434,-1.387,2],[0.453,-1.264,2],[0.425,-1.424,2],[0.439,-1.386,2],[0.436,-1.404,2],[0.438,-1.373,2],[0.437,-1.398,2],[0.439,-1.392,2],[0.442,-1.392,2],[0.481,-0.789,3],[0.477,-0.777,3],[0.471,-1.015,2],[0.478,-0.73,3],[0.483,-0.595,3],[0.484,-0.618,3],[0.479,-0.654,3],[0.484,-0.624,3],[0.481,-0.712,3],[0.489,-0.594,3],[0.481,-0.653,3],[0.491,-0.577,3],[0.485,-0.592,3],[0.487,-0.65,3],[0.479,-0.675,3],[0.484,-0.636,3],[-1.586,0.13,0],[-1.583,0.123,0]]
+};
+DATA.routes["chr6-160531482-160664275"].r = DATA.chr6routes;
+
+const NS="http://www.w3.org/2000/svg";
+const el=(n,a={})=>{const e=document.createElementNS(NS,n);for(const k in a)e.setAttribute(k,a[k]);return e;};
+const css=v=>getComputedStyle(document.documentElement).getPropertyValue(v).trim();
+
+/* ---------- Figure 1: route collapse ---------- */
+function routeFig(){
+  const host=document.getElementById('fig-routes');
+  const names=Object.keys(DATA.routes);
+  const rowH=42, labelW=250, W=960, H=names.length*rowH+34;
+  const svg=el('svg',{viewBox:`0 0 ${W} ${H}`,role:'img','aria-label':'Route composition per locus'});
+  const barW=W-labelW-72;
+  names.forEach((name,i)=>{
+    const y=i*rowH+16, d=DATA.routes[name], total=d.h;
+    const t=el('text',{x:0,y:y+13,'font-size':12.5,fill:css('--ink-2'),'font-family':'IBM Plex Mono, monospace'});
+    t.textContent=name; svg.appendChild(t);
+    let x=labelW, k=0;
+    d.r.forEach(sz=>{
+      const w=barW*sz/total;
+      const shade=k<5?[.92,.74,.58,.44,.32][k]:.17;
+      const rect=el('rect',{x:x.toFixed(2),y:y,width:Math.max(w-0.6,0.35).toFixed(2),height:18,
+        fill:css('--accent'),'fill-opacity':shade,rx:1});
+      rect.style.animationDelay=(i*70+Math.min(k,12)*14)+'ms';
+      svg.appendChild(rect); x+=w; k++;
+    });
+    const n=el('text',{x:W,y:y+13,'font-size':12,'text-anchor':'end',fill:css('--ink-3'),'font-family':'IBM Plex Mono, monospace'});
+    n.textContent=d.r.length+(d.r.length===1?' route':' routes'); svg.appendChild(n);
+  });
+  const axis=el('line',{x1:labelW,x2:W-72,y1:H-14,y2:H-14,stroke:css('--rule')});
+  svg.appendChild(axis);
+  [[0,'0'],[.25,'25'],[.5,'50'],[.75,'75'],[1,'100% of haplotypes']].forEach(([f,lab])=>{
+    const x=labelW+barW*f;
+    const tk=el('text',{x:f===1?x:x,y:H-2,'font-size':10.5,fill:css('--ink-3'),'font-family':'IBM Plex Mono, monospace','text-anchor':f===1?'end':(f===0?'start':'middle')});
+    tk.textContent=lab; svg.appendChild(tk);
+  });
+  host.appendChild(svg);
+}
+
+/* ---------- Figure 2: node frequency spectrum ---------- */
+function spectrumFig(){
+  const host=document.getElementById('fig-spectrum');
+  const keys=['universal','common','variable','rare','private'];
+  const cols=['--c2','--c0','--c4','--c3','--c1'];
+  const names=Object.keys(DATA.spectrum);
+  const rowH=42, labelW=250, W=960, H=names.length*rowH+20;
+  const max=Math.max(...names.map(n=>DATA.spectrum[n].reduce((a,b)=>a+b,0)));
+  const barW=W-labelW-72;
+  const svg=el('svg',{viewBox:`0 0 ${W} ${H}`,role:'img','aria-label':'Node frequency spectrum per locus'});
+  names.forEach((name,i)=>{
+    const y=i*rowH+16, v=DATA.spectrum[name], tot=v.reduce((a,b)=>a+b,0);
+    const t=el('text',{x:0,y:y+13,'font-size':12.5,fill:css('--ink-2'),'font-family':'IBM Plex Mono, monospace'});
+    t.textContent=name; svg.appendChild(t);
+    let x=labelW;
+    v.forEach((n,j)=>{
+      const w=barW*n/max;
+      if(n>0){
+        const r=el('rect',{x:x.toFixed(2),y:y,width:Math.max(w-1,1).toFixed(2),height:18,fill:css(cols[j]),rx:1,'fill-opacity':.88});
+        r.style.animationDelay=(i*70+j*40)+'ms';
+        svg.appendChild(r);
+        if(w>22){
+          const lb=el('text',{x:(x+w/2-0.5).toFixed(2),y:y+12.5,'font-size':10.5,'text-anchor':'middle',
+            fill:css('--ground'),'font-family':'IBM Plex Mono, monospace','font-weight':600});
+          lb.textContent=n; svg.appendChild(lb);
+        }
+      }
+      x+=w;
+    });
+    const n2=el('text',{x:W,y:y+13,'font-size':12,'text-anchor':'end',fill:css('--ink-3'),'font-family':'IBM Plex Mono, monospace'});
+    n2.textContent=tot+' nodes'; svg.appendChild(n2);
+  });
+  host.appendChild(svg);
+  const key=document.getElementById('key-spectrum');
+  keys.forEach((k,j)=>{
+    const s=document.createElement('span');
+    s.innerHTML=`<i style="background:${css(cols[j])}"></i>${k}`;
+    key.appendChild(s);
+  });
+}
+
+/* ---------- Figure 3: PCLAI scatter ---------- */
+function scatterFig(){
+  const host=document.getElementById('fig-scatter');
+  const W=960,H=560,pad=46;
+  const xs=DATA.pts.map(p=>p[0]), ys=DATA.pts.map(p=>p[1]);
+  const x0=Math.min(...xs),x1=Math.max(...xs),y0=Math.min(...ys),y1=Math.max(...ys);
+  const sx=v=>pad+(v-x0)/(x1-x0)*(W-pad*2);
+  const sy=v=>H-pad-(v-y0)/(y1-y0)*(H-pad*2);
+  const svg=el('svg',{viewBox:`0 0 ${W} ${H}`,role:'img','aria-label':'PCLAI coordinates coloured by cluster'});
+  for(let i=0;i<=4;i++){
+    const gy=pad+(H-pad*2)*i/4;
+    svg.appendChild(el('line',{x1:pad,x2:W-pad,y1:gy,y2:gy,stroke:css('--grid'),'stroke-width':1}));
+    const gx=pad+(W-pad*2)*i/4;
+    svg.appendChild(el('line',{x1:gx,x2:gx,y1:pad,y2:H-pad,stroke:css('--grid'),'stroke-width':1}));
+  }
+  const cols=['--c0','--c1','--c2','--c3','--c4'];
+  const counts=[0,0,0,0,0];
+  DATA.pts.forEach((p,i)=>{
+    counts[p[2]]++;
+    const c=el('circle',{cx:sx(p[0]).toFixed(1),cy:sy(p[1]).toFixed(1),r:3.6,
+      fill:css(cols[p[2]]),'fill-opacity':.62,stroke:css(cols[p[2]]),'stroke-opacity':.85,'stroke-width':.8});
+    c.style.animationDelay=(i%60*6)+'ms';
+    svg.appendChild(c);
+  });
+  [[x0,'x '+x0.toFixed(2)],[x1,'x '+x1.toFixed(2)]].forEach(([v,lab])=>{
+    const t=el('text',{x:sx(v),y:H-pad+20,'font-size':10.5,fill:css('--ink-3'),
+      'font-family':'IBM Plex Mono, monospace','text-anchor':v===x0?'start':'end'});
+    t.textContent=lab; svg.appendChild(t);
+  });
+  [[y0,'y '+y0.toFixed(2)],[y1,'y '+y1.toFixed(2)]].forEach(([v,lab])=>{
+    const t=el('text',{x:pad-8,y:sy(v)+(v===y0?0:4),'font-size':10.5,fill:css('--ink-3'),
+      'font-family':'IBM Plex Mono, monospace','text-anchor':'end'});
+    t.textContent=lab; svg.appendChild(t);
+  });
+  host.appendChild(svg);
+  const key=document.getElementById('key-scatter');
+  counts.forEach((n,j)=>{
+    const s=document.createElement('span');
+    s.innerHTML=`<i style="background:${css(cols[j])}"></i>cluster ${j+1} · ${n} haplotypes`;
+    key.appendChild(s);
+  });
+}
+
+routeFig(); spectrumFig(); scatterFig();
+const mq=window.matchMedia('(prefers-color-scheme: dark)');
+mq.addEventListener('change',()=>{
+  ['fig-routes','fig-spectrum','fig-scatter'].forEach(id=>document.getElementById(id).innerHTML='');
+  ['key-spectrum','key-scatter'].forEach(id=>document.getElementById(id).innerHTML='');
+  routeFig(); spectrumFig(); scatterFig();
+});
+</script>

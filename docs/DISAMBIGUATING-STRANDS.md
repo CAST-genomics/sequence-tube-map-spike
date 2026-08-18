@@ -257,6 +257,109 @@ Every strategy above starts from a strand and tries to pull it out of the crowd.
 starts from the crowd and asks how much of it is actually there. The answer is: much less
 than 464.
 
+### The framing: the coordinate does not individuate
+
+*This section is the reason Strategy C exists, and it corrects a premise the rest of this
+document has been running on. Measured 2026-08-18, same script.*
+
+The natural reading of the problem — and the one this document has assumed throughout — is
+that **position individuates and colour is the degraded copy of it.** Each haplotype sits at
+its own coordinate in PCLAI space; each coordinate is distinct; therefore a faithful encoding
+would give each haplotype its own appearance, and the shipped colours fail to. On that reading
+the two channels are in competition: position asserts that two strands differ, colour asserts
+they are the same, and the viewer is caught between them.
+
+Both halves of that reading are wrong, and the second is wrong in a way that changes what can
+be built.
+
+**The channels are not in competition.** Colour is a deterministic function of position, so it
+cannot assert a difference that position denies. Measured: among haplotype pairs sitting within
+1% of the cloud's diameter of each other, the largest colour difference across the six datasets
+is ΔE 2.5–8.4. Colour never over-separates. The failure is entirely one-sided — colour omits
+distinctions, it does not invent them — so where the two appear to disagree, position is always
+the one to trust. There is nothing to adjudicate.
+
+**Position does not have the resolution either.** This is the part that was simply assumed.
+Asking how many of the ~460 haplotypes each channel can actually hold apart, by greedy packing
+(so these are upper bounds):
+
+| Channel | Discriminable, of ~460 |
+|---|---|
+| Colour, mutually ≥ 1.0 ΔE apart | **54–63** |
+| Colour, mutually ≥ 2.3 ΔE apart | 27–35 |
+| Position, 600 px plot, 4 px separation | **78–99** |
+| Position, 1200 px plot, 2 px separation | 209–233 |
+
+At comparable settings position is **~1.5× better than colour, not orders of magnitude
+better.** Both channels are overwhelmed by nearly the same margin, and the reason is a property
+of the data rather than of either encoding:
+
+| | across all six datasets |
+|---|---|
+| Variance of the coordinate lying **between** the five clusters | **99.5–99.8%** |
+| Variance lying **within** them — all that separates two haplotypes in one lobe | 0.2–0.5% |
+| Median distance to a haplotype's nearest neighbour | **0.064–0.088% of the cloud diameter** |
+
+A typical haplotype's nearest neighbour is under a thousandth of the cloud away. Individuating
+the two would need on the order of 1,500 discriminable steps along an axis. No channel on a
+screen has that.
+
+So when the PCLAI chart appears to separate these haplotypes, **it is separating the lobes, not
+the points.** The lobes are real, enormous, and carry essentially all of the coordinate's
+variance. Inside a lobe — which is exactly where a colour collision lives — the chart is a
+smear of a hundred dots across a few pixels. The eye reads structure at the scale the structure
+exists and correctly concludes "these are far apart"; the pair actually sharing a colour is not
+the pair it is looking at.
+
+**What follows.** Two questions have been tangled together in this document since it was
+started:
+
+1. *Which group is this strand from?* PCLAI answers this with 99.5%+ of its variance, and the
+   shipped colours already carry it — the five lobes do receive visibly different hues. On this
+   question the encoding, gamut damage and all, works.
+2. *Which strand is this?* PCLAI cannot answer it. The information is not in the coordinate.
+
+**No PCLAI-derived channel can individuate a strand** — not colour, not position, not any
+interactive substitute for either. Asking colour to tell 460 haplotypes apart was asking it to
+encode 0.3% of the signal; a better colour would fail the same way. That is not an encoding
+defect to engineer around, it is an information-content fact about the coordinate.
+
+This is why Strategy C is a grouping strategy rather than another emphasis strategy. Identity
+has to come from a channel that has the bits — topology, sample name, haplotype index — and
+those are discrete, exact, and already in the data. It also sharpens constraint 1: *do not
+recolor* was justified as shared vocabulary with the chart, and it turns out there is nothing
+to be gained by recoloring anyway.
+
+*Caveat: measured on the mean coordinate per haplotype per locus, over six datasets that all
+carry ~460 haplotypes drawn from the same panel. The between-cluster figure is stable across
+all six, but six loci from one cohort is what it rests on.*
+
+### Two interactive moves this licenses — parked for detail
+
+Neither is worked through. Both are recorded because they are the only proposals so far that
+respect the section above rather than working around it, and both need unpacking before they
+are tickets.
+
+**Anchor-relative distance.** Pick one strand; encode every other strand's distance *to it* in
+PCLAI space. The move is dimensional: the 2-D coordinate cannot be carried by a channel holding
+~60 states, but distance-to-an-anchor is 1-D, which fits, and a sequential ramp over one
+dimension is something perception handles well. It answers *"which strands are genetically near
+this one"* without claiming to individuate any of them. It is a **query rather than an
+encoding**, which is what the interactive surface makes newly available — the static chart had
+no way to ask it. Open: what the ramp is, whether it replaces or overlays the shipped colour
+(constraint 1), whether it survives the sub-pixel regime any better than Strategy A did, and
+whether "near in PCLAI" is a question researchers actually have.
+
+**Brush and link to the real chart.** Restore position where it works — at lobe scale, in its
+own panel — and let selection flow both ways: hover a strand, its dot lights in the PCLAI
+chart; lasso a region of the chart, those strands light in the map. The division of labour is
+the one the section above argues for: the chart says *which group*, the map says *which
+strand*, and neither is asked to do the other's job. PGB already renders the chart from the
+same field (`SPEC.md` story 31), so this is mostly a selection-plumbing question rather than a
+rendering one. It also has the appearance table (#39) waiting for it. Open: who owns selection,
+whether the chart lives in the tube map panel or stays in PGB, and how it sits with constraint
+4 (no chrome inside the viewing surface).
+
 ### The strands are not 464 distinct things
 
 Group haplotypes by the set of nodes they traverse. Two haplotypes on the same **route**

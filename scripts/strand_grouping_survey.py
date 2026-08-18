@@ -22,6 +22,20 @@ Reported per dataset:
   AMI           adjusted mutual information between route and PCLAI cluster: how much
                 knowing a haplotype's ancestry group tells you about which route it takes
   pure routes   routes with >=4 placed carriers that are >=90% a single PCLAI cluster
+
+Then, separately, what the PCLAI coordinate can and cannot support as a channel:
+
+  between       share of the coordinate's variance that lies between clusters rather than
+                within them. The remainder is all that is available to tell two haplotypes
+                in the same cluster apart.
+  median NN     distance to a haplotype's nearest neighbour, as a share of the whole
+                cloud's diameter
+  capacity      how many of the haplotypes each channel can actually hold apart: colour at
+                a just-noticeable difference, position at a given plot size and pixel
+                separation. Greedy packing, so these are upper bounds.
+  over-separate the largest colour difference between two haplotypes that are within 1% of
+                the diameter of each other. Colour is a function of position, so this can
+                only ever be small -- it is here to show the failure is one-sided.
 """
 
 import collections
@@ -37,12 +51,39 @@ from sklearn.metrics import adjusted_mutual_info_score, silhouette_score
 
 BUCKETS = ("universal", "common", "variable", "rare", "private")
 
+# sRGB -> CIELAB (D65), enough for a delta-E; avoids a scikit-image dependency
+_M = np.array([[0.4124564, 0.3575761, 0.1804375],
+               [0.2126729, 0.7151522, 0.0721750],
+               [0.0193339, 0.1191920, 0.9503041]])
+_WHITE = np.array([0.95047, 1.0, 1.08883])
+
+
+def rgb_to_lab(rgb):
+    """rgb in 0-255 -> CIELAB. Vectorised over the leading axis."""
+    c = np.asarray(rgb, float) / 255.0
+    lin = np.where(c <= 0.04045, c / 12.92, ((c + 0.055) / 1.055) ** 2.4)
+    xyz = (lin @ _M.T) / _WHITE
+    f = np.where(xyz > 0.008856, np.cbrt(xyz), 7.787 * xyz + 16 / 116)
+    return np.stack([116 * f[:, 1] - 16,
+                     500 * (f[:, 0] - f[:, 1]),
+                     200 * (f[:, 1] - f[:, 2])], -1)
+
+
+def capacity(points, radius):
+    """How many members can be picked that are all >= radius apart. Greedy, so an upper bound."""
+    keep = []
+    for i in np.argsort(-np.linalg.norm(points - points.mean(0), axis=1)):
+        if all(np.linalg.norm(points[i] - points[j]) >= radius for j in keep):
+            keep.append(i)
+    return len(keep)
+
 
 def load(path):
-    """-> routes{hap: frozenset(node)}, obs{hap: {node: (coord, score)}}, conf Counter"""
+    """-> routes{hap: frozenset(node)}, obs{hap: {node: (coord, score)}}, rgb{hap: RGB}, conf"""
     data = json.load(open(path))
     routes = collections.defaultdict(set)
     obs = collections.defaultdict(dict)
+    rgb = {}
     conf = collections.Counter()
     for node_id, node in data["node"].items():
         for asm in node["assembly"]:
@@ -55,12 +96,13 @@ def load(path):
                     continue
                 score = pclai["confidence_score"]
                 obs[hap][node_id] = (tuple(pclai["coordinates"]), score)
+                rgb.setdefault(hap, tuple(pclai["RGB"]))
                 if score == "impainted":
                     conf["impainted"] += 1
                 else:
                     n = int(score)
                     conf[">=990" if n >= 990 else "950-989" if n >= 950 else "<950"] += 1
-    return {h: frozenset(v) for h, v in routes.items()}, obs, conf
+    return {h: frozenset(v) for h, v in routes.items()}, obs, rgb, conf
 
 
 def spectrum(routes):
@@ -93,7 +135,7 @@ def cluster(obs):
 
 
 def report(path):
-    routes, obs, conf = load(path)
+    routes, obs, rgb, conf = load(path)
     total = len(routes)
     bundles = collections.defaultdict(list)
     for hap, route in routes.items():
@@ -157,6 +199,40 @@ def report(path):
     print(f"  concordant samples {concordant}/{len(pairs)} ({100 * concordant / len(pairs):.0f}%)")
     print(f"  AMI(route, cluster) {ami:.2f}   pure routes {pure}/{len(sizeable)}")
     print(f"  confidence {dict(conf)}")
+    channels(obs, rgb, hap_cluster)
+
+
+def channels(obs, rgb, hap_cluster):
+    """What the PCLAI coordinate can and cannot support as a visual channel."""
+    haps = sorted(h for h in obs if h in rgb)
+    coords = np.array([np.mean([c for c, _ in obs[h].values()], axis=0) for h in haps])
+    lab = rgb_to_lab([rgb[h] for h in haps])
+
+    total = ((coords - coords.mean(0)) ** 2).sum()
+    within = sum(
+        ((coords[m] - coords[m].mean(0)) ** 2).sum()
+        for m in (np.array([hap_cluster[h] == k for h in haps]) for k in set(hap_cluster.values()))
+        if m.any()
+    )
+    dist = np.linalg.norm(coords[:, None] - coords[None, :], axis=2)
+    diameter = dist.max()
+    np.fill_diagonal(dist, np.inf)
+
+    print(
+        f"  between-cluster variance {100 * (1 - within / total):.1f}%   "
+        f"median nearest neighbour {100 * np.median(dist.min(1)) / diameter:.3f}% of diameter"
+    )
+    span = max(np.ptp(coords[:, 0]), np.ptp(coords[:, 1]))
+    print(
+        f"  capacity of {len(haps)}:  colour 1.0dE {capacity(lab, 1.0):3d}   "
+        f"colour 2.3dE {capacity(lab, 2.3):3d}   "
+        f"position 600px/4px {capacity(coords * (600 / span), 4):3d}   "
+        f"position 1200px/2px {capacity(coords * (1200 / span), 2):3d}"
+    )
+    near = dist < 0.01 * diameter
+    de = np.linalg.norm(lab[:, None] - lab[None, :], axis=2)
+    worst = de[near].max() if near.any() else float("nan")
+    print(f"  colour over-separation: max dE among position-identical pairs {worst:.1f}")
 
 
 if __name__ == "__main__":

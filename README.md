@@ -8,6 +8,38 @@ base-level resolution, where the variation actually lives.
 Design: [`CONTEXT.md`](./CONTEXT.md) (read the Vocabulary section first — "node"
 means two different things at two scales). Requirements: [`SPEC.md`](./SPEC.md).
 
+## This viewer has shipped. It ships from PGB, not from here
+
+**2026-08-18.** The viewer was migrated into PGB and is now reachable there: right-click a
+node in the 3D graph and pick *Sequence Tube Map*. Two copies of it exist, and the one that
+ships is PGB's.
+
+| | where |
+|---|---|
+| the shipping code | [`pgb/src/tubemap/`](https://github.com/CAST-genomics/pgb/tree/main/src/tubemap) |
+| why it is a panel and not a Look | [`pgb/docs/adr/0001`](https://github.com/CAST-genomics/pgb/blob/main/docs/adr/0001-sequence-tube-map-panel.md) |
+| why the band renderer, and what was given up | [`pgb/docs/adr/0002`](https://github.com/CAST-genomics/pgb/blob/main/docs/adr/0002-webgl-band-renderer.md) |
+| how the migration went | [`pgb#85`](https://github.com/CAST-genomics/pgb/issues/85), landed in [`pgb#99`](https://github.com/CAST-genomics/pgb/pull/99) |
+
+**This repo is not archived, and is not a snapshot of what shipped.** It is the laboratory:
+the place to try visualization metaphors and affordances for making tube map data more
+tractable, where an idea can be built on a standalone surface without owing anything to
+PGB's release. The traffic is one-way — an idea that earns its place arrives in PGB as a
+change to `src/tubemap/`, never as a second implementation to reconcile, and `src/tubemap/`
+is never re-synchronised wholesale from here.
+
+So expect the two to diverge, and expect this one to be ahead in ideas and behind in
+correctness. Six defects were fixed in PGB during the migration's last step that are still
+live here, four of them the assumption that every tube map is a wide strip: `fitZoom` fits
+the width rather than the map, the navigator's thumbnail has no height ceiling, the segment
+box parser compares coordinates exactly where the server spells one edge two ways, and
+`Shift` arms feeler mode from anywhere on the page. Worth porting if an experiment here runs
+into them; [`pgb#99`](https://github.com/CAST-genomics/pgb/pull/99) has each one.
+
+The four open questions this repo keeps — strand disambiguation (#32, #50), hollow unscored
+strands (#48), the slow-server spinner (#58) — stayed here rather than moving to PGB, for
+the same reason: they are the laboratory's subject.
+
 ```
 npm install
 npm run dev        # http://localhost:5173

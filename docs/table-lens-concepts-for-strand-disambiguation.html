@@ -1,0 +1,894 @@
+<title>A Lens With Its Handle Elsewhere</title>
+<style>
+:root{
+  --ground:#ffffff;
+  --panel:#f6f4ef;
+  --panel-2:#efece5;
+  --ink:#16191b;
+  --ink-2:#41474b;
+  --ink-3:#6d7479;
+  --rule:#ddd9d1;
+  --rule-soft:#ebe7e0;
+  --accent:#1d5c60;
+  --accent-soft:#e2ecec;
+  --warn:#96482c;
+  --c0:#1d5c60;
+  --c1:#7b3f5e;
+  --c2:#3b5378;
+  --c3:#8a6a1f;
+  --c4:#96482c;
+  --grid:#e6e2da;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --ground:#0f1214; --panel:#171b1d; --panel-2:#1d2225;
+    --ink:#e9e6e0; --ink-2:#b9bec1; --ink-3:#878d91;
+    --rule:#2b3134; --rule-soft:#22282a;
+    --accent:#63b3b3; --accent-soft:#16292a; --warn:#dd8e6d;
+    --c0:#5fb0b0; --c1:#c88bab; --c2:#8aa5cd; --c3:#ceac5c; --c4:#dd8e6d;
+    --grid:#262c2f;
+  }
+}
+:root[data-theme="dark"]{
+  --ground:#0f1214; --panel:#171b1d; --panel-2:#1d2225;
+  --ink:#e9e6e0; --ink-2:#b9bec1; --ink-3:#878d91;
+  --rule:#2b3134; --rule-soft:#22282a;
+  --accent:#63b3b3; --accent-soft:#16292a; --warn:#dd8e6d;
+  --c0:#5fb0b0; --c1:#c88bab; --c2:#8aa5cd; --c3:#ceac5c; --c4:#dd8e6d;
+  --grid:#262c2f;
+}
+*{box-sizing:border-box}
+body{
+  background:var(--ground); color:var(--ink);
+  font-family:Spectral,Georgia,"Times New Roman",serif;
+  font-weight:400; font-size:17.5px; line-height:1.62; margin:0;
+  -webkit-font-smoothing:antialiased;
+}
+.wrap{max-width:1180px;margin:0 auto;padding:0 28px 120px}
+h1,h2,h3{text-wrap:balance;margin:0}
+h1{font-size:clamp(2.5rem,5.6vw,3.9rem);font-weight:700;line-height:1.03;letter-spacing:-.022em}
+h2{font-size:1.62rem;font-weight:600;line-height:1.2;letter-spacing:-.012em}
+h3{font-size:1.06rem;font-weight:600;line-height:1.3}
+p{margin:0}
+.mono,code,th,.label,td{font-family:"IBM Plex Mono",ui-monospace,Menlo,monospace}
+.label{font-size:.685rem;font-weight:500;letter-spacing:.13em;text-transform:uppercase;color:var(--ink-3)}
+strong{font-weight:600}
+code{font-size:.86em;background:var(--panel);border:1px solid var(--rule-soft);
+  border-radius:2px;padding:.06em .34em;color:var(--ink-2)}
+a{color:var(--accent);text-decoration:none;border-bottom:1px solid color-mix(in srgb,var(--accent) 35%,transparent)}
+a:hover{border-bottom-color:var(--accent)}
+
+header.mast{padding:88px 0 0;border-bottom:1px solid var(--rule);margin-bottom:56px}
+.mast .label{display:block;margin-bottom:26px}
+.mast .deck{font-size:1.3rem;line-height:1.45;color:var(--ink-2);max-width:36em;margin-top:26px;font-weight:300}
+.mast .deck b{font-weight:600;color:var(--ink)}
+.colophon{display:flex;flex-wrap:wrap;gap:0 40px;margin:44px 0 26px;
+  font-family:"IBM Plex Mono",monospace;font-size:.76rem;color:var(--ink-3);line-height:1.9}
+.colophon div span{color:var(--ink-2)}
+
+section{display:grid;grid-template-columns:minmax(0,64ch) 1fr;gap:0 52px;align-items:start;margin-top:64px}
+section > *{grid-column:1}
+figure,.tablewrap,.callout,.builds,.pair{grid-column:1 / -1}
+.side{grid-column:2;font-size:.83rem;line-height:1.5;color:var(--ink-3);
+  border-top:1px solid var(--rule);padding-top:10px;max-width:27ch;margin-top:.35em}
+.side b{color:var(--ink-2);font-weight:600}
+@media (max-width:1000px){
+  section{grid-template-columns:minmax(0,1fr)}
+  section > *,.side{grid-column:1}
+  .side{max-width:none;border-top:0;border-left:2px solid var(--rule);padding:0 0 0 16px;margin:1.6em 0 0}
+}
+.sechead{display:flex;gap:16px;align-items:baseline;margin-bottom:22px}
+.sechead .n{font-family:"IBM Plex Mono",monospace;font-size:.8rem;font-weight:600;color:var(--accent);
+  padding-top:.25em;letter-spacing:.02em}
+p + p{margin-top:1.05em}
+h2 + p, h3 + p{margin-top:.7em}
+p + h3{margin-top:2em}
+.lede{font-size:1.12rem;color:var(--ink-2)}
+
+figure{margin:38px 0 0}
+figure svg{display:block;width:100%;height:auto;overflow:visible}
+figcaption{font-family:"IBM Plex Mono",monospace;font-size:.755rem;line-height:1.6;color:var(--ink-3);
+  margin-top:14px;max-width:76ch}
+figcaption b{color:var(--ink-2);font-weight:500}
+.figframe{border-top:1px solid var(--rule);padding-top:22px}
+
+.tablewrap{overflow-x:auto;margin:34px 0 0}
+table{border-collapse:collapse;width:100%;font-size:.845rem;font-variant-numeric:tabular-nums}
+th{font-size:.68rem;font-weight:500;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3);
+  text-align:right;padding:0 0 9px 22px;border-bottom:1px solid var(--rule);white-space:nowrap}
+th:first-child,td:first-child{text-align:left;padding-left:0}
+td{padding:9px 0 9px 22px;text-align:right;border-bottom:1px solid var(--rule-soft);
+  white-space:nowrap;color:var(--ink-2);font-size:.8rem}
+td.txt{white-space:normal;text-align:left;font-family:Spectral,Georgia,serif;font-size:.9rem;line-height:1.45}
+td:first-child{color:var(--ink)}
+td.hi{color:var(--ink);font-weight:600}
+tbody tr:last-child td{border-bottom:1px solid var(--rule)}
+
+.callout{border-left:3px solid var(--accent);background:var(--panel);
+  padding:22px 26px;margin-top:34px;border-radius:0 3px 3px 0}
+.callout p{font-size:1rem}
+.callout .label{margin-bottom:8px;color:var(--accent)}
+.callout.warn{border-left-color:var(--warn)}
+.callout.warn .label{color:var(--warn)}
+
+.builds{margin-top:14px;border-top:1px solid var(--rule)}
+.build{display:grid;grid-template-columns:2.4rem minmax(0,1fr) 12rem;gap:0 24px;
+  padding:22px 0;border-bottom:1px solid var(--rule-soft);align-items:start}
+.build .r{font-family:"IBM Plex Mono",monospace;font-size:.8rem;color:var(--accent);font-weight:600;padding-top:.2em}
+.build h3{margin-bottom:5px}
+.build p{font-size:.95rem;color:var(--ink-2)}
+.build .cost{font-family:"IBM Plex Mono",monospace;font-size:.72rem;color:var(--ink-3);line-height:1.55;text-align:right}
+@media (max-width:720px){
+  .build{grid-template-columns:2.2rem minmax(0,1fr)}
+  .build .cost{grid-column:2;text-align:left;margin-top:8px}
+}
+
+/* svg element classes */
+.ax{stroke:var(--rule);fill:none}
+.gridline{stroke:var(--grid);fill:none}
+.tk{font-family:"IBM Plex Mono",monospace;font-size:10.5px;fill:var(--ink-3)}
+.tkb{font-family:"IBM Plex Mono",monospace;font-size:11px;fill:var(--ink-2)}
+.hd{font-family:"IBM Plex Mono",monospace;font-size:11px;fill:var(--ink-2);font-weight:600}
+.band{fill:var(--accent)}
+.lift{fill:var(--warn)}
+.boxr{fill:none;stroke:var(--rule);stroke-width:1}
+.k0{fill:var(--c0)}.k1{fill:var(--c1)}.k2{fill:var(--c2)}.k3{fill:var(--c3)}.k4{fill:var(--c4)}
+.natline{fill:none;stroke:var(--ink-3);stroke-width:1.4;stroke-dasharray:4 3}
+.floorline{fill:none;stroke:var(--accent);stroke-width:2.4}
+.lensfill{fill:var(--accent);fill-opacity:.09}
+.cur{stroke:var(--warn);stroke-width:1.4;fill:none}
+.arrow{stroke:var(--accent);stroke-width:1.4;fill:none;marker-end:url(#ah)}
+.arrow2{stroke:var(--ink-3);stroke-width:1.2;fill:none;stroke-dasharray:3 3;marker-end:url(#ah2)}
+
+footer{margin-top:80px;padding-top:26px;border-top:1px solid var(--rule);
+  font-family:"IBM Plex Mono",monospace;font-size:.75rem;color:var(--ink-3);line-height:1.8}
+</style>
+
+<div class="wrap">
+
+<header class="mast">
+  <span class="label">Sequence tube map · interaction concept · 19 August 2026</span>
+  <h1>A Lens With Its<br>Handle Elsewhere</h1>
+  <p class="deck">
+    At fit-to-screen a haplotype strand is <b>0.19 css pixels</b> tall and nothing can be
+    found in the bundle. The Table Lens answered this in 1994 by expanding the row you point
+    at. This proposes the same expansion with <b>the pointing moved into a second panel</b> —
+    a PCLAI scatter where every strand has an address, where the whole bounded space is on
+    screen at once, and where resolution is something you can buy.
+  </p>
+  <div class="colophon">
+    <div>Origin<br><span>conversation, 19 Aug 2026</span></div>
+    <div>Prior art<br><span>Rao &amp; Card, CHI '94</span></div>
+    <div>Strategy note<br><span>docs/DISAMBIGUATING-STRANDS.md § A, C</span></div>
+    <div>Status<br><span>proposal · nothing rendered</span></div>
+  </div>
+</header>
+
+<section>
+  <div class="sechead"><span class="n">§</span><h2>The claim, in one paragraph</h2></div>
+  <p class="lede">
+    Selection happens in a PCLAI scatter plot, not in the tube map. The strand chosen there is
+    drawn in the map at a <em>screen-space minimum thickness</em> — a floor, not a multiplier —
+    so that a sub-pixel band becomes findable. The floor is inert at every zoom where the band
+    is already thicker than it, and it releases the instant the cursor leaves the chart. The
+    map at rest is never distorted.
+  </p>
+  <p>
+    Three things make this different from the treatment tried and removed on 14 August, and
+    each is argued below: the distortion is <strong>geometric rather than tonal</strong>, the
+    handle is <strong>outside the distorted view</strong>, and the whole thing is
+    <strong>self-annulling</strong> — it disappears precisely where it would begin to lie.
+  </p>
+  <div class="side">
+    Every number quoted here is from an existing measurement in this repo. Nothing in this
+    document has been rendered, and by <b>constraint 5</b> nothing here is settled until it
+    has been.
+  </div>
+</section>
+
+<section>
+  <div class="sechead"><span class="n">01</span><h2>The regime that defeats everything else</h2></div>
+  <p>
+    Fit-to-screen on <code>5520+</code>: 464 strands land on about <strong>177 device
+    rows</strong>, a band is <strong>0.19 css pixels</strong> tall, and roughly two and a half
+    bands share every device pixel row. The strip's aspect is 14:1 to 28:1 and is set by the
+    genome, so there is no vertical zoom to spend. This is the bound
+    <code>DISAMBIGUATING-STRANDS.md</code> states as constraint 3: <em>legibility at fit is
+    bounded by pixels, not by cleverness.</em>
+  </p>
+  <p>
+    Feeler mode (#39) works from about one css pixel per band upward and fails here, measured
+    and photographed. That is not a defect in the treatment. It is the treatment meeting an
+    arithmetic wall.
+  </p>
+  <p>
+    What makes the wall worth attacking rather than conceding: <strong>fit is the only view in
+    which constraint 2 is satisfiable at all.</strong> Constraint 2 asks for the whole strand
+    rather than the visible part, and at working zoom a strand crosses tens of screens. So the
+    one view where a haplotype's entire path is present is the one view where it cannot be
+    seen. Zoomed in you can tell strands apart and cannot follow them; at fit you could follow
+    them and cannot tell them apart. Repairing fit is not polishing the worst case — it is
+    completing the only view that answers the tracing question.
+  </p>
+  <div class="side">
+    <b>A discrepancy worth resolving.</b> <code>RENDERING.md</code> reports 2.6 strands per
+    device pixel row at fit on <code>5520+</code> (464 / 177, consistent with 0.19 css px at
+    dpr 2); the feeler note reports 5.7 for the same document. Figures here use 2.6. The
+    conclusions do not turn on which is right, but one of them is.
+  </div>
+</section>
+
+<section>
+  <div class="sechead"><span class="n">02</span><h2>What Rao and Card built, and which half we take</h2></div>
+  <p>
+    The Table Lens (Rao &amp; Card, CHI '94, Xerox PARC) put a large table on one screen by
+    compressing every row to a pixel or two and expanding only the rows under a
+    degree-of-interest function. Focus and context in one surface, with three properties worth
+    naming because we keep two of them and break the third.
+  </p>
+  <div class="tablewrap">
+  <table>
+    <thead><tr><th>Property</th><th style="text-align:left">Table Lens, 1994</th><th style="text-align:left">Here</th></tr></thead>
+    <tbody>
+      <tr>
+        <td>Focus is expanded in place</td>
+        <td class="txt">Focal rows grow; the rest stay compressed.</td>
+        <td class="txt"><strong>Kept.</strong> The strand grows about its own centreline; its position stays truthful.</td>
+      </tr>
+      <tr>
+        <td>Distortion is reversible and continuous</td>
+        <td class="txt">The lens follows the pointer and releases.</td>
+        <td class="txt"><strong>Kept, and load-bearing.</strong> The release is what makes the distortion honest.</td>
+      </tr>
+      <tr>
+        <td>The handle is in the distorted view</td>
+        <td class="txt">You click the row you want, in the table itself.</td>
+        <td class="txt"><strong>Broken deliberately.</strong> The handle is a second panel.</td>
+      </tr>
+      <tr>
+        <td>Space is conserved</td>
+        <td class="txt">Focus expands, context compresses; total height constant.</td>
+        <td class="txt"><strong>Open.</strong> Both variants are cheap here — see §06.</td>
+      </tr>
+    </tbody>
+  </table>
+  </div>
+  <div class="side">
+    Rao, R. and Card, S. K., <i>The Table Lens: Merging Graphical and Symbolic Representations
+    in an Interactive Focus+Context Visualization for Tabular Information</i>, CHI '94. The
+    wider family — Furnas' fisheye views, degree-of-interest — has one consistent finding worth
+    inheriting: <b>spatial distortion is well tolerated when it is reversible and under direct
+    user control, and intolerable when it persists.</b>
+  </div>
+</section>
+
+<section>
+  <div class="sechead"><span class="n">03</span><h2>Why the handle moves out of the view</h2></div>
+  <p>
+    A table has rows, and a row is an address. That is what makes direct manipulation work in
+    the original: the thing you want to expand is already an addressable object under your
+    cursor.
+  </p>
+  <p>
+    The tube map has no such index. <strong>Vertical order here is layout, not identity</strong>
+    — it is where the server routed a ribbon so the bundle reads, and it changes along the
+    strip. There is no row 12. At fit there is not even a pointable target: 2.6 strands share
+    the pixel under the cursor, so a click is a lottery among them. Direct manipulation fails
+    for the same arithmetic reason the display does, and no amount of picking precision (#38)
+    repairs it, because the ambiguity is in the input device's resolution, not the pick.
+  </p>
+  <p>
+    So the handle has to live where the strands <em>do</em> have addresses. Four consequences
+    follow, and the third is the one that decides it.
+  </p>
+
+  <h3>1 · The map at rest is never distorted</h3>
+  <p>
+    With hover-on-the-map you are always deforming the thing you are looking at. With
+    hover-on-the-chart, the deformation occurs only while attention is deliberately in the
+    other panel; the strip is truthful whenever it is the object of study. This is a strictly
+    better arrangement and it is available only because the handle moved.
+  </p>
+
+  <h3>2 · Selection becomes strand-global rather than cursor-local</h3>
+  <p>
+    <code>DISAMBIGUATING-STRANDS.md</code> records the same caveat against picking twice:
+    <em>it answers what is under the cursor, not what you are looking at three screens to the
+    right.</em> A dot in the chart is not at a position along the strip, so the caveat does not
+    arise. You have named a haplotype, not touched a band.
+  </p>
+
+  <h3>3 · The chart has an unspent resolution budget, and the strip has none</h3>
+  <p>
+    Strategy C concluded that no PCLAI-derived channel can individuate a strand. That is true
+    of a <em>fixed-size</em> rendering, and the reason is a resolution budget — which a scatter
+    plot, unlike the strip, can simply buy.
+  </p>
+  <p>
+    From the survey: a haplotype's median nearest neighbour sits <strong>0.064–0.088% of the
+    cloud's diameter</strong> away. To place a median pair 4 px apart the plot must be about
+    <code>4 / 0.0007 ≈ 5,700 px</code> across — roughly <strong>10× zoom on a 600 px
+    panel</strong>. Not exotic. Pan and zoom in a scatter, costing nothing and losing nothing.
+    The survey's own table corroborates the scaling: doubling effective resolution took
+    discriminable points from 78–99 to 209–233.
+  </p>
+  <div class="tablewrap">
+  <table>
+    <thead><tr><th>Channel</th><th>Discriminable, of ~460</th><th style="text-align:left">Can it be bought?</th></tr></thead>
+    <tbody>
+      <tr><td>Colour, ≥ 1.0 ΔE apart</td><td>54–63</td><td class="txt">No. Fixed by the shipped encoding and by the eye.</td></tr>
+      <tr><td>Position, 600 px plot, 4 px sep.</td><td>78–99</td><td class="txt">Yes — zoom the plot.</td></tr>
+      <tr><td>Position, 1200 px plot, 2 px sep.</td><td>209–233</td><td class="txt">Yes.</td></tr>
+      <tr><td class="hi">Position, ~10× zoom + pan</td><td class="hi">~460</td><td class="txt">This is the proposal.</td></tr>
+      <tr><td>Vertical position in the strip</td><td>—</td><td class="txt">No. Aspect is set by the genome; there is no vertical zoom.</td></tr>
+    </tbody>
+  </table>
+  </div>
+  <p>
+    The strip cannot be magnified in the axis that matters. The chart can be magnified in both.
+    <strong>That asymmetry is the whole argument for moving the handle</strong>, and it is not a
+    matter of taste.
+  </p>
+
+  <h3>4 · The per-node coordinate becomes a feature</h3>
+  <p>
+    Strategy C records, as a correction, that PCLAI is a property of the haplotype
+    <em>at a node</em> rather than of the haplotype. Median drift across a locus is 0.3–0.5% of
+    the cloud — invisible. In a linked chart that footnote becomes behaviour: let the cloud be a
+    function of the map's current viewport, and scrolling the strip settles the dots into their
+    coordinates for the nodes now on screen.
+  </p>
+  <p>
+    For 456 of 460 haplotypes nothing visible happens, which is the honest picture of locally
+    stable ancestry. And then <code>HG02004#2</code> in <code>chr6</code> leaps
+    <strong>43% of the cloud's diameter</strong> across two nodes. That is a real biological
+    event which the current picture renders as one hairline among 466 quietly changing hue by
+    101/255. In a linked chart it is the only thing moving.
+  </p>
+  <div class="side">
+    This is the rarest bucket the survey found — <b>0 to 4 haplotypes per locus</b> — and no
+    affordance in the strategy document surfaces it. Here it falls out of the design without
+    being designed for.
+  </div>
+</section>
+
+<section>
+  <div class="sechead"><span class="n">04</span><h2>The chart is a navigator for the other axis</h2></div>
+  <p>
+    The reason this arrangement should feel familiar is that the project has already built half
+    of it. <strong>The map has two extents a reader has to traverse</strong> — position along
+    the genome, and position in the population — and only one of them has an overview.
+  </p>
+  <p>
+    The navigator (#36) covers the first. Its record states its job in one line:
+    <em>"the navigator's entire job is to say where you are, and it does that with the rect, so
+    the rect has to be findable at the zoom where being lost is possible."</em> That is exactly
+    what a PCLAI scatter does for the second extent. The coordinate space is bounded, fully
+    known, and every haplotype in the document lands somewhere in it. Hovering a dot is not
+    only a selection — it is a <strong>position report</strong>: which lobe, how near its edge,
+    how far from everything else.
+  </p>
+  <div class="side">
+    Quotation from <code>notes/2026-08-14-navigator-thumbnail-aspect.md</code>, which settled
+    <code>THUMBNAIL_WIDTH = 720</code> by rendering it against <code>5520+</code> and
+    <code>5514+</code> rather than reasoning about it. <b>The same method applies here</b>, and
+    the same warning: that note also records the 360 px width having been calibrated against the
+    600 bp fixture and being wrong for it (constraint 6).
+  </div>
+  <p>
+    So the proposal is not a new kind of widget bolted to the side. It is the completion of a
+    pattern this project already accepted, applied to the axis that was left uncovered.
+  </p>
+
+  <div class="tablewrap">
+  <table>
+    <thead><tr><th></th><th style="text-align:left">Navigator · built</th><th style="text-align:left">PCLAI chart · proposed</th></tr></thead>
+    <tbody>
+      <tr><td>Extent it covers</td><td class="txt">Position along the genome</td><td class="txt">Position in the population</td></tr>
+      <tr><td>What it shows</td><td class="txt">The whole document, 720 px wide, one render</td><td class="txt">The whole coordinate space, every haplotype in it</td></tr>
+      <tr><td>Its "where you are" mark</td><td class="txt">The viewport rect</td><td class="txt">The hovered or pinned dot</td></tr>
+      <tr class="hi"><td class="hi">Load-bearing at</td><td class="txt"><strong>Deep zoom</strong> — 1/200 of the strip is on screen and being lost is possible</td><td class="txt"><strong>Fit</strong> — the whole strip is on screen and no strand can be told from another</td></tr>
+      <tr><td>Nearly idle at</td><td class="txt">Fit — the whole strip is already visible</td><td class="txt">Deep zoom — bands are 7.74 css px and the feeler works directly</td></tr>
+      <tr><td>Reflects selection</td><td class="txt">Not yet; the thumbnail is baked once per document (#39, open question 4)</td><td class="txt">By construction — it is where selection happens</td></tr>
+    </tbody>
+  </table>
+  </div>
+
+  <p>
+    <strong>Read the fourth and fifth rows together.</strong> The two overviews are essential in
+    precisely opposite regimes. Neither is a redundant copy of the other, and the lens is needed
+    exactly where the navigator has nothing to do. That is a strong argument that the chart is
+    not chrome creep: it is the missing member of a pair.
+  </p>
+
+  <h3>What boundedness buys that a list cannot</h3>
+  <p>
+    Indirect selection has been on the table since #50 as a column of 466 pills. Both it and the
+    chart are indirect selection; the difference is that a bounded space can be
+    <em>traversed</em> and a list can only be <em>scrolled</em>.
+  </p>
+  <p>
+    <strong>Nothing is hidden.</strong> A 466-row list has a bottom you cannot see. The strip has
+    463 strands you cannot tell apart. The chart puts every selectable object on screen
+    simultaneously, so a researcher can know they have seen the whole population rather than
+    hoping so. That guarantee is not available anywhere else in this viewer.
+  </p>
+  <p>
+    <strong>A sweep can be systematic and can finish.</strong> In a bounded space you can work
+    lobe by lobe, edge to edge, and tell when you are done. A list requires a name you do not yet
+    have, which is precisely the situation the disambiguation problem describes. The list wins
+    when you know who you are looking for; the chart wins when you do not.
+  </p>
+
+  <h3>The recursion, and the rule it suggests</h3>
+  <p>
+    §03 argues the chart's zoom is load-bearing — about 10× to resolve a lobe. The moment it
+    zooms, the chart inherits the navigator's own problem: being lost inside a magnified space.
+    It therefore needs the navigator's own answer, an overview inset with a viewport rect, and
+    this project has already solved that once and knows what it costs. A navigator for the
+    navigator is not a joke; it is the same widget at a different scale.
+  </p>
+  <div class="callout">
+    <span class="label">One rule, closing an open question</span>
+    <p>
+      <strong>Every overview reflects the current selection.</strong> #39's fourth open question
+      — that an emphasized strand does not appear in the navigator, because the thumbnail is
+      baked once per document — stops being a loose end and becomes an instance of a rule the
+      chart needs anyway. Both overviews are one render each. Selection is the shared object
+      (§09), and every surface that claims to show the whole of something has to show the
+      selection too, or it is lying about being an overview.
+    </p>
+  </div>
+</section>
+
+<section class="figframe">
+  <div class="sechead"><span class="n">05</span><h2>The two panels, and the loop between them</h2></div>
+  <figure>
+    <svg viewBox="0 0 960 246" role="img" aria-label="A PCLAI chart panel linked to the tube map strip">
+      <defs>
+        <marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+          <path d="M0,0 L10,5 L0,10 z" fill="var(--accent)"/>
+        </marker>
+        <marker id="ah2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+          <path d="M0,0 L10,5 L0,10 z" fill="var(--ink-3)"/>
+        </marker>
+      </defs>
+
+      <text class="hd" x="0" y="14">PCLAI CHART · the index</text>
+      <rect class="boxr" x="0" y="26" width="300" height="190"/>
+      <g transform="translate(0,26)">
+        <circle cx="250.8" cy="173.4" r="2.1" class="k2"/><circle cx="249.4" cy="176.0" r="2.1" class="k2"/><circle cx="249.8" cy="173.7" r="2.1" class="k2"/><circle cx="259.8" cy="130.2" r="2.1" class="k3"/><circle cx="249.7" cy="173.4" r="2.1" class="k2"/><circle cx="251.3" cy="171.5" r="2.1" class="k2"/><circle cx="253.8" cy="168.9" r="2.1" class="k2"/><circle cx="250.9" cy="172.2" r="2.1" class="k2"/><circle cx="285.6" cy="14.6" r="2.1" class="k1"/><circle cx="284.9" cy="14.2" r="2.1" class="k1"/><circle cx="285.5" cy="14.8" r="2.1" class="k1"/><circle cx="285.4" cy="14.7" r="2.1" class="k1"/><circle cx="285.8" cy="14.2" r="2.1" class="k1"/><circle cx="285.2" cy="14.9" r="2.1" class="k1"/><circle cx="271.0" cy="78.5" r="2.1" class="k4"/><circle cx="21.5" cy="83.8" r="2.1" class="k0"/><circle cx="267.6" cy="102.8" r="2.1" class="k4"/><circle cx="259.8" cy="142.0" r="2.1" class="k3"/><circle cx="250.5" cy="173.8" r="2.1" class="k2"/><circle cx="15.5" cy="82.7" r="2.1" class="k0"/><circle cx="24.2" cy="84.6" r="2.1" class="k0"/><circle cx="257.8" cy="132.5" r="2.1" class="k3"/><circle cx="251.9" cy="172.6" r="2.1" class="k2"/><circle cx="249.4" cy="174.6" r="2.1" class="k2"/><circle cx="250.6" cy="173.6" r="2.1" class="k2"/><circle cx="273.1" cy="71.1" r="2.1" class="k4"/><circle cx="273.7" cy="79.7" r="2.1" class="k4"/><circle cx="250.4" cy="174.9" r="2.1" class="k2"/><circle cx="277.0" cy="74.0" r="2.1" class="k4"/><circle cx="271.6" cy="79.1" r="2.1" class="k4"/><circle cx="285.5" cy="15.5" r="2.1" class="k1"/><circle cx="16.5" cy="82.8" r="2.1" class="k0"/><circle cx="285.7" cy="15.3" r="2.1" class="k1"/><circle cx="284.8" cy="14.1" r="2.1" class="k1"/><circle cx="284.9" cy="14.2" r="2.1" class="k1"/><circle cx="15.0" cy="83.2" r="2.1" class="k0"/><circle cx="285.2" cy="14.4" r="2.1" class="k1"/><circle cx="16.3" cy="82.6" r="2.1" class="k0"/><circle cx="272.1" cy="76.4" r="2.1" class="k4"/><circle cx="271.4" cy="77.6" r="2.1" class="k4"/><circle cx="284.3" cy="15.1" r="2.1" class="k1"/><circle cx="284.8" cy="14.3" r="2.1" class="k1"/><circle cx="16.8" cy="82.8" r="2.1" class="k0"/><circle cx="255.7" cy="125.9" r="2.1" class="k3"/><circle cx="19.3" cy="83.6" r="2.1" class="k0"/><circle cx="18.6" cy="83.5" r="2.1" class="k0"/><circle cx="19.6" cy="83.6" r="2.1" class="k0"/><circle cx="251.8" cy="161.4" r="2.1" class="k2"/><circle cx="22.8" cy="84.5" r="2.1" class="k0"/><circle cx="15.8" cy="82.8" r="2.1" class="k0"/><circle cx="16.8" cy="83.0" r="2.1" class="k0"/><circle cx="23.4" cy="84.4" r="2.1" class="k0"/><circle cx="18.6" cy="83.2" r="2.1" class="k0"/><circle cx="16.2" cy="83.2" r="2.1" class="k0"/><circle cx="15.6" cy="82.9" r="2.1" class="k0"/><circle cx="17.4" cy="83.1" r="2.1" class="k0"/><circle cx="14.3" cy="82.4" r="2.1" class="k0"/><circle cx="14.9" cy="82.7" r="2.1" class="k0"/><circle cx="22.8" cy="84.0" r="2.1" class="k0"/><circle cx="256.1" cy="127.1" r="2.1" class="k3"/><circle cx="255.2" cy="130.6" r="2.1" class="k3"/><circle cx="255.6" cy="125.5" r="2.1" class="k3"/><circle cx="256.3" cy="122.2" r="2.1" class="k3"/><circle cx="258.9" cy="117.5" r="2.1" class="k3"/><circle cx="257.9" cy="115.1" r="2.1" class="k3"/><circle cx="257.0" cy="128.7" r="2.1" class="k3"/><circle cx="257.2" cy="116.4" r="2.1" class="k3"/><circle cx="255.6" cy="124.4" r="2.1" class="k3"/><circle cx="17.5" cy="83.0" r="2.1" class="k0"/><circle cx="18.5" cy="83.5" r="2.1" class="k0"/><circle cx="285.1" cy="14.6" r="2.1" class="k1"/><circle cx="285.8" cy="14.6" r="2.1" class="k1"/><circle cx="15.0" cy="82.8" r="2.1" class="k0"/><circle cx="284.8" cy="15.3" r="2.1" class="k1"/><circle cx="285.1" cy="14.4" r="2.1" class="k1"/><circle cx="284.8" cy="14.7" r="2.1" class="k1"/><circle cx="285.2" cy="15.0" r="2.1" class="k1"/><circle cx="285.5" cy="14.5" r="2.1" class="k1"/><circle cx="285.0" cy="14.6" r="2.1" class="k1"/><circle cx="285.1" cy="14.6" r="2.1" class="k1"/><circle cx="17.8" cy="83.3" r="2.1" class="k0"/><circle cx="17.7" cy="83.3" r="2.1" class="k0"/><circle cx="266.8" cy="87.1" r="2.1" class="k4"/><circle cx="254.9" cy="155.7" r="2.1" class="k2"/><circle cx="18.0" cy="83.1" r="2.1" class="k0"/><circle cx="15.6" cy="83.0" r="2.1" class="k0"/><circle cx="250.2" cy="173.8" r="2.1" class="k2"/><circle cx="248.8" cy="175.3" r="2.1" class="k2"/><circle cx="250.3" cy="173.4" r="2.1" class="k2"/><circle cx="254.5" cy="135.5" r="2.1" class="k3"/><circle cx="254.9" cy="134.5" r="2.1" class="k3"/><circle cx="255.5" cy="131.0" r="2.1" class="k3"/>
+        <rect x="277" y="7" width="17" height="16" fill="none" stroke="var(--warn)" stroke-width="1.2"/>
+      </g>
+
+      <text class="hd" x="330" y="14">ZOOMED ~65×</text>
+      <rect class="boxr" x="330" y="26" width="104" height="104"/>
+      <g transform="translate(330,26)">
+        <circle cx="71.5" cy="20.1" r="2.1" class="k1"/><circle cx="79.4" cy="19.1" r="2.1" class="k1"/><circle cx="36.4" cy="23.2" r="2.1" class="k1"/><circle cx="32.5" cy="19.1" r="2.1" class="k1"/><circle cx="52.0" cy="40.4" r="2.1" class="k1"/><circle cx="67.6" cy="11.0" r="2.1" class="k1"/><circle cx="75.5" cy="23.2" r="2.1" class="k1"/><circle cx="55.9" cy="9.0" r="2.1" class="k1"/><circle cx="71.5" cy="24.2" r="2.1" class="k1"/><circle cx="87.2" cy="13.0" r="2.1" class="k1"/><circle cx="79.4" cy="23.2" r="2.1" class="k1"/><circle cx="44.2" cy="17.1" r="2.1" class="k1"/><circle cx="44.2" cy="28.2" r="2.1" class="k1"/><circle cx="67.6" cy="22.2" r="2.1" class="k1"/><circle cx="55.9" cy="15.1" r="2.1" class="k1"/><circle cx="83.3" cy="15.1" r="2.1" class="k1"/><circle cx="79.4" cy="27.2" r="2.1" class="k1"/><circle cx="48.1" cy="31.3" r="2.1" class="k1"/><circle cx="52.0" cy="11.0" r="2.1" class="k1"/><circle cx="71.5" cy="33.3" r="2.1" class="k1"/><circle cx="59.8" cy="19.1" r="2.1" class="k1"/><circle cx="83.3" cy="11.0" r="2.1" class="k1"/><circle cx="83.3" cy="19.1" r="2.1" class="k1"/><circle cx="87.2" cy="15.1" r="2.1" class="k1"/><circle cx="55.9" cy="30.2" r="2.1" class="k1"/><circle cx="52.0" cy="15.1" r="2.1" class="k1"/><circle cx="55.9" cy="28.2" r="2.1" class="k1"/><circle cx="83.3" cy="45.4" r="2.1" class="k1"/><circle cx="71.5" cy="17.1" r="2.1" class="k1"/><circle cx="63.7" cy="20.1" r="2.1" class="k1"/><circle cx="71.5" cy="22.2" r="2.1" class="k1"/><circle cx="67.6" cy="18.1" r="2.1" class="k1"/><circle cx="36.4" cy="17.1" r="2.1" class="k1"/><circle cx="59.8" cy="33.3" r="2.1" class="k1"/><circle cx="59.8" cy="34.3" r="2.1" class="k1"/><circle cx="63.7" cy="16.1" r="2.1" class="k1"/><circle cx="75.5" cy="28.2" r="2.1" class="k1"/><circle cx="63.7" cy="21.1" r="2.1" class="k1"/><circle cx="63.7" cy="26.2" r="2.1" class="k1"/><circle cx="63.7" cy="22.2" r="2.1" class="k1"/><circle cx="67.6" cy="26.2" r="2.1" class="k1"/><circle cx="32.5" cy="51.5" r="2.1" class="k1"/><circle cx="67.6" cy="15.1" r="2.1" class="k1"/><circle cx="79.4" cy="16.1" r="2.1" class="k1"/><circle cx="52.0" cy="22.2" r="2.1" class="k1"/><circle cx="59.8" cy="19.1" r="2.1" class="k1"/>
+        <g class="cur"><circle cx="63.7" cy="22.2" r="6.5"/><path d="M63.7,8 v6 M63.7,30.4 v6 M49.5,22.2 h6 M71.9,22.2 h6"/></g>
+      </g>
+      <text class="tk" x="330" y="146">one lobe, resolved</text>
+      <text class="tk" x="330" y="160">— 460 addresses</text>
+
+      <path class="arrow" d="M442,70 H570"/>
+      <text class="tk" x="446" y="62">emphasize + floor</text>
+      <path class="arrow2" d="M570,104 H442"/>
+      <text class="tk" x="446" y="120">pick → light the dot</text>
+
+      <text class="hd" x="590" y="14">TUBE MAP STRIP · the phenomenon</text>
+      <rect class="boxr" x="590" y="26" width="360" height="190"/>
+      <g transform="translate(590,26)">
+        <g class="band" fill-opacity="0.22">
+          <path d="M0,26 C90,26 120,44 180,44 C240,44 270,30 360,30" stroke="var(--accent)" stroke-opacity=".22" stroke-width="3" fill="none"/>
+          <path d="M0,40 C90,40 120,58 180,58 C240,58 270,44 360,46" stroke="var(--accent)" stroke-opacity=".22" stroke-width="3" fill="none"/>
+          <path d="M0,54 C90,54 120,72 180,72 C240,72 270,60 360,62" stroke="var(--accent)" stroke-opacity=".22" stroke-width="3" fill="none"/>
+          <path d="M0,68 C90,68 120,86 180,86 C240,86 270,76 360,78" stroke="var(--accent)" stroke-opacity=".22" stroke-width="3" fill="none"/>
+          <path d="M0,96 C90,96 130,74 190,74 C250,74 280,96 360,96" stroke="var(--accent)" stroke-opacity=".22" stroke-width="3" fill="none"/>
+          <path d="M0,110 C90,110 130,90 190,90 C250,90 280,112 360,112" stroke="var(--accent)" stroke-opacity=".22" stroke-width="3" fill="none"/>
+          <path d="M0,124 C90,124 130,106 190,106 C250,106 280,128 360,128" stroke="var(--accent)" stroke-opacity=".22" stroke-width="3" fill="none"/>
+          <path d="M0,138 C90,138 120,152 180,152 C240,152 270,140 360,142" stroke="var(--accent)" stroke-opacity=".22" stroke-width="3" fill="none"/>
+          <path d="M0,152 C90,152 120,166 180,166 C240,166 270,156 360,158" stroke="var(--accent)" stroke-opacity=".22" stroke-width="3" fill="none"/>
+          <path d="M0,166 C90,166 120,180 180,180 C240,180 270,170 360,172" stroke="var(--accent)" stroke-opacity=".22" stroke-width="3" fill="none"/>
+        </g>
+        <path d="M0,82 C90,82 130,124 190,124 C250,124 280,86 360,88"
+              stroke="var(--warn)" stroke-width="9" fill="none" stroke-linecap="round"/>
+      </g>
+      <text class="tk" x="590" y="232">one strand floored to ~1.75 css px · the other 463 receded</text>
+    </svg>
+    <figcaption>
+      <b>Figure 1.</b> The dots are real — 92 haplotypes from <code>cici.json</code> at their
+      mean PCLAI coordinate, subsampled 1-in-5, coloured by k-means cluster. The lobe in the
+      warn-coloured box is 103 haplotypes occupying about 1.5 × 1.4 units of the panel: a smear
+      at rest, and 460 separable addresses under about 10× magnification. The inset is that
+      lobe alone. <b>Selection travels right; picking travels back left.</b> The strip is
+      schematic.
+    </figcaption>
+  </figure>
+</section>
+
+<section class="figframe">
+  <div class="sechead"><span class="n">06</span><h2>The floor, stated precisely</h2></div>
+  <p>
+    Not <em>draw the selected strand 2 px tall</em>. Rather, for the emphasized strand only:
+  </p>
+  <p style="margin-top:1.05em">
+    <code style="font-size:1rem;padding:.5em .8em;display:inline-block">thickness = max(natural_thickness, floor_px)</code>
+  </p>
+  <p>
+    with <code>floor_px</code> somewhere around 1.5–2 css pixels, growing symmetrically about
+    the band's centreline so its <em>position</em> stays exactly truthful even as its extent
+    does not.
+  </p>
+  <p>
+    The property that makes this defensible is that it is <strong>self-annulling</strong>. Above
+    the floor the clamp does nothing and the map is precisely as honest as it is today. Below
+    it, the clamp is the entire effect — and below it is exactly the regime where the
+    neighbours being overdrawn were never resolvable in the first place. The distortion exists
+    only where it distorts nothing legible, and disappears the moment it would begin to lie.
+  </p>
+
+  <figure>
+    <svg viewBox="0 0 780 400" role="img" aria-label="Drawn thickness against natural thickness, log-log">
+      <path class="lensfill" d="M60,152 L439.8,152 L439.8,330 L60,330 Z"/>
+      <g class="gridline">
+        <path d="M60,30 V330"/><path d="M700,30 V330"/>
+        <path d="M60,330 H700"/><path d="M60,30 H700"/>
+      </g>
+      <path class="natline" d="M60,330 L700,30"/>
+      <path class="floorline" d="M60,152 H439.8 L700,30"/>
+
+      <g class="ax"><path d="M439.8,152 V330" stroke-dasharray="3 3"/></g>
+      <g class="ax"><path d="M202.6,263.2 V330" stroke-dasharray="3 3"/></g>
+      <g class="ax"><path d="M380,180 V330" stroke-dasharray="3 3"/></g>
+
+      <circle cx="202.6" cy="152" r="3.4" fill="var(--warn)"/>
+      <circle cx="202.6" cy="263.2" r="3.4" fill="var(--ink-3)"/>
+      <circle cx="598.6" cy="77.5" r="3.4" fill="var(--accent)"/>
+
+      <text class="tkb" x="212" y="148">floored → 1.75</text>
+      <text class="tk" x="212" y="277">natural → 0.19</text>
+      <text class="tkb" x="448" y="136">the clamp releases here</text>
+      <text class="tk" x="694" y="116" text-anchor="end">above the floor, inert</text>
+
+      <text class="tk" x="202.6" y="348" text-anchor="middle">0.19</text>
+      <text class="tk" x="202.6" y="362" text-anchor="middle">fit, 5520+</text>
+      <text class="tk" x="380" y="348" text-anchor="middle">1.0</text>
+      <text class="tk" x="380" y="362" text-anchor="middle">feeler works</text>
+      <text class="tk" x="439.8" y="348" text-anchor="middle">1.75</text>
+      <text class="tk" x="598.6" y="348" text-anchor="middle">7.74</text>
+      <text class="tk" x="598.6" y="362" text-anchor="middle">40× zoom</text>
+      <text class="tk" x="60" y="348" text-anchor="start">0.05</text>
+      <text class="tk" x="700" y="348" text-anchor="end">20</text>
+
+      <text class="tk" x="60" y="386" text-anchor="start">natural thickness, css px per band (log)</text>
+      <text class="tk" x="14" y="180" transform="rotate(-90,14,180)" text-anchor="middle">drawn thickness (log)</text>
+      <text class="tk" x="66" y="200">lens active</text>
+    </svg>
+    <figcaption>
+      <b>Figure 2.</b> Dashed line, the band as the document specifies it; solid line, the band
+      as drawn under the floor. Log–log, so the two coincide as a diagonal wherever the clamp is
+      inert. The shaded region is the entire extent of the distortion, and every zoom this
+      project has measured as legible — one css px per band upward (#39), 7.74 px at 40× —
+      lies outside it. Reference marks from <code>RENDERING.md</code> and the feeler note.
+    </figcaption>
+  </figure>
+
+  <h3>Overdraw, or conserve space?</h3>
+  <p>
+    Rao and Card conserved total height: expanding a focal row compressed the others. Both
+    variants are cheap here, and the arithmetic is worth having before the choice is made.
+  </p>
+  <div class="tablewrap">
+  <table>
+    <thead><tr><th>Variant</th><th style="text-align:left">What it costs at fit</th><th style="text-align:left">Verdict</th></tr></thead>
+    <tbody>
+      <tr>
+        <td>Overdraw</td>
+        <td class="txt">The floored strand covers about 9 neighbours, which at 0.19 css px each were not resolvable anyway. Every other strand stays pinned.</td>
+        <td class="txt"><strong>Recommended for fit.</strong> Nothing readable is lost and nothing moves.</td>
+      </tr>
+      <tr>
+        <td>Conserve (compress the rest)</td>
+        <td class="txt">The 8 bands of room, spread over 456 neighbours, is <strong>1.75% compression each</strong> — negligible. But every strand's <em>y</em> shifts, and the bundle breathes on every hover.</td>
+        <td class="txt">Cheaper than expected. The objection is not cost, it is that vertical position is the low-frequency cue still working at fit.</td>
+      </tr>
+    </tbody>
+  </table>
+  </div>
+  <div class="side">
+    Worth testing both, because the intuition here is weak and the cost of being wrong is one
+    shader constant. <b>Constraint 5.</b>
+  </div>
+</section>
+
+<section class="figframe">
+  <div class="sechead"><span class="n">07</span><h2>Why the 14 August removal does not bind this</h2></div>
+  <p>
+    <code>notes/2026-08-14-feeler-mode-on-the-gpu.md</code> records a floor of ink tried and
+    removed, and read quickly it reads like this proposal already failing. It is not the same
+    treatment, and the difference is the whole of §06.
+  </p>
+  <p>
+    What was tried was <strong>tonal</strong>: draw the emphasized band <em>as though</em> it
+    were a pixel thick so it composites at full colour instead of a fraction of it. The geometry
+    never changed. A fully-opaque band 0.19 css px tall still lands inside a device row it
+    shares with others, so it still contributes roughly a third of that row's ink. Full alpha on
+    partial coverage is still partial coverage. It turned a 59%-alpha hairline into a solid one
+    on the fixture and — exactly as the note reports — bought nothing at fit on
+    <code>5520+</code>.
+  </p>
+  <p>
+    What is proposed is <strong>geometric</strong>: the band owns three or four device rows
+    outright. This is not a better version of the failed experiment; it is a different quantity,
+    an order of magnitude apart. Figure 3 is that difference drawn.
+  </p>
+
+  <figure>
+    <svg viewBox="0 0 760 398" role="img" aria-label="Three treatments and what the display resamples them to">
+
+      <!-- Panel A -->
+      <text class="hd" x="8" y="16">A · RECEDED CROWD</text>
+      <text class="tk" x="8" y="34">geometry</text><text class="tk" x="108" y="34">display</text>
+      <g>
+        <g class="band" fill-opacity="0.35">
+          <rect x="8" y="54" width="84" height="11"/><rect x="8" y="67" width="84" height="11"/><rect x="8" y="80" width="84" height="11"/><rect x="8" y="93" width="84" height="11"/><rect x="8" y="106" width="84" height="11"/><rect x="8" y="119" width="84" height="11"/><rect x="8" y="132" width="84" height="11"/><rect x="8" y="145" width="84" height="11"/><rect x="8" y="158" width="84" height="11"/><rect x="8" y="171" width="84" height="11"/><rect x="8" y="184" width="84" height="11"/><rect x="8" y="197" width="84" height="11"/><rect x="8" y="210" width="84" height="11"/><rect x="8" y="223" width="84" height="11"/><rect x="8" y="236" width="84" height="11"/><rect x="8" y="249" width="84" height="11"/><rect x="8" y="262" width="84" height="11"/><rect x="8" y="275" width="84" height="11"/><rect x="8" y="288" width="84" height="11"/><rect x="8" y="301" width="84" height="11"/><rect x="8" y="314" width="84" height="11"/><rect x="8" y="327" width="84" height="11"/><rect x="8" y="340" width="84" height="11"/><rect x="8" y="353" width="84" height="11"/>
+        </g>
+        <g class="band">
+          <rect x="108" y="54" width="84" height="32.8" fill-opacity="0.35"/><rect x="108" y="87.8" width="84" height="32.8" fill-opacity="0.35"/><rect x="108" y="121.6" width="84" height="32.8" fill-opacity="0.35"/><rect x="108" y="155.4" width="84" height="32.8" fill-opacity="0.35"/><rect x="108" y="189.2" width="84" height="32.8" fill-opacity="0.35"/><rect x="108" y="223" width="84" height="32.8" fill-opacity="0.35"/><rect x="108" y="256.8" width="84" height="32.8" fill-opacity="0.35"/><rect x="108" y="290.6" width="84" height="32.8" fill-opacity="0.35"/><rect x="108" y="324.4" width="84" height="32.8" fill-opacity="0.35"/>
+        </g>
+      </g>
+      <text class="tk" x="8" y="382">the strand is in here</text>
+
+      <!-- Panel B -->
+      <text class="hd" x="262" y="16">B · ALPHA RESTORED</text>
+      <text class="tk" x="262" y="34">geometry</text><text class="tk" x="362" y="34">display</text>
+      <g>
+        <g class="band" fill-opacity="0.35">
+          <rect x="262" y="54" width="84" height="11"/><rect x="262" y="67" width="84" height="11"/><rect x="262" y="80" width="84" height="11"/><rect x="262" y="93" width="84" height="11"/><rect x="262" y="106" width="84" height="11"/><rect x="262" y="119" width="84" height="11"/><rect x="262" y="132" width="84" height="11"/><rect x="262" y="145" width="84" height="11"/><rect x="262" y="158" width="84" height="11"/><rect x="262" y="171" width="84" height="11"/><rect x="262" y="184" width="84" height="11"/><rect x="262" y="210" width="84" height="11"/><rect x="262" y="223" width="84" height="11"/><rect x="262" y="236" width="84" height="11"/><rect x="262" y="249" width="84" height="11"/><rect x="262" y="262" width="84" height="11"/><rect x="262" y="275" width="84" height="11"/><rect x="262" y="288" width="84" height="11"/><rect x="262" y="301" width="84" height="11"/><rect x="262" y="314" width="84" height="11"/><rect x="262" y="327" width="84" height="11"/><rect x="262" y="340" width="84" height="11"/><rect x="262" y="353" width="84" height="11"/>
+        </g>
+        <rect class="lift" x="262" y="197" width="84" height="11"/>
+        <g class="band">
+          <rect x="362" y="54" width="84" height="32.8" fill-opacity="0.35"/><rect x="362" y="87.8" width="84" height="32.8" fill-opacity="0.35"/><rect x="362" y="121.6" width="84" height="32.8" fill-opacity="0.35"/><rect x="362" y="155.4" width="84" height="32.8" fill-opacity="0.35"/><rect x="362" y="223" width="84" height="32.8" fill-opacity="0.35"/><rect x="362" y="256.8" width="84" height="32.8" fill-opacity="0.35"/><rect x="362" y="290.6" width="84" height="32.8" fill-opacity="0.35"/><rect x="362" y="324.4" width="84" height="32.8" fill-opacity="0.35"/>
+        </g>
+        <rect x="362" y="189.2" width="84" height="32.8" fill="var(--warn)" fill-opacity="0.60"/>
+      </g>
+      <text class="tk" x="262" y="382">one row altered by ~0.25</text>
+
+      <!-- Panel C -->
+      <text class="hd" x="516" y="16">C · EXTENT FLOORED</text>
+      <text class="tk" x="516" y="34">geometry</text><text class="tk" x="616" y="34">display</text>
+      <g>
+        <g class="band" fill-opacity="0.35">
+          <rect x="516" y="54" width="84" height="11"/><rect x="516" y="67" width="84" height="11"/><rect x="516" y="80" width="84" height="11"/><rect x="516" y="93" width="84" height="11"/><rect x="516" y="106" width="84" height="11"/><rect x="516" y="119" width="84" height="11"/><rect x="516" y="132" width="84" height="11"/><rect x="516" y="262" width="84" height="11"/><rect x="516" y="275" width="84" height="11"/><rect x="516" y="288" width="84" height="11"/><rect x="516" y="301" width="84" height="11"/><rect x="516" y="314" width="84" height="11"/><rect x="516" y="327" width="84" height="11"/><rect x="516" y="340" width="84" height="11"/><rect x="516" y="353" width="84" height="11"/>
+        </g>
+        <rect class="lift" x="516" y="145" width="84" height="115"/>
+        <g class="band">
+          <rect x="616" y="54" width="84" height="32.8" fill-opacity="0.35"/><rect x="616" y="87.8" width="84" height="32.8" fill-opacity="0.35"/><rect x="616" y="290.6" width="84" height="32.8" fill-opacity="0.35"/><rect x="616" y="324.4" width="84" height="32.8" fill-opacity="0.35"/>
+        </g>
+        <rect x="616" y="121.6" width="84" height="32.8" fill="var(--warn)" fill-opacity="0.55"/>
+        <rect x="616" y="155.4" width="84" height="32.8" fill="var(--warn)" fill-opacity="1"/>
+        <rect x="616" y="189.2" width="84" height="32.8" fill="var(--warn)" fill-opacity="1"/>
+        <rect x="616" y="223" width="84" height="32.8" fill="var(--warn)" fill-opacity="1"/>
+        <rect x="616" y="256.8" width="84" height="32.8" fill="var(--warn)" fill-opacity="0.41"/>
+      </g>
+      <text class="tk" x="516" y="382">three rows owned outright</text>
+    </svg>
+    <figcaption>
+      <b>Figure 3.</b> Left column of each pair: band geometry, 24 bands at the fit ratio of 2.6
+      bands per device row. Right column: the same content resampled onto device rows — what the
+      display can actually deliver. <b>B is the treatment removed on 14 August.</b> Restoring
+      alpha lifts one row from 0.35 to about 0.60, and one altered row among 177, in a picture
+      already textured by 464 varying colours, was not findable — measured, not argued. <b>C</b>
+      produces three saturated rows and a signature no texture supplies by accident. Opacities
+      are computed coverage averages, not illustration.
+    </figcaption>
+  </figure>
+
+  <h3>The other removal reason, met head on</h3>
+  <p>
+    The note's first reason was the stronger one, and it applies here too:
+    <em>a band emitting more ink than the document gave it is brightening by any observable
+    test, and the defence that it only ever reached the ink a pixel-tall band would have had is
+    an argument about the mechanism, not about what the eye sees.</em> That is correct, and
+    geometric dilation emits more ink than tonal restoration did, not less. There is no
+    rules-lawyer escape here and none should be attempted.
+  </p>
+  <p>
+    What can be said is narrower and, I think, sufficient. Story 30's rule — <em>recede the
+    others rather than brighten the one</em> — was derived from a perceptual finding: against
+    hundreds of saturated neighbours, brightening does not read. It is a rule about what
+    <em>works</em>, not a prohibition on ink. A treatment that demonstrably does read is not
+    condemned by a rule whose justification is non-reading; and a treatment that does not read
+    is killed by the second removal reason anyway. <strong>So the rule can be tested rather
+    than obeyed</strong>, and one of the two outcomes settles it either way.
+  </p>
+  <p>
+    Two further points. The lens does not replace the recede — the crowd still ghosts, as #39
+    built it and as translucency won. And extent is not the saturated channel; ink is. Adding
+    the one channel that is not yet contended is not the move story 30 examined.
+  </p>
+  <div class="callout warn">
+    <span class="label">If it works, amend the rule</span>
+    <p>
+      Better to write <em>at fit, receding alone is insufficient and extent is the added
+      channel</em> into <code>SPEC.md</code> story 30 than to argue that a nine-fold dilation is
+      not brightening. If the picture succeeds, the honest outcome is a qualified rule, not a
+      finessed one.
+    </p>
+  </div>
+</section>
+
+<section>
+  <div class="sechead"><span class="n">08</span><h2>The precedent is already in the renderer</h2></div>
+  <p>
+    <code>RENDERING.md</code> states a doctrine for exactly this class of correction, and then
+    an instance of it:
+  </p>
+  <p>
+    <em>"A feature's size is corrected only where scale destroys information the feature
+    carries."</em> And: <code>uPad</code> <em>"grows a band to cover a device pixel… The
+    correction is a floor, never a fixed size: above one pixel <code>uPad</code> does nothing
+    and thickness 15 scales freely, 0.19 css px at fit to 38 at 200×."</em>
+  </p>
+  <p>
+    So the mechanism proposed here already exists in the shader, as a global correction, framed
+    in the same words — a floor, inert above one pixel. What the lens adds is a
+    <strong>second, higher floor applied to one strand under a gesture</strong>. The doctrine
+    admits it on its own terms: at fit, scale destroys the strand's <em>identity</em>, and
+    identity is information the feature carries. <code>uPad</code> protects colour from being
+    lost to sampling; the lens protects identity from the same thing.
+  </p>
+  <p>
+    This is also the cleanest available answer to Tufte's Lie Factor, which the proposal
+    plainly incurs: a strand drawn 1.75 css px where the document says 0.19 has a lie factor
+    near 9. What pays for it is that <strong>the deception is reversible, user-caused, and
+    watched.</strong> The user sees the band deflate to a hairline on release, which teaches its
+    true size more vividly than never inflating it would. Nobody believes a magnifying glass
+    changed the object. A persistent nine-fold dilation would be indefensible; a transient one
+    under a live gesture is an instrument.
+  </p>
+  <div class="side">
+    This is the <b>data-encoded / interaction-state</b> distinction the strategy document does
+    not yet draw. The shipped RGB is shared vocabulary with PGB's chart and 3D graph and is
+    sacred (constraint 1). Emphasis, ghosting and this floor assert nothing about the data and
+    exist only while a gesture holds. Constraint 1 binds the first and has no business binding
+    the second.
+  </div>
+</section>
+
+<section>
+  <div class="sechead"><span class="n">09</span><h2>What would break it</h2></div>
+  <p>
+    Five things, in the order they are likely to bite.
+  </p>
+  <div class="tablewrap">
+  <table>
+    <thead><tr><th>Risk</th><th style="text-align:left">Why</th><th style="text-align:left">What to do about it</th></tr></thead>
+    <tbody>
+      <tr>
+        <td>Cardinality</td>
+        <td class="txt">One strand at 9× costs 9 rows of 177. A lasso of 40 costs 360 and the map ceases to exist.</td>
+        <td class="txt">Cap the floored set at 3–5. Degrade a larger selection to the recede alone, or to an envelope. Decide before the lasso exists.</td>
+      </tr>
+      <tr>
+        <td>Dilation may not suffice alone</td>
+        <td class="txt">One solid line among 464 saturated ribbons may still not pop. Against a ghosted crowd it should be trivial.</td>
+        <td class="txt">Test floor + recede together, never floor alone. If it still fails, the outline/halo candidate is next, not a larger floor.</td>
+      </tr>
+      <tr>
+        <td>The dots collide too</td>
+        <td class="txt">At 1× the lobes are a smear and a hover picks an arbitrary member. The zoom is load-bearing, not a nicety.</td>
+        <td class="txt">Report <em>n</em> dots under the cursor rather than silently choosing one. Make "you are in a smear, magnify" legible.</td>
+      </tr>
+      <tr>
+        <td>Hover gives up comparison</td>
+        <td class="txt">#39 already learned that a following emphasis cannot accumulate a set.</td>
+        <td class="txt">Hover to explore, lasso to commit. The chart is a far better home for an accumulated set than the strip was.</td>
+      </tr>
+      <tr>
+        <td>Ownership</td>
+        <td class="txt">PGB already draws this chart from the same field. Picking, the pill list (#50), a route menu and the chart are all producers of one selection.</td>
+        <td class="txt">Make selection a first-class shared object on day one, or four affordances will each invent their own.</td>
+      </tr>
+    </tbody>
+  </table>
+  </div>
+  <p>
+    One non-risk worth recording: a screen-space-constant thickness is <em>more</em> stable
+    under pan than a natural sub-pixel band, which shimmers as it resamples. The floored strand
+    should be the calmest thing on screen.
+  </p>
+</section>
+
+<section>
+  <div class="sechead"><span class="n">10</span><h2>What to build, in order</h2></div>
+  <div class="builds">
+    <div class="build">
+      <span class="r">1</span>
+      <div>
+        <h3>A second byte in the appearance table</h3>
+        <p>
+          Emphasis is already one byte per strand, uploaded as 2 KB in under 100 µs (#39). Add a
+          per-strand thickness floor beside it and one clamp in the vertex shader. Drive it from
+          the existing feeler to get a picture before any chart exists.
+        </p>
+      </div>
+      <span class="cost">one byte<br>one shader line</span>
+    </div>
+    <div class="build">
+      <span class="r">2</span>
+      <div>
+        <h3>Photograph it at fit on 5520+</h3>
+        <p>
+          <code>scripts/verify_highlight.mjs</code> and the <code>highlight-5520-*</code>
+          fixtures already produce exactly the comparison needed. This is the measurement that
+          settles §07, and it is the only thing in this document that can.
+        </p>
+      </div>
+      <span class="cost">constraint 5<br>settles or kills it</span>
+    </div>
+    <div class="build">
+      <span class="r">3</span>
+      <div>
+        <h3>Sweep the floor value</h3>
+        <p>
+          1.0, 1.5, 2.0, 3.0 css px, with and without space conservation. Pick by looking, and
+          record the losers.
+        </p>
+      </div>
+      <span class="cost">a morning</span>
+    </div>
+    <div class="build">
+      <span class="r">4</span>
+      <div>
+        <h3>Then, and only then, the chart</h3>
+        <p>
+          A zoomable PCLAI scatter driving selection, with picking closing the loop back — and,
+          once it zooms, its own overview inset and viewport rect, for the reason §04 gives. This
+          is selection plumbing rather than rendering, and it is a larger question than the lens —
+          but the lens is what makes it worth having at fit, so the lens goes first.
+        </p>
+      </div>
+      <span class="cost">needs an owner<br>for selection</span>
+    </div>
+  </div>
+  <p style="margin-top:34px">
+    Note the order. The chart is the better idea and the floor is the cheaper test, and the
+    floor can be evaluated on the surface that exists today. If the floor does not read at fit,
+    the chart is still worth building — it just does not repair fit, and the document should say
+    so rather than discover it later.
+  </p>
+</section>
+
+<section>
+  <div class="sechead"><span class="n">§</span><h2>What this does not claim</h2></div>
+  <p>
+    It does not repeal constraint 3. The pixel budget is real and this is a way of spending nine
+    strands' worth of it on one strand, under a gesture, in the one regime where the other eight
+    were unreadable. That is a trade, not a repeal.
+  </p>
+  <p>
+    It does not compete with Strategy C. Grouping reduces how many things are drawn; the lens
+    finds one thing among what is drawn. Twenty-one routes at fit are each above a pixel and
+    need no lens at all — which is the best argument for building both, and for building the
+    lens knowing it may become unnecessary at the loci where grouping pays.
+  </p>
+  <p>
+    And nothing here has been rendered. Every number is quoted from a prior measurement in this
+    repository; the one number this proposal turns on — whether a floored strand is findable at
+    fit on <code>5520+</code> — does not exist yet, and this project's own rule is that counts
+    propose and the screen decides.
+  </p>
+</section>
+
+<footer>
+  Sequence tube map spike · concept note, 19 August 2026 · to be folded into
+  docs/DISAMBIGUATING-STRANDS.md as an outcome under Strategy A once rendered<br>
+  Prior art: Rao &amp; Card, CHI '94 · Furnas, generalized fisheye views, CHI '86 ·
+  Tufte, <i>The Visual Display of Quantitative Information</i> (lie factor, data-ink) ·
+  Rams, ten principles (unobtrusive, honest, as little design as possible)<br>
+  Measurements quoted from docs/RENDERING.md, docs/DISAMBIGUATING-STRANDS.md,
+  notes/2026-08-14-feeler-mode-on-the-gpu.md, scripts/strand_grouping_survey.py
+</footer>
+
+</div>

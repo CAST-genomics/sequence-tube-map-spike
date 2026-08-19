@@ -1,0 +1,1172 @@
+<title>A Band Is Arithmetic</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Spectral:ital,wght@0,300;0,400;0,600;0,700;1,400&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+
+<style>
+:root{
+  --ground:#ffffff;
+  --panel:#f6f4ef;
+  --panel-2:#efece5;
+  --ink:#16191b;
+  --ink-2:#41474b;
+  --ink-3:#6d7479;
+  --rule:#ddd9d1;
+  --rule-soft:#ebe7e0;
+  --accent:#1d5c60;
+  --accent-soft:#e2ecec;
+  --warm:#96482c;
+  --c0:#1d5c60;
+  --c1:#7b3f5e;
+  --c2:#3b5378;
+  --c3:#8a6a1f;
+  --c4:#96482c;
+  --grid:#e6e2da;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --ground:#0f1214;
+    --panel:#171b1d;
+    --panel-2:#1d2225;
+    --ink:#e9e6e0;
+    --ink-2:#b9bec1;
+    --ink-3:#878d91;
+    --rule:#2b3134;
+    --rule-soft:#22282a;
+    --accent:#63b3b3;
+    --accent-soft:#16292a;
+    --warm:#dd8e6d;
+    --c0:#5fb0b0;
+    --c1:#c88bab;
+    --c2:#8aa5cd;
+    --c3:#ceac5c;
+    --c4:#dd8e6d;
+    --grid:#262c2f;
+  }
+}
+:root[data-theme="dark"]{
+  --ground:#0f1214;
+  --panel:#171b1d;
+  --panel-2:#1d2225;
+  --ink:#e9e6e0;
+  --ink-2:#b9bec1;
+  --ink-3:#878d91;
+  --rule:#2b3134;
+  --rule-soft:#22282a;
+  --accent:#63b3b3;
+  --accent-soft:#16292a;
+  --warm:#dd8e6d;
+  --c0:#5fb0b0;
+  --c1:#c88bab;
+  --c2:#8aa5cd;
+  --c3:#ceac5c;
+  --c4:#dd8e6d;
+  --grid:#262c2f;
+}
+
+*{box-sizing:border-box}
+body{
+  background:var(--ground);
+  color:var(--ink);
+  font-family:Spectral,Georgia,"Times New Roman",serif;
+  font-size:17.5px;
+  line-height:1.62;
+  margin:0;
+  -webkit-font-smoothing:antialiased;
+}
+.wrap{max-width:1180px;margin:0 auto;padding:0 28px 120px}
+
+h1,h2,h3{text-wrap:balance;margin:0}
+h1{font-size:clamp(2.6rem,6vw,4.1rem);font-weight:700;line-height:1.02;letter-spacing:-.022em}
+h2{font-size:1.62rem;font-weight:600;line-height:1.2;letter-spacing:-.012em}
+h3{font-size:1.06rem;font-weight:600;line-height:1.3}
+p{margin:0}
+.mono,code,th,.label,.num{font-family:"IBM Plex Mono",ui-monospace,Menlo,monospace}
+.label{font-size:.685rem;font-weight:500;letter-spacing:.13em;text-transform:uppercase;color:var(--ink-3)}
+strong{font-weight:600}
+code{
+  font-size:.86em;background:var(--panel);border:1px solid var(--rule-soft);
+  border-radius:2px;padding:.06em .34em;color:var(--ink-2);
+}
+a{color:var(--accent);text-decoration:none;border-bottom:1px solid color-mix(in srgb,var(--accent) 35%,transparent)}
+a:hover{border-bottom-color:var(--accent)}
+a:focus-visible{outline:2px solid var(--accent);outline-offset:3px;border-radius:2px}
+
+header.mast{padding:88px 0 0;border-bottom:1px solid var(--rule);margin-bottom:56px}
+.mast .label{display:block;margin-bottom:26px}
+.mast .deck{font-size:1.3rem;line-height:1.45;color:var(--ink-2);max-width:36em;margin-top:26px;font-weight:300}
+.mast .deck b{font-weight:600;color:var(--ink)}
+.colophon{
+  display:flex;flex-wrap:wrap;gap:0 40px;margin:44px 0 26px;
+  font-family:"IBM Plex Mono",monospace;font-size:.76rem;color:var(--ink-3);line-height:1.9;
+}
+.colophon div span{color:var(--ink-2)}
+
+section{display:grid;grid-template-columns:minmax(0,64ch) 1fr;gap:0 52px;align-items:start;margin-top:64px}
+section > *{grid-column:1}
+figure,.tablewrap,.glossary,.callout,.codeblock,.ledger{grid-column:1 / -1}
+.side{
+  grid-column:2;font-size:.83rem;line-height:1.5;color:var(--ink-3);
+  border-top:1px solid var(--rule);padding-top:10px;max-width:27ch;margin-top:.35em;
+}
+.side b{color:var(--ink-2);font-weight:600}
+@media (max-width:1000px){
+  section{grid-template-columns:minmax(0,1fr)}
+  section > *,.side{grid-column:1}
+  .side{max-width:none;border-top:0;border-left:2px solid var(--rule);padding:0 0 0 16px;margin:1.6em 0 0}
+}
+
+.sechead{display:flex;gap:16px;align-items:baseline;margin-bottom:22px}
+.sechead .n{
+  font-family:"IBM Plex Mono",monospace;font-size:.8rem;font-weight:600;color:var(--accent);
+  padding-top:.25em;letter-spacing:.02em;
+}
+p + p{margin-top:1.05em}
+h2 + p, h3 + p{margin-top:.7em}
+p + h3{margin-top:2em}
+.lede{font-size:1.12rem;color:var(--ink-2)}
+ul{margin:1.05em 0 0;padding-left:1.15em}
+li{margin-top:.5em}
+li::marker{color:var(--ink-3)}
+
+figure{margin:38px 0 0}
+figure svg{display:block;width:100%;height:auto;overflow:visible}
+figcaption{
+  font-family:"IBM Plex Mono",monospace;font-size:.755rem;line-height:1.6;color:var(--ink-3);
+  margin-top:14px;max-width:78ch;
+}
+figcaption b{color:var(--ink-2);font-weight:500}
+.figframe{border-top:1px solid var(--rule);padding-top:22px}
+svg .stroke{stroke:var(--ink-3);fill:none;stroke-width:1}
+svg .thin{stroke:var(--rule);fill:none;stroke-width:1}
+svg .accent{stroke:var(--accent);fill:none;stroke-width:1.4}
+svg .warm{stroke:var(--warm);fill:none;stroke-width:1.4}
+svg .dash{stroke-dasharray:3 3}
+svg text{font-family:"IBM Plex Mono",monospace;font-size:12px;fill:var(--ink-3)}
+svg text.em{fill:var(--ink-2)}
+svg text.ac{fill:var(--accent)}
+svg text.wa{fill:var(--warm)}
+svg text.big{font-size:13px;fill:var(--ink)}
+
+.codeblock{margin:34px 0 0;border-top:1px solid var(--rule);padding-top:16px}
+.codeblock .label{display:block;margin-bottom:10px}
+pre{
+  margin:0;overflow-x:auto;background:var(--panel);border:1px solid var(--rule-soft);
+  border-radius:3px;padding:18px 20px;
+  font-family:"IBM Plex Mono",monospace;font-size:.78rem;line-height:1.65;color:var(--ink-2);
+}
+pre b{color:var(--ink);font-weight:600}
+pre i{color:var(--ink-3);font-style:normal}
+pre em{color:var(--accent);font-style:normal}
+.codenote{font-family:"IBM Plex Mono",monospace;font-size:.755rem;color:var(--ink-3);margin-top:12px;max-width:78ch}
+
+.tablewrap{overflow-x:auto;margin:34px 0 0}
+table{border-collapse:collapse;width:100%;font-size:.845rem;font-variant-numeric:tabular-nums}
+th{
+  font-size:.68rem;font-weight:500;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3);
+  text-align:right;padding:0 0 9px 22px;border-bottom:1px solid var(--rule);white-space:nowrap;
+}
+th:first-child,td:first-child{text-align:left;padding-left:0}
+td{
+  padding:9px 0 9px 22px;text-align:right;border-bottom:1px solid var(--rule-soft);
+  font-family:"IBM Plex Mono",monospace;white-space:nowrap;color:var(--ink-2);
+}
+td:first-child{font-size:.8rem;color:var(--ink);white-space:normal}
+td.hi{color:var(--ink);font-weight:600}
+td.wide{white-space:normal;text-align:left;font-family:Spectral,Georgia,serif;font-size:.95rem}
+tr.flag td{background:var(--accent-soft)}
+tbody tr:last-child td{border-bottom:1px solid var(--rule)}
+caption{caption-side:bottom;text-align:left;font-family:"IBM Plex Mono",monospace;font-size:.755rem;color:var(--ink-3);padding-top:12px}
+
+.glossary{background:var(--panel);border:1px solid var(--rule-soft);border-radius:3px;padding:34px 36px;margin-top:26px}
+.gterms{display:grid;grid-template-columns:repeat(auto-fit,minmax(268px,1fr));gap:22px 40px;margin-top:24px}
+.gterm dt{font-family:"IBM Plex Mono",monospace;font-size:.79rem;font-weight:600;color:var(--ink);margin-bottom:3px}
+.gterm dd{margin:0;font-size:.905rem;line-height:1.5;color:var(--ink-2)}
+.gterm dd em{color:var(--ink-3)}
+
+.callout{
+  border-left:3px solid var(--accent);background:var(--panel);
+  padding:22px 26px;margin-top:34px;border-radius:0 3px 3px 0;
+}
+.callout p{font-size:1rem}
+.callout .label{margin-bottom:8px;color:var(--accent)}
+
+.ledger{margin-top:14px;border-top:1px solid var(--rule)}
+.row{
+  display:grid;grid-template-columns:2.4rem minmax(0,1fr) 13rem;gap:0 24px;
+  padding:22px 0;border-bottom:1px solid var(--rule-soft);align-items:start;
+}
+.row .r{font-family:"IBM Plex Mono",monospace;font-size:.8rem;color:var(--accent);font-weight:600;padding-top:.2em}
+.row h3{margin-bottom:5px}
+.row p{font-size:.95rem;color:var(--ink-2)}
+.row .cost{font-family:"IBM Plex Mono",monospace;font-size:.72rem;color:var(--ink-3);line-height:1.55;text-align:right}
+@media (max-width:720px){
+  .row{grid-template-columns:2.2rem minmax(0,1fr)}
+  .row .cost{grid-column:2;text-align:left;margin-top:8px}
+}
+
+footer{
+  grid-column:1 / -1;margin-top:80px;padding-top:26px;border-top:1px solid var(--rule);
+  font-family:"IBM Plex Mono",monospace;font-size:.75rem;color:var(--ink-3);line-height:1.8;
+}
+</style>
+
+<div class="wrap">
+
+<header class="mast">
+  <span class="label">Sequence tube map · rendering tech note · 19 August 2026</span>
+  <h1>A Band Is<br>Arithmetic</h1>
+  <p class="deck">The renderer draws <b>40,442 curved bands in one draw call</b> and holds
+  <b>8.3 ms a frame</b> from fit-to-width to 200× zoom. It does it by never storing a vertex,
+  never tessellating a curve on the CPU, and never touching geometry when anything changes.
+  Every band in the document is <b>six floats</b>; every pixel's edge quality is <b>solved,
+  not sampled</b>; and the answer to “which haplotype is under the cursor” comes from the
+  same arithmetic that put the ink there.</p>
+  <div class="colophon">
+    <div>Implementation<br><span>src/bandSurface.ts · src/bandPicker.ts · src/strandAppearance.ts</span></div>
+    <div>Measured on<br><span>M1 Pro · Chrome 151 · 1400×900 @ dpr 2 · three.js 0.176</span></div>
+    <div>Document<br><span>5520+ · 40,442 bands · 464 strands · 108,983 units wide</span></div>
+  </div>
+</header>
+
+<div class="body">
+
+<section style="margin-top:0">
+  <div class="sechead"><span class="n">§</span><h2>Vocabulary</h2></div>
+  <p class="lede">Two vocabularies meet in this document — pangenomics and real-time
+  graphics — and the interesting part is where they touch. Neither is assumed below.</p>
+
+  <div class="glossary">
+    <span class="label">Legend</span>
+    <dl class="gterms">
+      <div class="gterm"><dt>haplotype / strand</dt><dd>One individual's one copy of a
+      genomic region, drawn as a single continuous ribbon crossing the map. A document holds
+      369–466 of them. <em>“Strand” is this renderer's word for it.</em></dd></div>
+
+      <div class="gterm"><dt>band</dt><dd>One drawn piece of one strand: the segment between
+      two graph nodes. A strand is 13 to 47 bands; a document is up to 40,442 of them. <em>The
+      unit of rendering.</em></dd></div>
+
+      <div class="gterm"><dt>tube map</dt><dd>The picture: hundreds of strands running left to
+      right in parallel bundles, weaving vertically where the graph branches and rejoins.
+      Delivered by the server as an SVG document — which is the input this renderer reads and
+      then declines to use as a rendering medium.</dd></div>
+
+      <div class="gterm"><dt>instanced draw</dt><dd>The GPU draws one mesh <em>N</em> times in
+      a single command, giving each copy its own slice of per-instance data. One command,
+      40,442 bands.</dd></div>
+
+      <div class="gterm"><dt>vertex / fragment shader</dt><dd>The two programs in the pipeline.
+      The vertex shader decides where things are; the fragment shader decides what colour each
+      covered pixel gets. Both run massively in parallel.</dd></div>
+
+      <div class="gterm"><dt>varying</dt><dd>A value the vertex shader computes and the
+      rasterizer interpolates across the triangle before handing it to the fragment shader.
+      <code>flat</code> suppresses the interpolation and hands over one value per primitive.</dd></div>
+
+      <div class="gterm"><dt>coverage</dt><dd>What fraction of a pixel a shape actually fills.
+      The number antialiasing is trying to estimate — and the number this renderer computes
+      exactly.</dd></div>
+
+      <div class="gterm"><dt>MSAA</dt><dd>Multisample antialiasing: the hardware's estimate of
+      coverage, taken by testing 2–8 fixed points inside each pixel. Four samples can only ever
+      answer in quarters.</dd></div>
+
+      <div class="gterm"><dt>conflation artifact</dt><dd>The error you get when two shapes that
+      exactly abut are each composited independently against the background — the seam leaks
+      background through. Classic in SVG; inherited here, on purpose.</dd></div>
+
+      <div class="gterm"><dt>PCLAI colour</dt><dd>The upstream ancestry encoding that assigns
+      each strand its colour. The renderer reads this field and is never permitted to
+      alter it. <em>A fixed constraint, not a style choice.</em></dd></div>
+    </dl>
+  </div>
+</section>
+
+<section>
+  <div class="sechead"><span class="n">§</span><h2>The wall this was built against</h2></div>
+  <p>The shipping viewer draws the tube map as SVG. On <code>5520+</code> that is a 14.2 MB
+  document and 40,442 DOM elements, and it fails in three separate ways at once: zooming
+  re-rasterizes a layer that reaches 900 megapixels, changing the appearance of the strand
+  under the cursor costs <strong>~28 ms of style invalidation</strong> across ~10,000 elements
+  — 190 of 582 frames dropped during a single sweep — and the viewer's zoom ceiling of 4×
+  never resolves a single haplotype on the documents that matter.</p>
+
+  <p>None of those are bugs. They are the cost of the model: <em>one retained object per
+  drawn thing</em>, with the browser responsible for keeping all of them consistent. The
+  renderer described here changes the model. Nothing is retained per band except six numbers,
+  and no CPU work is proportional to the band count after load.</p>
+
+  <div class="ledger">
+    <div class="row">
+      <span class="r">01</span>
+      <div><h3>Geometry is evaluated, never stored</h3>
+      <p>One 130-vertex mesh is shared by every band. The vertex shader reconstructs the
+      curve from six per-instance floats. Zoom, pan and highlight touch no buffer.</p></div>
+      <span class="cost">1.05 MB of instance data<br>replaces 40,442 DOM nodes</span>
+    </div>
+    <div class="row">
+      <span class="r">02</span>
+      <div><h3>Coverage is solved, not sampled</h3>
+      <p>The fragment shader inverts the curve at its own pixel and computes what fraction of
+      that pixel the band fills. Exact fifths, not MSAA's quarters.</p></div>
+      <span class="cost">11,137 distinct colours<br>vs 1,052 under 4× MSAA</span>
+    </div>
+    <div class="row">
+      <span class="r">03</span>
+      <div><h3>Appearance is a 2 KB table</h3>
+      <p>Colour and emphasis live in one texel per strand, fetched by id in the vertex shader.
+      Highlighting writes one byte per strand and nothing per band.</p></div>
+      <span class="cost">&lt; 0.1 ms per swap<br>against ~28 ms in the DOM</span>
+    </div>
+    <div class="row">
+      <span class="r">04</span>
+      <div><h3>Hit-testing is the same shader</h3>
+      <p>A second pass writes strand ids instead of colour through the identical vertex shader
+      and the identical coverage test, into a 1×1 target that is read back.</p></div>
+      <span class="cost">no spatial index<br>no CPU geometry at all</span>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="sechead"><span class="n">01</span><h2>A band is six floats</h2></div>
+  <p>The whole design rests on one empirical fact, established by surveying every band in
+  every document the API returns: <strong>127,101 of 127,101 band paths match a single
+  grammar</strong>.</p>
+
+  <div class="codeblock">
+    <span class="label">The grammar · every band, every document</span>
+<pre>M x0 y0  C cx y0  cx y1  x1 y1   V y1+15  C dx y1+15  dx y0+15  x0 y0+15  Z</pre>
+    <p class="codenote">Read it as: go out along a cubic whose <b>two control points share the
+    abscissa <code>cx</code></b> and whose control ordinates are copies of the endpoints; drop
+    15 units; come back along a second cubic with its own shared abscissa <code>dx</code>.</p>
+  </div>
+
+  <p style="margin-top:2em">That degeneracy is worth dwelling on, because it is what makes
+  everything downstream cheap. A general cubic needs eight numbers per edge and a root-find to
+  evaluate at a given x. This one collapses. Normalise by the span, write <code>u</code> for the
+  control abscissa as a fraction of the width, and the two coordinate functions separate
+  completely:</p>
+
+  <div class="codeblock">
+    <span class="label">The band, as two functions of one parameter</span>
+<pre>x(t) = 3u·t·(1−t) + t³        <i>// normalised to the span: x0 + width·x(t)</i>
+y(t) = y0 + (y1−y0)·(3t² − 2t³)   <i>// literally smoothstep</i></pre>
+    <p class="codenote"><b>y is smoothstep</b> because the control ordinates are copies of the
+    endpoints — there is no Bézier evaluation in y anywhere in this renderer, in either shader.</p>
+  </div>
+
+  <p style="margin-top:2em">And one identity carries the rest of the document:</p>
+
+  <div class="callout">
+    <span class="label">The load-bearing identity</span>
+    <p><strong>x(0) = 0 and x(1) = 1 for every u.</strong> The two edges of a band therefore meet
+    at both ends however much their control abscissae differ — so the top and bottom edges can be
+    sampled at the <em>same</em> parameter <code>t</code> and still close into a watertight polygon
+    with vertical ends. No seam, no root-finding, no shared x.</p>
+  </div>
+
+  <figure class="figframe">
+    <svg viewBox="0 0 900 300" role="img" aria-label="One band, its two cubic edges, and the six floats that describe it">
+      <path d="M120,90 C420,90 420,200 720,200 V240 C400,240 400,130 120,130 Z"
+            fill="var(--accent-soft)" stroke="var(--accent)" stroke-width="1.4"/>
+      <line class="thin dash" x1="420" y1="60" x2="420" y2="270"/>
+      <line class="thin dash" x1="400" y1="60" x2="400" y2="270"/>
+      <line class="thin dash" x1="120" y1="60" x2="120" y2="275"/>
+      <line class="thin dash" x1="720" y1="60" x2="720" y2="275"/>
+      <circle cx="120" cy="90" r="3.5" fill="var(--accent)"/>
+      <circle cx="720" cy="200" r="3.5" fill="var(--accent)"/>
+      <circle cx="420" cy="90" r="2.5" fill="var(--ink-3)"/>
+      <circle cx="420" cy="200" r="2.5" fill="var(--ink-3)"/>
+      <circle cx="400" cy="240" r="2.5" fill="var(--warm)"/>
+      <circle cx="400" cy="130" r="2.5" fill="var(--warm)"/>
+      <line class="thin" x1="420" y1="90" x2="420" y2="200"/>
+      <line class="warm" x1="400" y1="130" x2="400" y2="240"/>
+      <text class="em" x="86" y="84">x0, y0</text>
+      <text class="em" x="726" y="196">y1</text>
+      <text class="ac" x="428" y="76">cx = x0 + uTop · width</text>
+      <text class="wa" x="300" y="262">dx = x0 + uBot · width</text>
+      <line class="stroke" x1="120" y1="282" x2="720" y2="282"/>
+      <line class="stroke" x1="120" y1="277" x2="120" y2="287"/>
+      <line class="stroke" x1="720" y1="277" x2="720" y2="287"/>
+      <text x="392" y="298">width</text>
+      <line class="stroke" x1="756" y1="200" x2="756" y2="240"/>
+      <line class="stroke" x1="751" y1="200" x2="761" y2="200"/>
+      <line class="stroke" x1="751" y1="240" x2="761" y2="240"/>
+      <text x="768" y="226">15</text>
+      <text class="big" x="120" y="40">iSpan = (x0, y0, width, y1)</text>
+      <text class="big" x="460" y="40">iControl = (uTop, uBot)</text>
+      <text class="big" x="760" y="40">iStrandId</text>
+    </svg>
+    <figcaption><b>Figure 1.</b> The six floats, and where each one is. The two edges have
+    <b>different</b> control abscissae — 0.70000 and 0.69874 in the first band of
+    <code>5520+</code> — so a band's thickness varies along its length and the two edges are
+    not translates of each other. The tempting shortcut, “offset the top edge by 15”, is
+    wrong, and the parser verifies the closing half of every path rather than assuming it.</figcaption>
+  </figure>
+
+  <p class="side"><b>Where this comes from.</b> <code>parseBands.ts</code> reads the response
+  text with a regex, never <code>DOMParser</code> — building 40,442 DOM nodes is exactly the
+  cost being escaped. It also flips y, centres the map on the origin, and refuses the whole
+  document if a single band does not match. A half-drawn map looks like a correct map of
+  different data.</p>
+</section>
+
+<section>
+  <div class="sechead"><span class="n">02</span><h2>The ladder: a mesh with no positions</h2></div>
+  <p>There is exactly one mesh in the scene. It is a strip of 64 quads spanning the curve
+  parameter from 0 to 1, two rows deep, and it carries <strong>no positions at all</strong> —
+  only, per vertex, a parameter <code>t</code> and a flag saying which edge the vertex belongs
+  to. 130 vertices, 128 triangles, about a kilobyte, shared by every band in the document.</p>
+
+  <div class="codeblock">
+    <span class="label">src/bandSurface.ts · the entire geometry</span>
+<pre>function buildLadder(rungs: number): InstancedBufferGeometry {
+    const params = new Float32Array((rungs + 1) * 4)
+    const indices: number[] = []
+
+    for (let i = 0; i &lt;= rungs; i += 1) {
+        const t = i / rungs
+        const o = i * 4
+
+        params[o]     = t;  params[o + 1] = 0   <i>// upper edge</i>
+        params[o + 2] = t;  params[o + 3] = 1   <i>// lower edge</i>
+
+        if (i &lt; rungs) {
+            const upper = i * 2
+            indices.push(upper, upper + 1, upper + 2, upper + 2, upper + 1, upper + 3)
+        }
+    }
+
+    const geometry = new InstancedBufferGeometry()
+
+    geometry.setAttribute('aParam', new BufferAttribute(params, 2))
+    geometry.setIndex(indices)
+
+    return geometry
+}</pre>
+  </div>
+
+  <p style="margin-top:2em">The vertex shader turns <code>(t, side)</code> plus the instance's
+  six floats into a world position. Because the placement happens per vertex per frame,
+  <strong>zooming touches no geometry whatsoever</strong> — the CPU does not retessellate,
+  does not re-upload, and does not know that the zoom changed except to hand the shader a
+  different matrix.</p>
+
+  <figure class="figframe">
+    <svg viewBox="0 0 900 320" role="img" aria-label="The ladder mesh: rungs placed at even t, unevenly in x">
+      <path d="M120,90 C420,90 420,200 720,200 V240 C400,240 400,130 120,130 Z"
+            fill="none" stroke="var(--rule)" stroke-width="1.2"/>
+      <g stroke="var(--accent)" stroke-width="1" fill="none" opacity="0.85">
+        <line x1="120.0" y1="90.0"  x2="120.0" y2="130.0"/>
+        <line x1="201.6" y1="93.1"  x2="196.2" y2="133.1"/>
+        <line x1="268.8" y1="101.4" x2="259.2" y2="141.4"/>
+        <line x1="325.2" y1="113.8" x2="312.6" y2="153.8"/>
+        <line x1="374.4" y1="128.7" x2="360.0" y2="168.7"/>
+        <line x1="420.0" y1="145.0" x2="405.0" y2="185.0"/>
+        <line x1="465.6" y1="161.3" x2="451.2" y2="201.3"/>
+        <line x1="514.8" y1="176.2" x2="502.2" y2="216.2"/>
+        <line x1="571.2" y1="188.6" x2="561.6" y2="228.6"/>
+        <line x1="638.4" y1="196.9" x2="633.0" y2="236.9"/>
+        <line x1="720.0" y1="200.0" x2="720.0" y2="240.0"/>
+      </g>
+      <polyline class="accent" points="120,90 201.6,93.1 268.8,101.4 325.2,113.8 374.4,128.7 420,145 465.6,161.3 514.8,176.2 571.2,188.6 638.4,196.9 720,200"/>
+      <polyline class="accent" points="120,130 196.2,133.1 259.2,141.4 312.6,153.8 360,168.7 405,185 451.2,201.3 502.2,216.2 561.6,228.6 633,236.9 720,240"/>
+      <g fill="var(--accent)">
+        <circle cx="120" cy="90" r="2"/><circle cx="201.6" cy="93.1" r="2"/><circle cx="268.8" cy="101.4" r="2"/>
+        <circle cx="325.2" cy="113.8" r="2"/><circle cx="374.4" cy="128.7" r="2"/><circle cx="420" cy="145" r="2"/>
+        <circle cx="465.6" cy="161.3" r="2"/><circle cx="514.8" cy="176.2" r="2"/><circle cx="571.2" cy="188.6" r="2"/>
+        <circle cx="638.4" cy="196.9" r="2"/><circle cx="720" cy="200" r="2"/>
+      </g>
+      <line class="thin" x1="120" y1="272" x2="720" y2="272"/>
+      <g stroke="var(--accent)" stroke-width="1">
+        <line x1="120" y1="267" x2="120" y2="277"/><line x1="201.6" y1="267" x2="201.6" y2="277"/>
+        <line x1="268.8" y1="267" x2="268.8" y2="277"/><line x1="325.2" y1="267" x2="325.2" y2="277"/>
+        <line x1="374.4" y1="267" x2="374.4" y2="277"/><line x1="420" y1="267" x2="420" y2="277"/>
+        <line x1="465.6" y1="267" x2="465.6" y2="277"/><line x1="514.8" y1="267" x2="514.8" y2="277"/>
+        <line x1="571.2" y1="267" x2="571.2" y2="277"/><line x1="638.4" y1="267" x2="638.4" y2="277"/>
+        <line x1="720" y1="267" x2="720" y2="277"/>
+      </g>
+      <text class="ac" x="120" y="292">rungs land here — even in t</text>
+      <line class="thin" x1="120" y1="308" x2="720" y2="308"/>
+      <g stroke="var(--ink-3)" stroke-width="1" stroke-dasharray="2 2">
+        <line x1="120" y1="303" x2="120" y2="313"/><line x1="180" y1="303" x2="180" y2="313"/>
+        <line x1="240" y1="303" x2="240" y2="313"/><line x1="300" y1="303" x2="300" y2="313"/>
+        <line x1="360" y1="303" x2="360" y2="313"/><line x1="420" y1="303" x2="420" y2="313"/>
+        <line x1="480" y1="303" x2="480" y2="313"/><line x1="540" y1="303" x2="540" y2="313"/>
+        <line x1="600" y1="303" x2="600" y2="313"/><line x1="660" y1="303" x2="660" y2="313"/>
+        <line x1="720" y1="303" x2="720" y2="313"/>
+      </g>
+      <text x="460" y="326">even in x — not used, and why is the point</text>
+      <text class="em" x="120" y="66">aParam.y = 0 · upper edge</text>
+      <text class="em" x="120" y="255">aParam.y = 1 · lower edge</text>
+    </svg>
+    <figcaption><b>Figure 2.</b> Eleven rungs shown; the real mesh has 65. Both edges are sampled
+    at the <b>same</b> <code>t</code>, which is why the rungs are not vertical — the two edges have
+    different <code>u</code> and so do not share an x at equal <code>t</code>. Placing rungs at even
+    x instead would require inverting <code>x(t)</code> per vertex; placing them at even t removes
+    the question entirely, at the cost of uneven spacing in x — never worse than ~3×, and
+    irrelevant, since tessellation error follows <b>curvature</b>, not spacing.</figcaption>
+  </figure>
+
+  <p class="side"><b>Why 64.</b> Measured, not guessed: worst-case chord error <b>0.41 px in x
+  and 0.06 px in y</b> at 200× zoom on the widest band in <code>5520+</code>. A sweep of
+  16/32/64/128 showed flat frame time — rung count is free in this range — and the pixel
+  differences across the sweep were indistinguishable from camera reproducibility across page
+  loads. The spike swept it from the URL; it is a constant now.</p>
+
+  <div class="codeblock">
+    <span class="label">src/bandSurface.ts · the vertex shader, in full</span>
+<pre>in vec2 aParam;     <i>// x: curve parameter 0..1, y: 0 = upper edge, 1 = lower edge</i>
+in vec4 iSpan;      <i>// x0, y0, width, y1 — y0/y1 are the upper edge, world space</i>
+in vec2 iControl;   <i>// control abscissa of the upper and lower edge, as a fraction</i>
+in float iStrandId; <i>// the haplotype this band belongs to</i>
+
+void main() {
+    float t = aParam.x;
+    float side = aParam.y;
+
+    <i>// Each edge carries its own control abscissa; they differ, so a band's thickness
+    // varies along its length and the two edges are not translates of each other.</i>
+    float u = mix(iControl.x, iControl.y, side);
+
+    <b>float x = iSpan.x + iSpan.z * (3.0 * u * t * (1.0 - t) + t * t * t);</b>
+    <b>float y = mix(iSpan.y, iSpan.w, t * t * (3.0 - 2.0 * t)) - side * uThickness;</b>
+
+    <i>// Grow the band by a pixel on each side so a band thinner than one pixel still
+    // covers a fragment to compute coverage in.</i>
+    y += (1.0 - 2.0 * side) * uPad;
+
+    <i>// Exact texels by integer id — no filtering, so no chance of two haplotypes'
+    // appearance being blended into a third that belongs to neither.</i>
+    int id = int(iStrandId + 0.5);
+    int row = int(uAppearanceRow);
+    vec4 appearance = texelFetch(uAppearance, ivec2(id - (id / row) * row, id / row), 0);
+
+    vColor = appearance.rgb;
+    vEmphasis = appearance.a;
+
+    vSpan = iSpan; vControl = iControl; vStrandId = iStrandId;
+    vT = t; vWorld = vec2(x, y);
+
+    gl_Position = projectionMatrix * modelViewMatrix * vec4(x, y, 0.0, 1.0);
+}</pre>
+    <p class="codenote">Two bold lines are the entire geometry of the tube map. Everything else
+    in the shader is bookkeeping: fetch the appearance, hand the fragment shader what it needs to
+    redo this arithmetic at its own pixel.</p>
+  </div>
+
+  <h3 style="margin-top:2.4em">Where each number lives</h3>
+  <p>The frequency at which a value changes decides where it is stored. This table is the whole
+  memory architecture.</p>
+
+  <div class="tablewrap">
+  <table>
+    <thead><tr><th>Datum</th><th>Rate</th><th>Where</th><th>Size on 5520+</th></tr></thead>
+    <tbody>
+      <tr><td>t, side</td><td>per vertex</td><td><code>aParam</code>, shared mesh</td><td>1.0 KB</td></tr>
+      <tr><td>x0, y0, width, y1</td><td>per band</td><td><code>iSpan</code>, instanced</td><td>647 KB</td></tr>
+      <tr><td>uTop, uBot</td><td>per band</td><td><code>iControl</code>, instanced</td><td>324 KB</td></tr>
+      <tr><td>strand id</td><td>per band</td><td><code>iStrandId</code>, instanced, <code>Uint16</code></td><td>81 KB</td></tr>
+      <tr class="flag"><td>colour + emphasis</td><td class="hi">per strand</td><td class="hi"><code>uAppearance</code>, a 256-wide texture</td><td class="hi">2 KB</td></tr>
+      <tr><td>thickness, pixel size, pad</td><td>per frame</td><td>uniforms</td><td>12 B</td></tr>
+      <tr><td>camera</td><td>per frame</td><td>two mat4</td><td>128 B</td></tr>
+    </tbody>
+    <caption><b>Table 1.</b> Total resident geometry ≈ <b>1.05 MB</b> for a document that is 14.2 MB
+    of SVG text and 40,442 DOM elements in the shipping viewer. The instance buffers are written
+    once at load and <b>never touched again</b> — not on pan, not on zoom, not on highlight.</caption>
+  </table>
+  </div>
+
+  <p style="margin-top:2em">One line deserves its own note. <strong>Colour is not an instance
+  attribute</strong>, and that is the difference between a highlight costing 2 KB and costing
+  162 KB of scattered writes. Section 05 is about that decision.</p>
+</section>
+
+<section>
+  <div class="sechead"><span class="n">03</span><h2>Coverage, solved rather than sampled</h2></div>
+  <p>At fit-to-width, 464 strands land on about 177 device rows: 2.6 haplotypes share every
+  pixel row, and a band is <strong>0.19 CSS pixels tall</strong>. This is the regime the whole
+  antialiasing question lives in, and it is where hardware multisampling stops being an
+  approximation and starts being a lottery.</p>
+
+  <p>Four-sample MSAA does not blur 2.6 overlapping sub-pixel bands into a mixture. Each of the
+  four sample points is <em>won outright</em> by exactly one band. At most four of the bands
+  covering a pixel can be represented at all; the rest are simply discarded. The result looks
+  crisp and saturated and is missing data.</p>
+
+  <p>So the fragment shader computes coverage itself. Each fragment knows its own world x. It
+  inverts <code>x(t)</code> for each edge — Newton, two steps, from a starting guess the
+  rasterizer already interpolated for it — evaluates both edges there, and intersects the
+  resulting vertical span with its own pixel box.</p>
+
+  <figure class="figframe">
+    <svg viewBox="0 0 900 300" role="img" aria-label="Analytic coverage: the band's span intersected with the pixel box">
+      <g class="thin">
+        <line x1="80" y1="40" x2="80" y2="260"/><line x1="200" y1="40" x2="200" y2="260"/>
+        <line x1="320" y1="40" x2="320" y2="260"/><line x1="440" y1="40" x2="440" y2="260"/>
+        <line x1="80" y1="40" x2="440" y2="40"/><line x1="80" y1="113" x2="440" y2="113"/>
+        <line x1="80" y1="187" x2="440" y2="187"/><line x1="80" y1="260" x2="440" y2="260"/>
+      </g>
+      <path d="M60,150 C200,150 200,96 460,96 L460,126 C200,126 200,180 60,180 Z"
+            fill="var(--accent-soft)" stroke="var(--accent)" stroke-width="1.2"/>
+      <rect x="200" y="113" width="120" height="74" fill="var(--warm)" opacity="0.14"/>
+      <rect x="200" y="120" width="120" height="30" fill="var(--warm)" opacity="0.3"/>
+      <line class="warm" x1="200" y1="120" x2="320" y2="120"/>
+      <line class="warm" x1="200" y1="150" x2="320" y2="150"/>
+      <text class="wa" x="330" y="124">hi = min(yTop, y + halfPixel)</text>
+      <text class="wa" x="330" y="154">lo = max(yBot, y − halfPixel)</text>
+      <text class="em" x="330" y="182">this fragment's pixel box</text>
+      <line class="stroke dash" x1="260" y1="40" x2="260" y2="290"/>
+      <text x="212" y="286">the fragment's own x</text>
+      <text class="ac" x="60" y="130">yTop(x)</text>
+      <text class="ac" x="60" y="200">yBot(x)</text>
+      <g transform="translate(560,60)">
+        <text class="big" x="0" y="0">coverage = (hi − lo) / (2 · halfPixel)</text>
+        <text x="0" y="34">= 0.41 for this fragment</text>
+        <text x="0" y="66">MSAA×4 would answer</text>
+        <text x="0" y="86">0.25 or 0.50 — never 0.41</text>
+        <text class="em" x="0" y="126">alpha = coverage × emphasis</text>
+        <text x="0" y="150">colour is never touched.</text>
+      </g>
+    </svg>
+    <figcaption><b>Figure 3.</b> A band covering two fifths of a pixel's height returns exactly two
+    fifths. Horizontal coverage at the two ends is ignored on purpose: bands lap their neighbours by
+    a whole unit and are hundreds of units wide, so the ends are interior to the strand and never
+    become a visible edge.</figcaption>
+  </figure>
+
+  <div class="codeblock">
+    <span class="label">src/bandSurface.ts · COVERAGE — shared verbatim by both passes</span>
+<pre><i>/**
+ * Recover the curve parameter at this fragment's own x. The rungs give a value that is
+ * close — it is linearly interpolated between two points on a curve — and two Newton
+ * steps from there are exact to well inside a pixel.
+ *
+ * f(t)  = 3u·t·(1-t) + t³ - p
+ * f'(t) = 3u·(1-2t) + 3t²,  which bottoms out at 3u(1-u) &gt; 0, so this cannot stall.
+ */</i>
+float parameterAt(float p, float u, float t) {
+    for (int i = 0; i &lt; 2; i += 1) {
+        float f = 3.0 * u * t * (1.0 - t) + t * t * t - p;
+        float d = 3.0 * u * (1.0 - 2.0 * t) + 3.0 * t * t;
+
+        t -= f / max(d, 1e-5);
+    }
+
+    return clamp(t, 0.0, 1.0);
+}
+
+float bandCoverage() {
+    float p = clamp((vWorld.x - vSpan.x) / vSpan.z, 0.0, 1.0);
+
+    <i>// Each edge has its own control abscissa, so each needs its own parameter at this x.</i>
+    float tTop = parameterAt(p, vControl.x, vT);
+    float tBot = parameterAt(p, vControl.y, vT);
+
+    float yTop = mix(vSpan.y, vSpan.w, tTop * tTop * (3.0 - 2.0 * tTop));
+    float yBot = mix(vSpan.y, vSpan.w, tBot * tBot * (3.0 - 2.0 * tBot)) - uThickness;
+
+    float lo = max(yBot, vWorld.y - uHalfPixel);
+    float hi = min(yTop, vWorld.y + uHalfPixel);
+
+    return clamp((hi - lo) / (2.0 * uHalfPixel), 0.0, 1.0);
+}</pre>
+    <p class="codenote">Two Newton iterations, unrolled, no branches, no early exit — the
+    derivative is bounded below by <code>3u(1−u)</code> over the measured range
+    <code>u ∈ [0.30, 0.70]</code>, so convergence is guaranteed and the loop can be a fixed
+    two steps rather than a convergence test. <b>The starting guess is free</b>: it is the
+    interpolated <code>vT</code>, which the rasterizer computed anyway.</p>
+  </div>
+
+  <p style="margin-top:2em">The Newton step is the piece a graphics reader should linger on.
+  Analytic coverage for a curved shape normally means either a distance field (which needs a
+  precomputed texture and gets the closed-form wrong near high curvature) or a per-pixel
+  root-find with an unknown starting point. Here the mesh has already <em>told each fragment
+  roughly which t it is at</em>, because that is what the rasterizer does with a varying. The
+  ladder is not merely a tessellation; it is a distributed initial guess.</p>
+
+  <h3 style="margin-top:2.4em">What it buys, measured</h3>
+  <p>Both arms were built in the spike, sharing geometry and one shader behind a define,
+  swapped live with the space bar so the two could be judged on the same frame. Measured at fit
+  on <code>5520+</code>, over a 600×155 device-pixel window well inside the map:</p>
+
+  <div class="tablewrap">
+  <table>
+    <thead><tr><th>Arm</th><th>Saturation</th><th>Min channel</th><th>Distinct colours</th><th>Distinct per column</th></tr></thead>
+    <tbody>
+      <tr><td>A · ladder + 4× MSAA</td><td>0.560</td><td>102.6</td><td>1,052</td><td>101 / 464</td></tr>
+      <tr class="flag"><td>C · ladder + analytic coverage</td><td>0.394</td><td>145.2</td><td class="hi">11,137</td><td class="hi">119 / 464</td></tr>
+    </tbody>
+    <caption><b>Table 2.</b> Analytic carries ~10× more distinct colour and 18% more distinct values
+    per column — the banding structure the renderer exists to preserve.</caption>
+  </table>
+  </div>
+
+  <p style="margin-top:2em"><strong>And it is visibly washed toward white</strong>, which is
+  arithmetic rather than a bug. Bands abut exactly; compositing 2.6 independently-covered opaque
+  bands into one pixel leaves <code>1 − (1−0.38)^2.6</code> ≈ 30% of the background showing
+  through. That is the classic conflation artifact — <strong>SVG has exactly the same defect</strong>,
+  so the analytic arm is <em>faithful</em> to the document, and faithful is not automatically
+  prettier.</p>
+
+  <p>The artifact is not confined to sub-pixel zooms, either. It lives at every band boundary at
+  every zoom, because a boundary pixel is always split between two abutting bands, and strands are
+  stacked at a regular pitch so every seam is in phase:</p>
+
+  <div class="tablewrap">
+  <table>
+    <thead><tr><th>Band height</th><th>Rows opaque</th><th>Rows leaking &gt; 5%</th><th>Transmittance where it leaks</th></tr></thead>
+    <tbody>
+      <tr><td>0.6 css px</td><td>0%</td><td>100%</td><td>median 0.251</td></tr>
+      <tr><td>1.5 css px</td><td>33%</td><td>67%</td><td>median 0.184</td></tr>
+      <tr><td>3 css px</td><td>67%</td><td>33%</td><td>p90 0.251</td></tr>
+      <tr><td>8 css px</td><td>87%</td><td>12%</td><td>p90 0.149</td></tr>
+      <tr><td>30 css px</td><td>99%</td><td>0.8%</td><td>—</td></tr>
+    </tbody>
+    <caption><b>Table 3.</b> Measured by rendering the same view over a white ground and a black
+    ground and subtracting. A band's interior is exactly opaque; its boundary rows leak, and
+    <code>(1−a)(1−(1−a))</code> peaks at exactly <b>0.25</b> when a boundary falls on a pixel centre.</caption>
+  </table>
+  </div>
+
+  <div class="callout">
+    <span class="label">The correct fix, and why it is not built</span>
+    <p>Because bands abut and are opaque, the right answer at sub-pixel scale is a
+    <strong>coverage-weighted average of the covering bands with no background term</strong> —
+    normalise by total coverage instead of compositing over white. That gives full saturation
+    <em>and</em> exact proportions: better than SVG rather than equal to it. It costs
+    order-independence, and where two strands genuinely cross, the painter's-algorithm z-order
+    that instance order currently carries would be lost. Front-most-wins was deliberately kept
+    when picking was designed. Filed as its own ticket rather than folded into a rendering tidy-up.</p>
+  </div>
+
+  <p class="side"><b>A third technique, never built.</b> Evaluating the curve entirely in the
+  fragment shader over a bounding quad gives analytic coverage with no mesh at all — but a strand
+  that jumps most of the map's height does so over a narrow horizontal span, so its bounding box is
+  enormous and the band inside is a sliver: <b>8.07× overdraw</b>. It remains the answer if the
+  ladder ever facets at high zoom, and it is now known to be affordable — 8.07× on 2.5 megapixels
+  is ~20 megapixels of fill, unremarkable on this hardware.</p>
+</section>
+
+<section>
+  <div class="sechead"><span class="n">04</span><h2>The pad: a floor, not a size</h2></div>
+  <p>A band 0.19 CSS pixels tall has a real problem before coverage is ever computed. If nothing
+  intervenes, the rasterized quad may not contain <em>any</em> sample point, in which case the
+  fragment shader never runs and the band contributes nothing — not a faint line, nothing. Its
+  colour is the information, and a band that isn't drawn is a haplotype that isn't there.</p>
+
+  <p>So the vertex shader grows every band by one device pixel on each side, and the fragment
+  shader then reports its <em>true</em> coverage over that pixel. The geometry is inflated; the ink
+  is not.</p>
+
+  <figure class="figframe">
+    <svg viewBox="0 0 900 240" role="img" aria-label="uPad: growing a sub-pixel band so it covers a fragment">
+      <text class="big" x="0" y="20">without uPad</text>
+      <g class="thin">
+        <line x1="0" y1="40" x2="380" y2="40"/><line x1="0" y1="90" x2="380" y2="90"/>
+        <line x1="0" y1="140" x2="380" y2="140"/><line x1="0" y1="190" x2="380" y2="190"/>
+      </g>
+      <g fill="var(--ink-3)">
+        <circle cx="65" cy="65" r="2"/><circle cx="165" cy="65" r="2"/><circle cx="265" cy="65" r="2"/><circle cx="355" cy="65" r="2"/>
+        <circle cx="65" cy="115" r="2"/><circle cx="165" cy="115" r="2"/><circle cx="265" cy="115" r="2"/><circle cx="355" cy="115" r="2"/>
+        <circle cx="65" cy="165" r="2"/><circle cx="165" cy="165" r="2"/><circle cx="265" cy="165" r="2"/><circle cx="355" cy="165" r="2"/>
+      </g>
+      <rect x="20" y="96" width="350" height="2.5" fill="var(--accent)"/>
+      <rect x="20" y="128" width="350" height="2.5" fill="var(--warm)"/>
+      <text class="ac" x="20" y="222">the band is between the sample rows.</text>
+      <text class="em" x="20" y="238">no fragment runs. the strand vanishes.</text>
+
+      <text class="big" x="500" y="20">with uPad</text>
+      <g class="thin">
+        <line x1="500" y1="40" x2="880" y2="40"/><line x1="500" y1="90" x2="880" y2="90"/>
+        <line x1="500" y1="140" x2="880" y2="140"/><line x1="500" y1="190" x2="880" y2="190"/>
+      </g>
+      <rect x="520" y="90" width="350" height="50" fill="var(--accent)" opacity="0.1"/>
+      <rect x="520" y="90" width="350" height="50" fill="none" stroke="var(--accent)" stroke-dasharray="3 3"/>
+      <rect x="520" y="96" width="350" height="2.5" fill="var(--accent)"/>
+      <rect x="520" y="128" width="350" height="2.5" fill="var(--warm)"/>
+      <g fill="var(--ink-3)">
+        <circle cx="565" cy="65" r="2"/><circle cx="665" cy="65" r="2"/><circle cx="765" cy="65" r="2"/><circle cx="855" cy="65" r="2"/>
+        <circle cx="565" cy="115" r="2"/><circle cx="665" cy="115" r="2"/><circle cx="765" cy="115" r="2"/><circle cx="855" cy="115" r="2"/>
+        <circle cx="565" cy="165" r="2"/><circle cx="665" cy="165" r="2"/><circle cx="765" cy="165" r="2"/><circle cx="855" cy="165" r="2"/>
+      </g>
+      <text class="ac" x="520" y="222">geometry grown to one device pixel; alpha still</text>
+      <text class="em" x="520" y="238">reports the band's true 0.05 coverage.</text>
+    </svg>
+    <figcaption><b>Figure 4.</b> Two bands, each far thinner than a device pixel. Left: neither quad
+    contains a sample point and both disappear. Right: <code>uPad</code> grows each quad to cover a
+    pixel, the fragment shader runs, and each band contributes ink <b>in proportion to what it
+    actually covers</b> — so they accumulate into the pixel they belong to instead of one of them
+    winning it.</figcaption>
+  </figure>
+
+  <div class="callout">
+    <span class="label">The rule this follows</span>
+    <p><strong>A feature's size is corrected only where scale destroys information the feature
+    carries.</strong> Everything else is drawn at the scale the camera says, and the server's
+    numbers survive the trip unmodified. <code>uPad</code> qualifies because a band that falls
+    between sample rows loses its colour entirely — and it is a <em>floor</em>: above one pixel it
+    does nothing, and thickness 15 scales freely from 0.19 CSS px at fit to 38 at 200×.</p>
+    <p style="margin-top:.9em">A segment box's 2-unit stroke was going to be pinned at 2 CSS px on
+    similar reasoning. The number behind that was simply wrong — a scaling stroke spans 0.016 px at
+    fit to 3.1 px at 200×, so there was never anything to fix. It scales, like everything else.</p>
+  </div>
+</section>
+
+<section>
+  <div class="sechead"><span class="n">05</span><h2>Appearance as a table, not an attribute</h2></div>
+  <p>The obvious place for a band's colour is a per-instance attribute. That is what the spike
+  shipped, and it is what makes interactive highlighting impossible.</p>
+
+  <p>A strand is drawn as dozens of separate bands — 13 to 47 across the surveyed documents, 87
+  on <code>5520+</code> — scattered through document order. With colour as an attribute, changing how one haplotype looks means finding and
+  rewriting its share of a 162 KB buffer and re-uploading it — per pointer move. Moving the
+  data one level of indirection away fixes this completely: <strong>one texel per strand</strong>,
+  RGB plus an emphasis byte, fetched in the vertex shader by <code>iStrandId</code>.</p>
+
+  <figure class="figframe">
+    <svg viewBox="0 0 900 265" role="img" aria-label="The appearance table: one texel per strand, fetched by id">
+      <text class="big" x="0" y="18">instance buffer · 40,442 bands</text>
+      <g>
+        <rect x="0" y="34" width="300" height="26" fill="none" stroke="var(--rule)"/>
+        <g font-size="10">
+          <text x="8" y="51">id 0</text><text x="60" y="51">id 12</text><text x="118" y="51">id 0</text>
+          <text x="170" y="51">id 463</text><text x="232" y="51">id 12</text>
+        </g>
+        <line class="thin" x1="50" y1="34" x2="50" y2="60"/><line class="thin" x1="108" y1="34" x2="108" y2="60"/>
+        <line class="thin" x1="160" y1="34" x2="160" y2="60"/><line class="thin" x1="222" y1="34" x2="222" y2="60"/>
+      </g>
+      <text x="0" y="82">one strand's bands are scattered</text>
+      <text x="0" y="100">through document order</text>
+
+      <path class="accent" d="M306,47 C356,47 356,104 404,104"/>
+      <polygon points="410,104 400,99 400,109" fill="var(--accent)"/>
+      <text class="ac" x="316" y="92">texelFetch</text>
+
+      <text class="big" x="430" y="18">uAppearance · 256 × 2 texels · 2 KB</text>
+      <g transform="translate(470,34)">
+        <g class="thin">
+          <rect x="0" y="0" width="390" height="52" fill="none" stroke="var(--rule)"/>
+          <line x1="0" y1="26" x2="390" y2="26"/>
+        </g>
+        <g stroke="var(--rule-soft)" stroke-width="0.5">
+          <line x1="26" y1="0" x2="26" y2="52"/><line x1="52" y1="0" x2="52" y2="52"/>
+          <line x1="78" y1="0" x2="78" y2="52"/><line x1="104" y1="0" x2="104" y2="52"/>
+          <line x1="130" y1="0" x2="130" y2="52"/><line x1="156" y1="0" x2="156" y2="52"/>
+          <line x1="182" y1="0" x2="182" y2="52"/><line x1="208" y1="0" x2="208" y2="52"/>
+          <line x1="234" y1="0" x2="234" y2="52"/><line x1="260" y1="0" x2="260" y2="52"/>
+          <line x1="286" y1="0" x2="286" y2="52"/><line x1="312" y1="0" x2="312" y2="52"/>
+          <line x1="338" y1="0" x2="338" y2="52"/><line x1="364" y1="0" x2="364" y2="52"/>
+        </g>
+        <rect x="182" y="26" width="26" height="26" fill="var(--accent)" opacity="0.55"/>
+        <text x="-8" y="18" text-anchor="end" font-size="10">row 0</text>
+        <text x="-8" y="44" text-anchor="end" font-size="10">row 1</text>
+        <text class="ac" x="128" y="74">id 463 → texel (207, 1)</text>
+        <text x="-40" y="98">ivec2(id % 256, id / 256) · NearestFilter · no mipmaps</text>
+      </g>
+
+      <g transform="translate(430,168)">
+        <rect x="0" y="0" width="88" height="32" fill="none" stroke="var(--accent)"/>
+        <text class="ac" x="18" y="21">R G B</text>
+        <rect x="88" y="0" width="44" height="32" fill="none" stroke="var(--warm)"/>
+        <text class="wa" x="103" y="21">A</text>
+        <text class="ac" x="0" y="54">RGB · the document's PCLAI colour, never written again.</text>
+        <text class="wa" x="0" y="74">A · emphasis. 255 plain, 20 receded — the only mover.</text>
+      </g>
+      <text class="em" x="0" y="188">moving the focus writes one byte per strand —</text>
+      <text class="em" x="0" y="206">not per band, and not per lit strand.</text>
+      <text x="0" y="234">worst measured: 0.100 ms</text>
+      <text x="0" y="252">upload: 2 KB, once per frame at most</text>
+    </svg>
+    <figcaption><b>Figure 5.</b> The indirection that makes highlighting free. The instance buffer
+    holds an <em>id</em>, not a colour, so the appearance of a haplotype exists in exactly one place
+    regardless of how many bands it is drawn as.</figcaption>
+  </figure>
+
+  <p style="margin-top:2em">Holding <code>Shift</code> turns the cursor into a feeler: the strand it
+  touches is drawn in full, everything else recedes to 8% alpha, and releasing brings the whole map
+  back. On the SVG surface this same interaction was built and <em>shipped switched off</em>,
+  because invoking it cost ~28 ms of style invalidation per swap. Here:</p>
+
+  <div class="tablewrap">
+  <table>
+    <thead><tr><th>Cost of moving the emphasis, by moves already made</th><th>Median</th><th>Worst</th></tr></thead>
+    <tbody>
+      <tr><td>moves 0–9</td><td>0.000 ms</td><td>0.100 ms</td></tr>
+      <tr><td>moves 10–24</td><td>0.000 ms</td><td>0.100 ms</td></tr>
+      <tr><td>moves 25–49</td><td>0.000 ms</td><td>0.100 ms</td></tr>
+      <tr><td>moves 50–99</td><td>0.000 ms</td><td>0.100 ms</td></tr>
+      <tr><td>moves 100–end</td><td>0.000 ms</td><td>0.100 ms</td></tr>
+      <tr class="flag"><td>worst frame during the sweep</td><td></td><td class="hi">9.4 ms</td></tr>
+      <tr class="flag"><td>worst frame, same 260 moves, no Shift held</td><td></td><td class="hi">9.4 ms</td></tr>
+    </tbody>
+    <caption><b>Table 4.</b> A 260-move sweep down the middle of <code>5520+</code> at ~6× fit, during
+    which the emphasis moved 198 times across 198 distinct strands. <b>The cost does not drift</b> —
+    median and worst are flat across every window, so this is not a worst-so-far figure hiding a trend.
+    0.000 ms is below what <code>performance.now()</code> resolves in this browser; the honest reading
+    is <em>under 100 µs</em>. Highlighting is not what the frame costs.</caption>
+  </table>
+  </div>
+
+  <div class="codeblock">
+    <span class="label">src/bandSurface.ts · the fragment shader, in full</span>
+<pre>void main() {
+    float coverage = bandCoverage();
+
+    if (0.0 &gt;= coverage) {
+        discard;
+    }
+
+    <i>// One multiply, and only ever downward: the focused strand and a map with no key
+    // held are both emphasis 1 and are drawn identically.</i>
+    <b>fragColor = vec4(vColor, coverage * vEmphasis);</b>
+}</pre>
+    <p class="codenote"><b>Emphasis reaches alpha and never <code>vColor</code>.</b> PCLAI colour is
+    shared vocabulary with two other panels a researcher reads alongside this one, so the renderer may
+    dim a strand but may never recolour it. Receding therefore turns a strand into a ghost of itself —
+    whatever is behind it shows through, including the focused strand crossing over it — rather than
+    repainting it grey, which would collide with grey's existing meaning (<code>pclaiX="None"</code>).</p>
+  </div>
+
+  <p class="side"><b>A reversal worth recording.</b> The ticket, the spec and the decision log all
+  asked for touched strands to <b>accumulate</b> into a comparison set. Built that way, looked at, and
+  reversed on the evidence: swept across a bundle, accumulation leaves a widening trail of lit strands
+  and the one strand being pointed at ends up as one of dozens at full colour — the opposite of telling
+  it apart. The table is indifferent: it holds a byte per strand and has no opinion about how many are
+  lit, so a deliberate comparison-set gesture needs no change here.</p>
+
+  <p class="side" style="margin-top:2em"><b>Why 256 wide.</b> <code>MAX_TEXTURE_SIZE</code> is only
+  guaranteed to be 2048 in WebGL2 and the parser admits strand ids to 65535, so a one-row table is a
+  table that works until it doesn't. 256 per row puts the whole admissible range inside 256 rows.</p>
+</section>
+
+<section>
+  <div class="sechead"><span class="n">06</span><h2>Picking: the same shader, asked a different question</h2></div>
+  <p>“Which haplotype is under the cursor” is the capability the SVG surface lost — DOM
+  hit-testing at 40,442 elements cost ~28 ms per hover. The GPU already knows how to rasterize
+  these bands. So the renderer asks it what it put there.</p>
+
+  <p>A second pass runs over the same scene with a material that is the band material's twin:
+  <strong>same vertex shader, same coverage test</strong>, differing only in what it writes. The
+  camera's entire frustum is the one CSS pixel under the cursor; the target is 1×1; the pixel is
+  read back synchronously.</p>
+
+  <figure class="figframe">
+    <svg viewBox="0 0 900 260" role="img" aria-label="The pick pass: a one-pixel frustum, a 1x1 target, two bytes of id">
+      <rect x="0" y="30" width="330" height="150" fill="none" stroke="var(--rule)"/>
+      <g stroke="var(--ink-3)" stroke-width="6" opacity="0.35">
+        <path d="M0,70 C120,70 120,58 330,58" fill="none"/>
+        <path d="M0,92 C120,92 120,120 330,120" fill="none"/>
+        <path d="M0,130 C120,130 120,96 330,96" fill="none"/>
+        <path d="M0,158 C120,158 120,150 330,150" fill="none"/>
+      </g>
+      <rect x="176" y="30" width="4" height="150" fill="var(--warm)" opacity="0.25"/>
+      <line class="warm" x1="176" y1="30" x2="176" y2="180"/>
+      <line class="warm" x1="180" y1="30" x2="180" y2="180"/>
+      <circle cx="178" cy="108" r="4" fill="none" stroke="var(--warm)" stroke-width="1.4"/>
+      <text class="wa" x="120" y="200">the frustum is one css pixel wide</text>
+      <text x="0" y="222">almost every instance is clipped after its vertex shader</text>
+      <text x="0" y="240">and rasterizes nothing — but the vertex shader still runs for all</text>
+      <text x="0" y="258">40,442 of them. that is the cost of this approach.</text>
+
+      <path class="accent" d="M340,105 L420,105"/><polygon points="424,105 414,100 414,110" fill="var(--accent)"/>
+      <text class="ac" x="344" y="96">render</text>
+
+      <rect x="440" y="88" width="36" height="36" fill="var(--accent)" opacity="0.2" stroke="var(--accent)"/>
+      <text class="em" x="436" y="140">1 × 1 target</text>
+      <text x="436" y="158">cleared to alpha 0</text>
+
+      <path class="accent" d="M496,105 L560,105"/><polygon points="564,105 554,100 554,110" fill="var(--accent)"/>
+      <text class="ac" x="500" y="96">readback</text>
+
+      <g transform="translate(580,80)">
+        <rect x="0" y="0" width="52" height="36" fill="none" stroke="var(--accent)"/>
+        <rect x="52" y="0" width="52" height="36" fill="none" stroke="var(--accent)"/>
+        <rect x="104" y="0" width="52" height="36" fill="none" stroke="var(--rule)"/>
+        <rect x="156" y="0" width="52" height="36" fill="none" stroke="var(--warm)"/>
+        <text class="ac" x="12" y="23">R low</text><text class="ac" x="62" y="23">G high</text>
+        <text x="122" y="23">B —</text><text class="wa" x="170" y="23">A hit</text>
+        <text class="em" x="0" y="60">strandId = R + G · 256</text>
+        <text class="wa" x="0" y="80">A = 0 means empty space — not strand 0,</text>
+        <text class="wa" x="0" y="98">which is a real haplotype on every document.</text>
+      </g>
+    </svg>
+    <figcaption><b>Figure 6.</b> No spatial index, no bounding boxes, no per-band arithmetic on the
+    CPU. <b>A strand is 13 to 47 separate bands</b>, and the id attribute is what unites them, so the
+    answer is a haplotype rather than a fragment — that falls out of the attribute; nothing stitches
+    anything.</figcaption>
+  </figure>
+
+  <div class="codeblock">
+    <span class="label">src/bandSurface.ts · PICK_FRAGMENT</span>
+<pre>precision highp float;
+${COVERAGE}          <i>// ← the identical string the visible pass compiles</i>
+
+flat in float vStrandId;
+
+out vec4 fragColor;
+
+void main() {
+    if (0.0 &gt;= bandCoverage()) {
+        discard;
+    }
+
+    float low = mod(vStrandId, 256.0);
+    float high = floor(vStrandId / 256.0);
+
+    fragColor = vec4(low / 255.0, high / 255.0, 0.0, <b>1.0</b>);
+}</pre>
+  </div>
+
+  <div class="callout">
+    <span class="label">Why the coverage test is shared as a string</span>
+    <p>Sharing it is a <strong>correctness property, not a tidiness one</strong>. Picking answers
+    “which band put ink in this pixel”, and the only way that answer cannot drift from what the screen
+    shows is for both passes to run the same test over the same varyings from the same vertex shader.
+    Two copies of this arithmetic would be two opinions about where a band is — and they would
+    disagree exactly at the sub-pixel edges where it matters most.</p>
+  </div>
+
+  <p style="margin-top:2em">Four smaller decisions in this pass are each worth one sentence:</p>
+  <ul>
+    <li><strong>Alpha is a hit flag, not a colour.</strong> Every kept fragment writes 1 and the
+    target clears to 0, so “nothing here” is distinguishable from strand 0 — a real haplotype on
+    every document we have.</li>
+    <li><strong>Blending is off and there is no depth buffer</strong>, so the last fragment written
+    wins; instances are drawn in document order, so that is the topmost band — the same answer SVG's
+    own hit-testing gave, and the one the researcher is looking at where strands cross. Blending two
+    ids would produce a third naming a strand neither band belongs to.</li>
+    <li><strong>Emphasis is deliberately not applied here.</strong> A receded strand is exactly what
+    the feeler is reaching for next; a pick pass that dimmed along with the picture would make the
+    strands a sweep has not yet touched progressively harder to touch.</li>
+    <li><strong>Picks are coalesced to one per frame.</strong> Pointer devices report well above
+    60 Hz and every pick is a synchronous readback that stalls the pipeline — answering each event
+    would stall several times for one frame of movement, and only the last answer is ever read.</li>
+  </ul>
+
+  <p class="side"><b>Honest numbers.</b> <code>readRenderTargetPixels</code> blocks until the pass
+  finishes, so the milliseconds reported with each pick include the GPU work rather than just the
+  time to submit it. The pick is the largest single item in the 9.4 ms sweep frame — and the frame
+  is still inside budget.</p>
+</section>
+
+<section>
+  <div class="sechead"><span class="n">07</span><h2>The same shader at 1/150 scale</h2></div>
+  <p>The navigator thumbnail renders this scene into a render target 720 px wide — one camera
+  change, once per document — and reads it back. Same scene, same shader, same instance buffer;
+  only the camera differs. The alternative was to serialize a second copy of the document and let
+  the browser rasterize it, which is two pictures from two pipelines with nothing keeping them the
+  same.</p>
+
+  <p>This puts the coverage path at the far end of the regime Table 3 measures. A device pixel is
+  ~300 world units and a band is 15, so <strong>~20 strands share every pixel row</strong> instead
+  of 2.6. Both consequences are the arithmetic behaving as designed: <code>uPad</code> is doing
+  real work, because without it a 0.05 px band falls between sample rows and the thumbnail becomes
+  a picture of whichever strands happened to land on one; and the wash toward white is stronger
+  still, because twenty independently-composited 0.05-coverage bands leave most of the background
+  showing. The thumbnail is pale, and it is pale <em>in proportion to what is there</em>, which is
+  what a thumbnail is for.</p>
+
+  <p class="side"><b>The unbuilt normalisation would help here more than anywhere</b> — 20 bands
+  averaged by coverage with no background term is a saturated, proportionally correct thumbnail.</p>
+</section>
+
+<section>
+  <div class="sechead"><span class="n">08</span><h2>What it costs</h2></div>
+  <p>Measured on the real page with real pointer input. Nothing below is estimated, and nothing
+  below was taken in headless Chromium — Playwright's bundled browser falls back to SwiftShader on
+  this machine, which would have measured a software rasterizer.</p>
+
+  <div class="tablewrap">
+  <table>
+    <thead><tr><th>State</th><th>Zoom</th><th>Band height</th><th>Frame</th><th>Worst</th></tr></thead>
+    <tbody>
+      <tr><td>fit to width</td><td>1.0×</td><td>0.19 css px</td><td>8.3 ms</td><td>10.5</td></tr>
+      <tr><td>working zoom</td><td>19.2×</td><td>3.70 css px</td><td>8.3 ms</td><td>9.2</td></tr>
+      <tr><td>ceiling</td><td>200.0×</td><td>38.54 css px</td><td>8.4 ms</td><td>9.3</td></tr>
+      <tr><td>panning at the ceiling</td><td>200.0×</td><td></td><td>8.4 ms</td><td>9.2</td></tr>
+      <tr><td>round trip back to fit</td><td>1.0×</td><td>0.19 css px</td><td>8.3 ms</td><td>10.5</td></tr>
+    </tbody>
+    <caption><b>Table 5.</b> <code>5520+</code>, 40,442 bands, 1400×900 at dpr 2.
+    <b>8.3 ms is the display's 120 Hz cap, not the renderer.</b> Frame time never left 8.3–8.4 ms
+    through any gesture, and the worst frame across every session was 10.5 ms. The only cost anywhere
+    is a single ~87 ms frame at load while the buffers upload, which does not recur.</caption>
+  </table>
+  </div>
+
+  <p style="margin-top:2em">The structural reason is worth stating plainly, because the frame time
+  alone understates it. The SVG surface also panned at 8.3 ms — but only by handing the compositor a
+  new matrix for a bitmap it already had, which is exactly why <em>zoom</em> re-rasterized a
+  900-megapixel layer and came apart. Here the canvas is 2.5 megapixels at every zoom level and
+  geometry is never rebuilt, so the failure is <strong>structurally absent rather than
+  avoided</strong>.</p>
+
+  <p>Per frame, the CPU does: one uniform write for the device-pixel size, one
+  <code>drawElementsInstanced</code>, one CSS transform on the segment-box overlay, and two style
+  writes on the navigator rect. Nothing is proportional to the band count. And a mounted surface
+  nobody is touching costs no frames at all — <code>MapControls</code> announces every camera change
+  and a frame is scheduled from that and from nothing else.</p>
+
+  <div class="tablewrap">
+  <table>
+    <thead><tr><th>Operation</th><th>Work proportional to</th><th>Measured</th></tr></thead>
+    <tbody>
+      <tr><td>Load a document</td><td>bytes of SVG text (regex, one pass)</td><td>~87 ms, once</td></tr>
+      <tr><td>Pan or zoom</td><td class="hi">nothing</td><td>8.3–8.4 ms</td></tr>
+      <tr><td>Move the highlight</td><td class="hi">strand count (464 bytes)</td><td>&lt; 0.1 ms</td></tr>
+      <tr><td>Pick under the cursor</td><td>a 1×1 readback; all 40,442 instances still run their vertex shader</td><td>within the 9.4 ms frame</td></tr>
+      <tr><td>Resize</td><td>nothing — the frustum is recomputed, geometry is not</td><td>one frame</td></tr>
+    </tbody>
+    <caption><b>Table 6.</b> The shape of the design, as costs. Only two rows scale with anything, and
+    neither scales with the number of drawn bands.</caption>
+  </table>
+  </div>
+</section>
+
+<section>
+  <div class="sechead"><span class="n">09</span><h2>What would break it</h2></div>
+  <p>This design buys its performance by knowing the shape of its input exactly. That is a real
+  constraint and it should be stated as one, not discovered later.</p>
+
+  <div class="tablewrap">
+  <table>
+    <thead><tr><th>If this changed</th><th>Consequence</th></tr></thead>
+    <tbody>
+      <tr><td>A band that isn't the canonical shape</td><td class="wide">The parser recognises one grammar and rejects the whole document, loudly. Partial rendering is never offered: a half-drawn map looks like a correct map of different data.</td></tr>
+      <tr><td>A control abscissa outside the span</td><td class="wide"><code>x(t)</code> stops being monotone, a pixel's x maps to two points on the curve, and the Newton inversion is answering an ill-posed question. Measured at <code>u ∈ [0.30, 0.70]</code> across every document, so there is real margin — but it is margin, not a guarantee.</td></tr>
+      <tr><td>Text in the document</td><td class="wide">There is none in any of the 17 documents surveyed. It would need a genuinely different answer, not an extension of this one.</td></tr>
+      <tr><td>A thickness other than 15</td><td class="wide">Harmless. It becomes a seventh float.</td></tr>
+      <tr><td>More than 65,535 strands</td><td class="wide">The pick pass encodes the id in two bytes and the instance buffer is <code>Uint16</code>. The parser refuses a document that would wrap it, rather than returning a wrong answer quietly.</td></tr>
+      <tr><td>Bands that genuinely overlap rather than abut</td><td class="wide">Order-independent coverage normalisation — the unbuilt improvement in §03 — would become wrong rather than merely lossy. Instance order carrying z-order is the assumption doing the work.</td></tr>
+    </tbody>
+  </table>
+  </div>
+
+  <div class="callout">
+    <span class="label">The transferable part</span>
+    <p>Very little here is about genomics. The reusable shape is: <strong>survey the real input
+    until a closed-form parameterisation falls out; store the parameters, not the geometry; give the
+    fragment shader enough of the parameterisation to re-derive the exact answer at its own pixel;
+    and move anything that changes interactively into a lookup indexed by identity rather than into
+    the geometry stream.</strong> Each of those steps replaces a cost proportional to the number of
+    drawn things with a cost proportional to nothing at all.</p>
+  </div>
+</section>
+
+<footer>
+  Sequence tube map · rendering tech note · 19 August 2026<br>
+  Implementation: <code>src/bandSurface.ts</code>, <code>src/bandPicker.ts</code>,
+  <code>src/strandAppearance.ts</code>, <code>src/bandCamera.ts</code>, <code>src/parseBands.ts</code><br>
+  Companion documents: <a href="./tracing-strand-463.html">Tracing Strand 463</a> (one haplotype, end to end) ·
+  <a href="./RENDERING.md">docs/RENDERING.md</a> (technique comparison) ·
+  <a href="./DISAMBIGUATING-STRANDS.md">docs/DISAMBIGUATING-STRANDS.md</a> (the problem this serves) ·
+  <a href="./adr/0001-webgl-band-renderer.md">adr/0001</a> ·
+  <a href="../notes/2026-08-14-three-js-renderer-verdict.md">the verdict</a> ·
+  <a href="../notes/2026-08-14-feeler-mode-on-the-gpu.md">feeler mode on the GPU</a> ·
+  <a href="../notes/2026-08-15-how-much-shows-through.md">how much shows through</a>
+</footer>
+
+</div>
+</div>

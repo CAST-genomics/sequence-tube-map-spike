@@ -1,6 +1,8 @@
 # How a band gets drawn
 
-Reference for the shader in [`../src/bandSurface.ts`](../src/bandSurface.ts). Written for
+Reference for the shader in [`../src/bandSurface.ts`](../src/bandSurface.ts). The narrative
+version — how the shaders work and why, with diagrams — is
+[`a-band-is-arithmetic.html`](./a-band-is-arithmetic.html). Written for
 `spike/bandSurface.ts` and carried here when the spike was rewritten into `src/`; forked
 2026-08-14 from §03 of
 [`../notes/2026-08-13-six-floats-per-band.html`](../notes/2026-08-13-six-floats-per-band.html),
